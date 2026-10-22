@@ -43,4 +43,5 @@ CC BY -lisenssin Freesound-äänet (Benboncan 65888, Pierre Grandjean 125974, Yl
 | puhe (aani_*, tunnukset, radio/juonto_*) | Piper TTS 1.8.0 (piper-tts, pip) | GPL-3.0-or-later (työkalu; tuotettu ääni ei ole GPL-koodia) |
 | suomenkielinen ääni | fi_FI-harri-medium (rhasspy/piper-voices, Hugging Face) | data: Finnish Single Speaker Speech Dataset, CC0. Malli on hienosäädetty englanninkielisestä lessac-medium-mallista. Lessac-pohjan datalisenssi on epäselvä, ja Blizzard-aineistossa on kaupallisen käytön rajoituksia, joten tarkista ennen kaupallista julkaisua. |
 | jälkikäsittely | SoX (GPL-2.0+), FFmpeg (LGPL/GPL), numpy (BSD) | – |
-Musiikki ja tekstit on sävelletty ja kirjoitettu itse, eikä niissä ole ulkoisia sämplejä. Myös baarin taustaäänet ovat synteesiä, ja nauru tehtiin Piperillä.
+| musiikki_aloitus (generoi_aloitus.py) | tuuli: Gravity Sound; ajohaukku: Benboncan, Freesound 65888; melodia FluidR3_GM | CC BY 4.0 (Gravity Sound, Benboncan); FluidR3_GM MIT |
+Musiikki ja tekstit on sävelletty ja kirjoitettu itse, eikä niissä ole ulkoisia sämplejä (poikkeus: musiikki_aloitus käyttää yllä mainittuja CC BY -äänitteitä). Myös baarin taustaäänet ovat synteesiä, ja nauru tehtiin Piperillä.

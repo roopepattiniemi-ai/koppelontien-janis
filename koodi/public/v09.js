@@ -28,43 +28,46 @@ function animBird(n,{t,fly,kind,seed=0}){if(!n)return;const fv=n.siipi_v,fo=n.si
     for(const k of['jalka_v','jalka_o'])if(n[k])n[k].rotation.x=1.3;if(n.pyrsto)n.pyrsto.rotation.x=0;}
   else{for(const w of[fv,fo])if(w)w.rotation.set(0,0,0);for(const k of['jalka_v','jalka_o'])if(n[k])n[k].rotation.x=0.3;if(n.paa)n.paa.rotation.x=0.15*Math.max(0,Math.sin(t*1.3+seed));}}
 // ---------- riista + linnut ----------
-export function setupWildlife(scene,{height,isForest,trees,rand=Math.random,play3d=()=>{}}){
+export const COUNTS={kettu:2,peura:6,orava:8,teeriParvet:2,teeriParvessa:6,korppi:6,tiainen:12};
+export function setupWildlife(scene,{height,isForest,trees,rand=Math.random,play3d=()=>{},aiInterval=()=>0}){
   const W={critters:[],birds:[],targets:[]};
   const spot=(ok,cx=0,cz=0,R=500)=>{for(let i=0;i<400;i++){const x=cx+(rand()*2-1)*R,z=cz+(rand()*2-1)*R;if(Math.abs(x)<580&&Math.abs(z)<580&&ok(x,z))return{x,z};}return{x:cx,z:cz};};
   const add=(kind,n)=>{for(let i=0;i<n;i++){const p=spot((x,z)=>isForest(x,z)&&Math.hypot(x,z)>60),c=new Critter(kind,{...p,seed:(rand()*1e6)|0});c.obj=loadModel('mallit/elaimet/'+kind+'.glb',FB[kind]());scene.add(c.obj);c.tn=0;W.critters.push(c);
     W.targets.push({kind,get alive(){return c.alive;},pos:()=>({x:c.x,y:height(c.x,c.z)+(kind==='peura'?0.9:kind==='kettu'?0.3:0.08),z:c.z}),r:kind==='peura'?0.45:kind==='kettu'?0.22:0.08,shoot:()=>c.shoot()});}};
-  add('kettu',1);add('peura',3);add('orava',4);
+  add('kettu',COUNTS.kettu);add('peura',COUNTS.peura);add('orava',COUNTS.orava);
   // linnut: teeriparvi koivussa, korpit kiertelevät, tiaiset (pienet varamuodot)
   const koivut=trees.filter(t=>t.model?.includes('koivu')||t.kind==='koivu');
   const perch=()=>{const t=koivut.length?koivut[(rand()*koivut.length)|0]:{x:spot(isForest).x,z:0};return{x:t.x+(rand()-.5)*2,z:t.z+(rand()-.5)*2,y:height(t.x,t.z)+5+rand()*3};};
-  const P0=perch();for(let i=0;i<6;i++){const b={kind:'teeri',x:P0.x+(rand()-.5)*6,z:P0.z+(rand()-.5)*6,y:P0.y+rand()*2,fly:false,alive:true,seed:rand()*9,vx:0,vy:0,vz:0,heading:rand()*6.28};
-    b.obj=loadModel('mallit/elaimet/teeri.glb',FB.teeri());scene.add(b.obj);W.birds.push(b);}
-  W.flock={state:'istuu',t:0,target:null};
-  for(let i=0;i<3;i++){const b={kind:'korppi',cx:(rand()-.5)*800,cz:(rand()-.5)*800,R:60+rand()*80,y:35+rand()*20,ph:rand()*6.28,w:0.08+rand()*0.06,fly:true,alive:true,seed:rand()*9};b.obj=loadModel('mallit/elaimet/korppi.glb',FB.korppi());scene.add(b.obj);W.birds.push(b);}
-  const tg=new THREE.SphereGeometry(0.05,6,4);for(let i=0;i<6;i++){const t=koivut[(rand()*koivut.length)|0]||{x:0,z:0};const m=new THREE.Group();m.add(new THREE.Mesh(tg,lam(i%2?0xd8c030:0x5070a0)));const hd=new THREE.Mesh(new THREE.SphereGeometry(0.03,6,4),lam(0x111111));hd.position.set(0,0.04,0.04);m.add(hd);
-    const b={kind:'tiainen',x:t.x+1,z:t.z,y:height(t.x,t.z)+1.5+rand()*2,hx:t.x,hz:t.z,hop:0,fly:false,alive:true,obj:m};scene.add(m);W.birds.push(b);}
-  for(const b of W.birds)W.targets.push({kind:b.kind,get alive(){return b.alive;},pos:()=>({x:b.obj.position.x,y:b.obj.position.y+0.15,z:b.obj.position.z}),r:b.kind==='tiainen'?0.06:0.2,shoot:()=>{b.alive=false;b.vy=0;}});
-  let sndT=10;
+  W.flocks=[];for(let f=0;f<COUNTS.teeriParvet;f++){let P0=perch();for(let k=0;k<30&&W.flocks.some(F=>Math.hypot(F.home.x-P0.x,F.home.z-P0.z)<300);k++)P0=perch();
+  const F={state:'istuu',t:0,target:null,home:P0,sndT:10+rand()*20};W.flocks.push(F);for(let i=0;i<COUNTS.teeriParvessa;i++){const b={F,kind:'teeri',x:P0.x+(rand()-.5)*6,z:P0.z+(rand()-.5)*6,y:P0.y+rand()*2,fly:false,alive:true,seed:rand()*9,vx:0,vy:0,vz:0,heading:rand()*6.28};
+    b.obj=loadModel('mallit/elaimet/teeri.glb',FB.teeri());scene.add(b.obj);W.birds.push(b);}}
+  W.flock=W.flocks[0];
+  for(let i=0;i<COUNTS.korppi;i++){const b={kind:'korppi',cx:(rand()-.5)*800,cz:(rand()-.5)*800,R:60+rand()*80,y:35+rand()*20,ph:rand()*6.28,w:0.08+rand()*0.06,fly:true,alive:true,seed:rand()*9};b.obj=loadModel('mallit/elaimet/korppi.glb',FB.korppi());scene.add(b.obj);W.birds.push(b);}
+  // tiaiset: vain ambienssiääniä ~12 koivulta, soivat kun pelaaja < 120 m
+  W.tiaiset=[];for(let i=0;i<COUNTS.tiainen;i++){const t=koivut[(rand()*koivut.length)|0]||spot(isForest);W.tiaiset.push({x:t.x,z:t.z,y:height(t.x,t.z)+3,T:8+rand()*17});}
+  if(typeof window!=='undefined')window.__tiainenSoitot=0;
+  for(const b of W.birds)W.targets.push({kind:b.kind,get alive(){return b.alive;},pos:()=>({x:b.obj.position.x,y:b.obj.position.y+0.15,z:b.obj.position.z}),r:0.2,shoot:()=>{b.alive=false;b.vy=0;}});
   W.update=(dt,{t,player,dog,addTrack})=>{const threats=[player,dog];
-    for(const c of W.critters){const was=c.state;c.update(dt,{threats,ok:(x,z)=>Math.abs(x)<590&&Math.abs(z)<590});
+    for(const c of W.critters){c._acc=(c._acc||0)+dt;if(c._acc<aiInterval(Math.hypot(c.x-player.x,c.z-player.z)))continue;const cdt=Math.min(c._acc,0.25);c._acc=0;const was=c.state;c.update(cdt,{threats,ok:(x,z)=>Math.abs(x)<590&&Math.abs(z)<590});
       if(c.state==='pakenee'&&was!=='pakenee'){if(c.kind==='peura')play3d('sfx_peura_pakenee_1',{x:c.x,y:height(c.x,c.z)+1,z:c.z,gain:1.2,ref:10,max:600});if(c.kind==='kettu')play3d('sfx_kettu_haukahdus_'+(1+(rand()*2|0)),{x:c.x,y:height(c.x,c.z)+0.4,z:c.z,gain:1,ref:8,max:700});}
       if(c.kind!=='orava')while(c.tn<c.trail.length)addTrack(c.kind,c.trail[c.tn++]);
       c.obj.position.set(c.x,height(c.x,c.z),c.z);c.obj.rotation.set(0,Math.PI/2-c.heading,c.alive?0:Math.PI/2);animQuad(c.obj.userData.n,{t,spd:c.speed,kind:c.kind});}
     // teeriparvi: pyrähtää kun pelaaja < 35 m, lentää 150–300 m uuteen koivuun
-    const F=W.flock,teeret=W.birds.filter(b=>b.kind==='teeri'&&b.alive);F.t+=dt;
+    for(const q of W.tiaiset){if((q.T-=dt)>0)continue;q.T=8+rand()*17;if(Math.hypot(q.x-player.x,q.z-player.z)>250)for(let k=0;k<40;k++){const t=koivut[(rand()*koivut.length)|0];if(t&&Math.hypot(t.x-player.x,t.z-player.z)<110){q.x=t.x;q.z=t.z;q.y=height(t.x,t.z)+3;break;}}
+      if(Math.hypot(q.x-player.x,q.z-player.z)<120&&play3d('amb_tiainen_'+(1+(rand()*2|0)),{x:q.x,y:q.y,z:q.z,gain:0.9,ref:6,max:120})){if(typeof window!=='undefined')window.__tiainenSoitot++;}}
+    for(const F of W.flocks){const teeret=W.birds.filter(b=>b.F===F&&b.alive);F.t+=dt;
     if(teeret.length){const cx=teeret.reduce((s,b)=>s+b.x,0)/teeret.length,cz=teeret.reduce((s,b)=>s+b.z,0)/teeret.length;
       if(F.state==='istuu'&&Math.hypot(player.x-cx,player.z-cz)<35){F.state='lentaa';F.t=0;F.flushed=(F.flushed||0)+1;let p;for(let k=0;k<30;k++){p=perch();if(Math.hypot(p.x-cx,p.z-cz)>150&&Math.hypot(p.x-cx,p.z-cz)<400)break;}F.target=p;
         play3d('sfx_teeri_pyrahdus_'+(1+(rand()*2|0)),{x:cx,y:teeret[0].y,z:cz,gain:1.6,ref:10,max:500});}
-      if(F.state==='istuu'&&(sndT-=dt)<=0){sndT=20+rand()*40;play3d('amb_teeri_kuherrus_1',{x:cx,y:teeret[0].y,z:cz,gain:1,ref:20,max:1200});}}
+      if(F.state==='istuu'&&(F.sndT-=dt)<=0){F.sndT=20+rand()*40;play3d('amb_teeri_kuherrus_1',{x:cx,y:teeret[0].y,z:cz,gain:1,ref:20,max:1200});}}
+      if(F.state==='lentaa'&&teeret.every(b=>!b.fly)&&F.t>3)F.state='istuu';}
     for(const b of W.birds){const o=b.obj;
       if(!b.alive){b.vy=(b.vy||0)-9.8*dt;b.y=Math.max(height(b.x??o.position.x,b.z??o.position.z),b.y+b.vy*dt);if(b.kind==='korppi'){b.x??=o.position.x;b.z??=o.position.z;}o.position.set(b.x,b.y,b.z);o.rotation.z=Math.PI/2;animBird(o.userData.n,{t,fly:false,kind:b.kind});continue;}
       if(b.kind==='korppi'){b.ph+=b.w*dt;const x=b.cx+Math.cos(b.ph)*b.R,z=b.cz+Math.sin(b.ph)*b.R;o.position.set(x,height(x,z)+b.y,z);o.rotation.set(0,-b.ph+Math.PI,0.25);animBird(o.userData.n,{t,fly:true,kind:'korppi',seed:b.seed});continue;}
-      if(b.kind==='teeri'){if(F.state==='lentaa'&&F.target){const tx=F.target.x+(b.seed-4.5),tz=F.target.z+Math.sin(b.seed)*3,ty=F.target.y+(b.seed%2);const dx=tx-b.x,dz=tz-b.z,d=Math.hypot(dx,dz);
+      if(b.kind==='teeri'){const F=b.F;if(F.state==='lentaa'&&F.target){const tx=F.target.x+(b.seed-4.5),tz=F.target.z+Math.sin(b.seed)*3,ty=F.target.y+(b.seed%2);const dx=tx-b.x,dz=tz-b.z,d=Math.hypot(dx,dz);
           const cruise=height(b.x,b.z)+18,wantY=d>40?cruise:ty;b.y+=(wantY-b.y)*Math.min(1,dt*(F.t<1.5?3:1));if(d>0.5){const sp=Math.min(14,2+F.t*8);b.x+=dx/d*sp*dt;b.z+=dz/d*sp*dt;b.heading=Math.atan2(dx,dz);}
           b.fly=d>0.8;}else b.fly=false;o.position.set(b.x,b.y,b.z);o.rotation.set(0,b.heading,0);animBird(o.userData.n,{t,fly:b.fly,kind:'teeri',seed:b.seed});}
-      if(b.kind==='tiainen'){b.hop-=dt;if(b.hop<=0){b.hop=0.5+rand()*2;const near=Math.hypot(player.x-b.x,player.z-b.z)<6;b.x=b.hx+(rand()-.5)*(near?6:3);b.z=b.hz+(rand()-.5)*(near?6:3);b.y=height(b.x,b.z)+1+rand()*(near?5:3);}
-        o.position.set(b.x,b.y+Math.abs(Math.sin(t*9))*0.03,b.z);}}
-    if(F.state==='lentaa'&&teeret.every(b=>!b.fly)&&F.t>3)F.state='istuu';
+      }
   };
   return W;}
 // ---------- heinikko: 3 tupasmallia InstancedMeshinä, kortit ladataan erikseen ----------

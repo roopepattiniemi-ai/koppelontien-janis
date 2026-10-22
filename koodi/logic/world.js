@@ -42,6 +42,10 @@ export function trees(seed=7,n=12000){
   return out;
 }
 // jäniksen makuu: metsässä, kaukana taloista/teistä, 120–500 m mökistä
+// jänikset koko kartalle: väli vähintään minD (oletus 100 m), tarvittaessa väliä pienennetään
+export function spreadHares(n,rand=Math.random,minD=100){const out=[];for(let d=minD;d>=20&&out.length<n;d*=0.8)for(let k=0;k<600&&out.length<n;k++){const sp=hareSpot(rand);if(out.every(h=>Math.hypot(h.x-sp.x,h.z-sp.z)>=d))out.push(sp);}return out;}
+// AI-harvennus: päivitysväli (s) etäisyyden mukaan; lähellä joka ruutu
+export const aiInterval=d=>d>300?0.25:d>150?0.1:0;
 export function hareSpot(rand){for(let i=0;i<500;i++){const a=rand()*Math.PI*2,d=120+rand()*380,x=Math.cos(a)*d,z=Math.sin(a)*d;if(Math.abs(x)<520&&Math.abs(z)<520&&isForest(x,z)&&distToRoad(x,z)>25&&!inBuilding(x,z,30))return{x,z};}return{x:-200,z:150};}
 // Tuuli: suunta johon tuuli PUHALTAA (rad, 0 = pohjoiseen eli -z), voimakkuus m/s
 export const WIND = { dir: Math.PI*0.25, speed: 5 }; // lounaistuuli, puhaltaa koilliseen

@@ -3,7 +3,7 @@ import { Hare, H } from '../logic/hare.js';
 import { Dog, D, nearTrack } from '../logic/dog.js';
 import { audibility } from '../logic/hearing.js';
 import { Car } from '../logic/car.js';
-import { YARD, drivable } from '../logic/world.js';
+import { YARD, drivable, inBuilding } from '../logic/world.js';
 import { shotgun } from '../logic/shot.js';
 import { judgeShot } from '../logic/rules.js';
 import { Critter } from '../logic/wild.js';
@@ -31,9 +31,27 @@ t('täällä: jäljellä -> koira tulee ja nostaa jäljen, ilman jälkeä = tän
   assert.ok(nearTrack(h,P,3));const r=g.command('taalla',P,h);assert.ok(r.ok&&r.jalki);assert.equal(g.state,D.TAALLA);
   for(let i=0;i<600;i++)g.update(.05,{hare:h,player:P});assert.ok([D.YOJALKI,D.YLOSOTTO,D.AJO].includes(g.state),g.state);
   const g2=new Dog({x:P.x+60,z:P.z});assert.equal(g2.command('taalla',{x:P.x+500,z:P.z+500},h).ok,false);const Q={x:h.home.x+700,z:h.home.z};const g3=new Dog({x:Q.x+20,z:Q.z});g3.command('taalla',Q,h);assert.equal(g3.state,D.TANNE);});
-t('Vitara: nousu vaatii narun, pysyy ajettavalla maalla',()=>{const c=new Car({x:YARD.x,z:YARD.z});const g=new Dog({x:YARD.x,z:YARD.z,leashed:true});
-  assert.ok(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok);g.command('irti',{x:0,z:0});assert.equal(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok,false);
-  for(let i=0;i<2000;i++){c.update(.05,{throttle:1,steer:i%300<150?1:-.3});assert.ok(drivable(c.x,c.z));}});
+t('Vitara: nousu ilman koiraa, ajaa tiellä',()=>{const c=new Car({x:YARD.x,z:YARD.z});assert.ok(c.canEnter({x:YARD.x+1,z:YARD.z}).ok);assert.equal(c.canEnter({x:YARD.x+9,z:YARD.z}).ok,false);
+  const g=new Dog({x:YARD.x,z:YARD.z});assert.ok(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok);
+  for(let i=0;i<2000;i++){c.update(.05,{throttle:1,steer:i%300<150?1:-.3});assert.ok(!inBuilding(c.x,c.z));}});
+{const W=await import('../logic/world.js');const CM=await import('../logic/car.js');
+t('Vitara maastossa: −30 % huippunopeus, ylittää ojan, puu ja talo pysäyttävät',()=>{
+  // etsi suora tie ja aja kohtisuoraan ojan yli maastoon
+  let P=null;for(const r of W.ROADS){if(r.c!=='tie')continue;for(let i=0;i<r.pts.length-1&&!P;i++){const[a,b]=r.pts[i],[c2,d]=r.pts[i+1],L=Math.hypot(c2-a,d-b);if(L<10)continue;const mx=(a+c2)/2,mz=(b+d)/2,ux=(c2-a)/L,uz=(d-b)/L;
+    for(const sd of[1,-1]){const nx=-uz*sd,nz=ux*sd;let ok=true;for(let e=0;e<40;e+=1){const x=mx+nx*e,z=mz+nz*e;if(e>r.w/2+4&&CM.onRoad(x,z)||!CM.carFree(x,z))ok=false;}if(ok&&Math.abs(mx)<450&&Math.abs(mz)<450){P={x:mx,z:mz,h:Math.atan2(nx,-nz),r};break;}}}if(P)break;}
+  assert.ok(P,'tie');const c=new Car({x:P.x,z:P.z,heading:P.h});let maxOja=0,vmax=0;
+  for(let i=0;i<400;i++){c.update(.05,{throttle:1});maxOja=Math.max(maxOja,W.ditch(c.x,c.z));if(c.offroad)vmax=Math.max(vmax,c.speed);}
+  const dist=Math.hypot(c.x-P.x,c.z-P.z);assert.ok(dist>35,'ei jumittunut: '+dist);assert.ok(maxOja>0.3,'oja ylitetty '+maxOja);assert.ok(c.offroad);
+  assert.ok(Math.abs(vmax-16*CM.MAASTO)<0.01,vmax);
+  // kiihtyvyys maastossa 0.7×
+  const c2=new Car({x:c.x,z:c.z,heading:c.heading});c2.update(.1,{throttle:1});assert.ok(Math.abs(c2.speed-0.8*CM.MAASTO)<1e-6,c2.speed);
+  const c3=new Car({x:P.x,z:P.z,heading:P.h+Math.PI/2});c3.update(.1,{throttle:1});assert.ok(Math.abs(c3.speed-0.8)<1e-6,c3.speed);
+  // puu pysäyttää
+  const tx=c.x+Math.sin(c.heading)*6,tz=c.z-Math.cos(c.heading)*6;const c4=new Car({x:c.x,z:c.z,heading:c.heading});c4.blocked=(x,z)=>Math.hypot(x-tx,z-tz)<1.4;
+  for(let i=0;i<100;i++)c4.update(.05,{throttle:1});assert.ok(Math.hypot(c4.x-tx,c4.z-tz)>=1.39&&Math.hypot(c4.x-c.x,c4.z-c.z)<6,'puu');
+  // talo pysäyttää
+  const B=W.BUILDINGS[0];let bx=0,bz=0;for(const[a,b]of B){bx+=a;bz+=b;}bx/=B.length;bz/=B.length;const c5=new Car({x:bx+30,z:bz,heading:-Math.PI/2});
+  for(let i=0;i<400;i++)c5.update(.05,{throttle:1});assert.ok(!W.inBuilding(c5.x,c5.z));assert.ok(c5.x>bx-1,'talo');});}
 {const {height}=await import('../logic/world.js');t('korkeus: mökki≈0, vaihtelua >10 m, Vitara pinnalla',()=>{assert.ok(Math.abs(height(0,0))<1);let mn=1e9,mx=-1e9;for(let x=-590;x<590;x+=20)for(let z=-590;z<590;z+=20){const h=height(x,z);mn=Math.min(mn,h);mx=Math.max(mx,h);}assert.ok(mx-mn>10,mx-mn);
   const c=new Car({x:YARD.x,z:YARD.z});for(let i=0;i<500;i++){c.update(.05,{throttle:1,steer:.3});assert.ok(c.y>=height(c.x,c.z)-1e-6);assert.ok(Math.abs(c.pitch)<0.6);}});}
 {const W=await import('../logic/world.js');t('v0.8 kenttä: jänis metsässä, puut eivät pelloilla/taloissa/teillä, piha ajettava',()=>{const r=mulberryT(5);
@@ -71,4 +89,14 @@ t('puut: ei puita 3 m lähempänä rakennuksia, kylttejä tai pylväitä',async(
   assert.ok(T.length<all.length&&T.length>all.length*0.8,[all.length,T.length]);const E=TV.esteet(info,W.SIGNS);
   for(const t of T){assert.ok(!W.inBuilding(t.x,t.z,3),'talo');for(const e of E)assert.ok(Math.hypot(t.x-e.x,t.z-e.z)>=e.r,'este');}});
 t('narussa koira pysyy 3 m sisällä vaikka pelaaja siirtyy kauas',async()=>{const {Dog}=await import('../logic/dog.js');const d=new Dog({x:0,z:0,leashed:true});d.update(.1,{hares:[],player:{x:300,z:-80}});assert.ok(Math.hypot(d.x-300,d.z+80)<=3,[d.x,d.z]);});
+t('aloitusruudun ohjeet kattavat kaikki main.js:n näppäimet, ei passia',async()=>{const fs=await import('fs');const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
+  globalThis.localStorage=globalThis.localStorage||{getItem:()=>null};const {OHJEET,KREDIITIT}=await import('../public/aloitus.js');const have=new Set(OHJEET.flatMap(o=>o[2]||[]));
+  const used=new Set([...src.matchAll(/e\.code===?'([A-Za-z0-9]+)'/g)].map(m=>m[1]).concat([...src.matchAll(/\b(Key[A-Z]|Digit[0-9]):/g)].map(m=>m[1])));
+  for(const k of used)assert.ok(have.has(k),'ohjeista puuttuu '+k);assert.ok(!JSON.stringify(OHJEET).toLowerCase().includes('passi'));for(const n of['Lukas Beck','Livlandfahrer','Benboncan','Pierre Grandjean','YleArkisto'])assert.ok(KREDIITIT.includes(n),n);});
+{const W=await import('../logic/world.js');const fs=await import('fs');t('eläimet tuplana: 10 jänistä ≥~100 m välein koko kartalla, koira ajaa yhtä, AI-harvennus',()=>{const r=mulberryT(5);const sp=W.spreadHares(10,r);assert.equal(sp.length,10);
+  let md=1e9,xs=[],zs=[];for(const a of sp){xs.push(a.x);zs.push(a.z);for(const b of sp)if(a!==b)md=Math.min(md,Math.hypot(a.x-b.x,a.z-b.z));}assert.ok(md>=80,md);assert.ok(Math.max(...xs)-Math.min(...xs)>400&&Math.max(...zs)-Math.min(...zs)>400,'levitys');
+  assert.equal(W.aiInterval(50),0);assert.ok(W.aiInterval(400)>0);
+  const hs=sp.map((p,k)=>new Hare({...p,seed:k+1}));const h=hs[3],g=new Dog({x:h.home.x+30,z:h.home.z,seed:3});g.command('etsi',{x:h.home.x+30,z:h.home.z},h);let ajo=false;
+  for(let i=0;i<6000&&!ajo;i++){g.update(.05,{hares:hs,player:{x:h.home.x+30,z:h.home.z}});for(const x of hs)x.update(.05,{dog:g.pos,player:{x:h.home.x+30,z:h.home.z}});if(g.state===D.AJO)ajo=true;}assert.ok(ajo,'koira ajoon');
+  const src=fs.readFileSync(new URL('../public/v09.js',import.meta.url),'utf8');const C=JSON.parse(src.match(/COUNTS=(\{[^}]*\})/)[1].replace(/(\w+):/g,'"$1":'));assert.deepEqual(C,{kettu:2,peura:6,orava:8,teeriParvet:2,teeriParvessa:6,korppi:6,tiainen:12});assert.ok(!/kind:'tiainen'/.test(src)&&!/SphereGeometry\(0\.05/.test(src),'tiaispallot poistettu');assert.match(src,/play3d\('amb_tiainen_'/);assert.match(src,/__tiainenSoitot\+\+/);});}
 console.log(`${n} testiä ok`);

@@ -75,3 +75,5 @@ Persoonat: Parkano on matala ja rento, Country hidas ja leppoisa, Tekno nopea ja
 | juonto_tekno_2 | Ajokoira on paras tanssija. Koko yön ympyrää, nenä maassa, häntä pystyssä! Seuraava biisi on omistettu kaikille koirille, jotka eivät koskaan väsy! |
 | juonto_tekno_3 * | Jouuu! Tässä Mökö ja Jänskä takapenkiltä! Nyt etitään autoa kuusikosta. Terkkuja Koppelontien bileisiin, soittakaa jumputusta! |
 | juonto_tekno_4 | Muistakaa: haulikko ja tanssilattia vaativat molemmat hyvää ajoitusta. Liian aikaisin, ja jänis nauraa. Täällä Koppelontien Tekno, nyt mennään! |
+
+- musiikki_aloitus (.ogg/.mp3, generoi_aloitus.py): aloitusruudun 45 s saumaton looppi. CC BY 4.0 -lähteet: tuuli Gravity Sound (amb_talvimetsa_tuuli_loop), kaukainen ajohaukku Benboncan, Freesound 65888 (sfx_koira_ajo_harva). Melodia FluidSynth + FluidR3_GM.

@@ -266,3 +266,9 @@ Talviversiot Kurikan Street View -kuvien pohjalta. Metrit, +Y ylös, etu +Z, ori
 
 Rakennukset: punamulta #8B2A1F, valkoiset nurkkalaudat/räystäslauta/ikkunanpuitteet, harmaa peltikatto 0.18 m lumilaatalla (pellin reuna näkyy räystäällä), lumi kivijalan päällä.
 Puutteet: ei hirsi-/lautakuviota (tasaväri), päädyt kolmioina ilman räystään alapintaa, ikkunoissa vain yksi välipuite. Esikatselun painter-renderöinti piirtää isoja kolmioita väärässä järjestyksessä (seinän läpi näkyviä lumikolmioita) – mallit itse ovat kunnossa.
+
+## Aloitusruutu (hud/)
+- aloitus_tausta.png 1920×1080: generoitu (GenerateImage, tyyliref. referenssi_roope_1.png), skaalattu 1280×720 → 1920×1080 (LANCZOS, hieman pehmeä). Metsästäjä+koira keskellä-oikealla, yläosa väljä logolle.
+- aloitus_tausta_mobiili.png 810×1080: pystyrajaus x=745–1555 (hahmot keskellä).
+- logo_koppelontien_janis.png 1200×300 RGBA: DejaVu Sans Bold, kermainen teksti, tumma ääriviiva+varjo, oranssi alleviivaus. Tehty PIL:llä.
+- Esikatselu: /workspace/jahti_varmuus/aloitus_esikatselu.png (logo 960×240 kohtaan (480,30)).
