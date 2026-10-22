@@ -17,7 +17,10 @@ Kaikki PNG:t on tarkoitettu NearestFilter-suodatukselle (retro). Läpinäkyvät 
 | mallit/ajokoira.glb | 980 tris | suomenajokoira (kuono, luppakorvat, häntä, satula, valkoinen läsi/rinta/jalat), säkä ≈0.62 m, pituus ≈1.1 m |
 | haulikko_fp.png | **512×256** | RGBA, sijoitus näytön oikeaan alakulmaan (kuvan oikea/ala-reuna = ruudun reuna) |
 | haulikko_laukaus.png | **512×256** | sama + suuliekki, rekyyli +18px oikealle/+14px alas |
-| haulikko_tahtays.png | 512×256 | RGBA tähtäysasento (piippujen yli). **Jyvän keskipiste (256,66)**: aseta kuva niin, että tämä piste osuu ruudun keskelle |
+| haulikko_tahtays.png | 512×256 | RGBA tähtäysasento (piippujen yli). **Jyvän keskipiste (256,58)** (over-under, jyvä ylemmän piipun päällä): aseta kuva niin, että tämä piste osuu ruudun keskelle |
+| haulikko_hihna.png | 512×256 | RGBA, vasen hanskakäsi pitää hihnaa; sijoita ruudun vasempaan alakulmaan (kuvan vasen/ala-reuna = ruudun reuna) haulikko_fp.png:n rinnalle. Hihna päättyy kuvan alareunan keskelle (256,256) |
+| tekstuurit/hihna.png | 16×64 | talutushihna (oranssi nylon), toistuu pystysuunnassa (V); hihna x=3–12, reunat läpinäkyviä |
+| hud/komento_irti.png, komento_kiinni.png, komento_tanne.png, komento_seuraa.png, komento_hae.png | 32×32 | RGBA komentokuvakkeet, tumma puoliläpinäkyvä pyöristetty tausta, ei näppäintekstiä; koodi voi piirtää numeron esim. oikeaan alakulmaan |
 | jaljet/janis_jalki_32.png | **64×64** (nimi ennallaan) | RGBA, kulkusuunta = kuvan ylös; Y-kuvio: takakäpälät edessä, etukäpälät takana |
 | jaljet/koira_jalki_32.png | **64×64** (nimi ennallaan) | RGBA, kulkusuunta ylös; kaksi soikeaa tassua kynsineen |
 | hud/kompassi_256x32.png | 256×32 | RGBA, toistuu vaakasuunnassa; P x=0, I x=64, E x=128, L x=192 (1 px = 1.40625°) |
@@ -36,3 +39,8 @@ Kaikki PNG:t on tarkoitettu NearestFilter-suodatukselle (retro). Läpinäkyvät 
 ## Huomioita
 - Jälkien varjosävy sinharmaa (128,146,170) alfalla ~150–170; piirrä decalina lumen päälle.
 - Kompassin "P" piirretty myös oikeaan reunaan (x≈253) saumattomuuden vuoksi.
+
+## v0.4
+- Haulikko on nyt päällekkäispiippuinen (over-under): haulikko_fp/laukaus/tahtays. haulikko_hihna.png ennallaan (ase ei näy siinä).
+- Tekstuurit viilennetty: matalampi saturaatio, sinertävä valo, kuuset/koivut sumuun sekoitettu, porrastetut sävyt (12 tason askel). GLB-värejä viilennetty hieman.
+- Suositus koodiin: sumun väri **#B0BED2** (176,190,210), ambientti valo **#C8D4E8**, suuntavalo #F0F0F4 matala kulma.
