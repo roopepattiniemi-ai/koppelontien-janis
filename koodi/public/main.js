@@ -6,7 +6,7 @@ import * as TV from '/tienvarsi.js';
 import * as AL from '/aloitus.js';
 import { pickJuonto } from '/logic/radio.js';
 import { judgeShot, LAJIT } from '/logic/rules.js';
-import { Car } from '/logic/car.js';
+import { Car, bodyBox } from '/logic/car.js';
 import { CABIN, YARD, START, SIGNS, inBuilding } from '/logic/world.js';
 import { spreadHares, aiInterval } from '/logic/world.js';
 import { clampB } from '/logic/bounds.js';
@@ -379,7 +379,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
     if(interior.n.ratti)interior.n.ratti.rotation.z=-(car.steer||0)*1.6;if(interior.n.vaihdekeppi)interior.n.vaihdekeppi.rotation.x=car.speed>0.3?-0.25:car.speed<-0.3?0.25:0;}
   else{pl.lookYaw=0;pl.eye=(pl.eye??1.65)+((pl.crouch?1.0:1.65)-(pl.eye??1.65))*Math.min(1,dt*10);cam.position.set(pl.x,height(pl.x,pl.z)+pl.eye,pl.z);cam.rotation.set(pl.pitch+(WP.swayY||0),pl.yaw+(WP.swayX||0),0);}window._sky.position.copy(cam.position);
   // tekoäly
-  netTick(dt);const P={x:pl.x,z:pl.z},GUEST=isGuest();if(!GUEST)dog.update(dt,{hares,fetch:WL.birds.filter(b=>b.kind==='teeri'),player:P,players:{[ME]:P,...(NET?.last&&!GUEST?{v:{x:NET.last.x,z:NET.last.z}}:{})}});hare=dog.target||hare;for(const h of hares){if(GUEST)break;h._acc=(h._acc||0)+dt;const d=Math.min(Math.hypot(h.x-P.x,h.z-P.z),Math.hypot(h.x-dog.x,h.z-dog.z));if(h!==dog.target&&h._acc<aiInterval(d))continue;h.update(Math.min(h._acc,0.25),{dog:dog.pos,player:P,playerMoving:pl.moving||pl.revealT>0});h._acc=0;}
+  netTick(dt);const P={x:pl.x,z:pl.z},GUEST=isGuest();if(!GUEST)dog.update(dt,{hares,fetch:WL.birds.filter(b=>b.kind==='teeri'),player:P,players:{[ME]:P,...(NET?.last&&!GUEST?{v:{x:NET.last.x,z:NET.last.z}}:{})},obstacles:[bodyBox(car)]});hare=dog.target||hare;for(const h of hares){if(GUEST)break;h._acc=(h._acc||0)+dt;const d=Math.min(Math.hypot(h.x-P.x,h.z-P.z),Math.hypot(h.x-dog.x,h.z-dog.z));if(h!==dog.target&&h._acc<aiInterval(d))continue;h.update(Math.min(h._acc,0.25),{dog:dog.pos,player:P,playerMoving:pl.moving||pl.revealT>0});h._acc=0;}
   WL.update(dt,{t:clock.elapsedTime,player:P,dog:dog.pos,addTrack});
   if(hare.state===H.PAKO&&!hareFlushed){hareFlushed=true;play3d('sfx_janis_pakoloikka',{x:hare.x,y:height(hare.x,hare.z)+0.3,z:hare.z,gain:1,ref:5,max:400});}
   if(hare.veered&&pl.moving){hare.veered=false;}

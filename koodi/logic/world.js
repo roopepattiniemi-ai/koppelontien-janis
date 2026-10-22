@@ -59,3 +59,18 @@ export const WIND = { dir: Math.PI*0.25, speed: 5 }; // lounaistuuli, puhaltaa k
 export function windVec(w=WIND){ return { x: Math.sin(w.dir), z: -Math.cos(w.dir) }; }
 const DIRS=['pohjoisesta','koillisesta','idästä','kaakosta','etelästä','lounaasta','lännestä','luoteesta'];
 export function windFromText(w=WIND){ const from=(w.dir+Math.PI)%(2*Math.PI); return DIRS[Math.round(from/(Math.PI/4))%8]; }
+// Maatilan rakennukset samaan kohtaan kuin public/tienvarsi.js (navetta, lato, konekatos, aitta).
+// yaw = Three.js rotation.y, hx/hz = laatikon paikallinen puolikas (X/Z).
+const LOYH_KOPP={x:302.7,z:-87.3};
+let _farms;
+export function farmFootprints(){if(_farms)return _farms;
+  const loy=ROADS.find(r=>r.n==='Löyhingintie'),p0=loy.pts[0],p1=loy.pts[3]||loy.pts[1];
+  const L=Math.hypot(p1[0]-p0[0],p1[1]-p0[1])||1,ux=(p1[0]-p0[0])/L,uz=(p1[1]-p0[1])/L;
+  const at=(s,side)=>({x:p0[0]+ux*s-uz*side,z:p0[1]+uz*s+ux*side}),face=Math.atan2(ux,uz);
+  const kp=ROADS.find(r=>r.n==='Koppelontie').pts,kx=kp[1][0]-kp[0][0],kz=kp[1][1]-kp[0][1],kl=Math.hypot(kx,kz)||1;
+  const nav=at(70,45),lato=at(22,48),katos=at(30,17),ap={x:LOYH_KOPP.x+kx/kl*14+kz/kl*9,z:LOYH_KOPP.z+kz/kl*14-kx/kl*9};
+  return _farms=[
+    {n:'navetta',x:nav.x,z:nav.z,yaw:face+Math.PI/2,hx:12,hz:6},
+    {n:'lato',x:lato.x,z:lato.z,yaw:face,hx:6,hz:3.5},
+    {n:'konekatos',x:katos.x,z:katos.z,yaw:Math.atan2(uz,-ux),hx:7,hz:4},
+    {n:'aitta',x:ap.x,z:ap.z,yaw:Math.atan2(kx,kz),hx:2.5,hz:2}];}

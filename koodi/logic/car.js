@@ -4,6 +4,10 @@ import { height, distToRoad, inYard, inBuilding, SIZE, inBounds } from './world.
 export const MAASTO=0.7;
 export const onRoad=(x,z)=>distToRoad(x,z)<0.6||inYard(x,z);
 export const carFree=(x,z)=>!inBuilding(x,z)&&inBounds(x,z);
+// vitara.glb-runko paikallisessa xz:ssä (pyörät mukana) + pieni vara, ettei koira leikkaa koria.
+// yaw vastaa carObj.rotation.y = π − heading.
+export const BODY={minx:-1.1,maxx:1.1,minz:-2.2,maxz:2.0};
+export const bodyBox=c=>({x:c.x,z:c.z,yaw:Math.PI-c.heading,...BODY});
 export class Car {
   constructor({x=0,z=0,heading=0}={}){this.x=x;this.z=z;this.heading=heading;this.speed=0;this.occupied=false;this.blocked=()=>false;this.pose();}
   // heading 0 = pohjoiseen (-z)
