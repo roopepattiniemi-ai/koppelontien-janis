@@ -22,8 +22,8 @@ export class Hare {
   flush(from){ if(this.state!==H.MAKUU)return; this.state=H.PAKO;this.t=0;
     const a=Math.atan2(this.z-from.z,this.x-from.x);this.heading=a;this.loopAngle=Math.atan2(this.z-this.home.z,this.x-this.home.x)||a; }
   shoot(){this.state=H.KUOLLUT;this.alive=false;this.speed=0;}
-  update(dt,{dog,player,playerMoving=false,playerHidden=false}={}){
-    const flushR=playerHidden?1.5:4;
+  update(dt,{dog,player,playerMoving=false}={}){
+    const flushR=4;
     if(!this.alive)return; this.t+=dt; const d=(p)=>p?Math.hypot(p.x-this.x,p.z-this.z):1e9;
     switch(this.state){
       case H.MAKUU:
@@ -32,13 +32,19 @@ export class Hare {
         break;
       case H.PAKO: // varovainen pako 10–30 m
         this.speed=6; this._move(dt,this.heading);
-        if(this.t>3.5){this.state=H.KIERTO;this.t=0;this.cx=this.x-Math.cos(this.loopAngle)*this.loopR;this.cz=this.z-Math.sin(this.loopAngle)*this.loopR;}
+        if(this.t>3.5){this.state=H.KIERTO;this.t=0;this.cx=this.x-Math.cos(this.loopAngle)*this.loopR;this.cz=this.z-Math.sin(this.loopAngle)*this.loopR;this.qA=this.loopAngle;this.anchor=this.home;}
         break;
       case H.KIERTO:{
         const dd=d(dog); this.speed=dd<80?7:dd<200?4.5:2.5;  // säätää vauhtia koiran etäisyyden mukaan
         // pelaaja liikkuu edessä -> jänis väistää (kierto suurenee/vaihtaa puolta)
         if(playerMoving&&d(player)<70){this.loopR=Math.min(480,this.loopR+40*dt);this.veered=true;}
-        this.loopAngle+=this.dirSign*this.speed*dt/this.loopR;
+        // vaiheittainen kaarto pelaajaa kohti: joka neljänneskierroksella lenkin keskipistettä siirretään ~30 %
+        // kohti paikkaa, josta kierros kulkee pelaajan (tai lähtöpaikan) läheltä -> laaja lenkki, joka palaa takaisin
+        // kaukana (>300 m lähtöpaikasta) oleva pelaaja ei vedä, silloin palataan lähtöpaikalle
+        this.anchor=player&&Math.hypot(player.x-this.home.x,player.z-this.home.z)<300?{x:player.x,z:player.z}:this.home;
+        if(Math.abs(this.loopAngle-this.qA)>Math.PI/2){this.qA=this.loopAngle;const A=this.anchor||this.home,dx=this.cx-A.x,dz=this.cz-A.z,L=Math.hypot(dx,dz)||1,want=this.loopR*0.85;
+          const tx=A.x+dx/L*want,tz=A.z+dz/L*want,k=0.25+this.rand()*0.15;this.cx+=(tx-this.cx)*k;this.cz+=(tz-this.cz)*k;}
+        this.loopAngle+=this.dirSign*this.speed*dt/(this.loopR*(1+0.25*Math.sin(this.loopAngle*3+this.dirSign)));
         const tx=this.cx+Math.cos(this.loopAngle)*this.loopR,tz=this.cz+Math.sin(this.loopAngle)*this.loopR;
         this._move(dt,Math.atan2(tz-this.z,tx-this.x));
         if(Math.abs(this.loopAngle-(this.startA??(this.startA=this.loopAngle)))>Math.PI*2*(this.loops+1)){this.loops++;}

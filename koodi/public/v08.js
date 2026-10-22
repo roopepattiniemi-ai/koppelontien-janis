@@ -94,12 +94,12 @@ export function setupViewmodel(){
 // ---------- 4) Vitaran sisänäkymä + radion näyttö ----------
 export function setupInterior(scene){
   const it={g:new THREE.Group(),n:{},loaded:false};scene.add(it.g);
-  const c=document.createElement('canvas');c.width=256;c.height=64;const tex=new THREE.CanvasTexture(c);tex.flipY=false;nearestT(tex);it.canvas=c;it.tex=tex;
+  const c=document.createElement('canvas');c.width=1024;c.height=256;const tex=new THREE.CanvasTexture(c);tex.flipY=false;tex.anisotropy=8;tex.generateMipmaps=true;tex.minFilter=THREE.LinearMipmapLinearFilter;tex.magFilter=THREE.LinearFilter;it.canvas=c;it.tex=tex;
   const panel=new Image();panel.src=G+'hud/radio_paneeli.png';it.panel=panel;
   new GLTFLoader().load(G+'mallit/vitara_sisa.glb',gl=>{vc(gl.scene);gl.scene.traverse(o=>{if(o.isMesh)o.material.side=THREE.DoubleSide;});it.g.add(gl.scene);
     for(const k of['ratti','vaihdekeppi','radio_naytto','kamera_kuljettaja','koira_paikka'])it.n[k]=gl.scene.getObjectByName(k);
     if(it.n.ratti)it.n.ratti.userData.rx=it.n.ratti.rotation.x;
-    const rn=it.n.radio_naytto;if(rn){const m=rn.isMesh?rn:rn.getObjectByProperty('isMesh',true);if(m)m.material=new THREE.MeshBasicMaterial({map:tex});}
+    const rn=it.n.radio_naytto;if(rn){const m=rn.isMesh?rn:rn.getObjectByProperty('isMesh',true);if(m)m.material=new THREE.MeshBasicMaterial({map:tex});rn.scale.multiplyScalar(1.6);rn.position.y+=0.16;rn.position.z-=0.006;rn.rotation.y-=0.3;}
     // Lattialevy + karmien muotoiset lasit (pisteet mitattu sisa_kori-meshistä). Näkyvät vain sisänäkymässä.
     const ex=new THREE.Group();it.extra=ex;ex.visible=false;gl.scene.add(ex);
     const fl=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.04,2.2),new THREE.MeshLambertMaterial({color:0x3a3d42,flatShading:true}));fl.position.set(0,0.44,-0.53);ex.add(fl);
@@ -112,8 +112,8 @@ export function setupInterior(scene){
     poly([[-0.78,1.12,0.5],[0.78,1.12,0.5],[0.76,1.62,0.1],[-0.76,1.62,0.1]]); // tuulilasi
     poly([[-0.78,1.12,-1.61],[0.78,1.12,-1.61],[0.78,1.6,-1.61],[-0.78,1.6,-1.61]]); // takalasi
     it.loaded=true;},undefined,e=>{it.err=String(e.message||e);});
-  it.drawRadio=(on,name,freq)=>{const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,256,64);
+  it.drawRadio=(on,name,freq)=>{const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(4,0,0,4,0,0);g.clearRect(0,0,256,64);
     if(panel.complete&&panel.naturalWidth)g.drawImage(panel,0,0,256,64);else{g.fillStyle='#222';g.fillRect(0,0,256,64);}
-    g.fillStyle=on?'#0d2a12':'#050805';g.fillRect(46,16,163,32);if(on){g.fillStyle='#9CFF9C';g.font='bold 11px monospace';g.textAlign='center';g.fillText(name,127,30);g.fillText(freq+' MHz',127,43);}tex.needsUpdate=true;};
+    g.fillStyle=on?'#020802':'#050805';g.fillRect(46,16,163,32);if(on){g.fillStyle='#EFFFEF';g.textAlign='center';g.font='bold 15px monospace';g.fillText(name,127,31,158);g.font='bold 10px monospace';g.fillText(freq+' MHz',127,44);}tex.needsUpdate=true;};
   return it;
 }

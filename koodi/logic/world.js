@@ -5,12 +5,21 @@ import { HM, HM_N, HM_STEP, HM_MIN } from './korkeus_data.js';
 import { ROADS, FIELDS, WATER, BUILDINGS, CABIN, YARD, START, SIGNS } from './kartta_data.js';
 export { ROADS, FIELDS, WATER, BUILDINGS, CABIN, YARD, START, SIGNS };
 export const SIZE = 1200;
-// Korkeus: AWS Terrarium, metreinä suhteessa mökkiin, kerroin 0.75, 17 m suodatus
-export function height(x,z){
+// Korkeus: AWS Terrarium, metreinä suhteessa mökkiin, kerroin 0.375, 17 m suodatus (+ tienvarsiojat, ks. ditch)
+export function baseHeight(x,z){
   const fx=Math.max(0,Math.min(HM_N-1.001,(x-HM_MIN)/HM_STEP)),fz=Math.max(0,Math.min(HM_N-1.001,(z-HM_MIN)/HM_STEP));
   const i=fx|0,j=fz|0,ax=fx-i,az=fz-j,h=(a,b)=>HM[b*HM_N+a];
   return (h(i,j)*(1-ax)+h(i+1,j)*ax)*(1-az)+(h(i,j+1)*(1-ax)+h(i+1,j+1)*ax)*az;
 }
+// Tienvarsioja: alkaa 0.6 m tien reunasta, 1.8 m leveä, 0.5 m syvä, pehmeä (sin²) profiili. Vain 'tie'-luokan teillä;
+// missä tahansa tiellä (myös piha/ura, risteykset) ja pihassa oja tasoittuu -> rumpu.
+export const DITCH={off:0.6,w:1.8,depth:0.5};
+const ss=(a,b,v)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
+export function ditch(x,z){let et=1e9,ea=1e9;for(const r of ROADS){const bb=r._bb||(r._bb=r.pts.reduce((b,[a,c])=>[Math.min(b[0],a),Math.min(b[1],c),Math.max(b[2],a),Math.max(b[3],c)],[1e9,1e9,-1e9,-1e9]));
+  if(x<bb[0]-8||x>bb[2]+8||z<bb[1]-8||z>bb[3]+8)continue;const e=lineDist(x,z,r.pts)-r.w/2;if(e<ea)ea=e;if(r.c==='tie'&&e<et)et=e;}
+  const t=(et-DITCH.off)/DITCH.w;if(t<=0||t>=1)return 0;let d=DITCH.depth*Math.sin(Math.PI*t)**2;
+  d*=ss(0.2,1.6,ea+(ea===et?2:0)) ;d*=ss(YARD.r,YARD.r+4,Math.hypot(x-YARD.x,z-YARD.z));return d;}
+export function height(x,z){return baseHeight(x,z)-ditch(x,z);}
 function segDist(x,z,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,L=dx*dx+dz*dz||1;let t=((x-ax)*dx+(z-az)*dz)/L;t=Math.max(0,Math.min(1,t));return Math.hypot(x-ax-t*dx,z-az-t*dz);}
 function lineDist(x,z,pts){let b=1e9;for(let i=0;i<pts.length-1;i++){const[ax,az]=pts[i],[bx,bz]=pts[i+1];if(Math.abs(x-ax)>b+400&&Math.abs(x-bx)>b+400)continue;b=Math.min(b,segDist(x,z,ax,az,bx,bz));}return b;}
 // etäisyys tien reunaan (0 = tiellä); kaikki tieluokat (tie, piha, ura)

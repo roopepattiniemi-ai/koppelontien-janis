@@ -179,3 +179,90 @@ Maailmakoordinaatit (taittamaton):
 - Kiskon tähtäyslinja: silmäpiste ehdotus **(0, 0.080, 0.23)** → helmi **(0, 0.0585, −0.733)** (kiskon yläpinta y≈0.0565). Kameran voi asettaa silmäpisteeseen ja katsoa helmeen.
 - Suuaukot: ylä (0, 0.040, −0.74), ala (0, 0.018, −0.74); piipun Ø 21 mm.
 - Patruunapäät (hylsyt, piippujen takapää/sarana): ylä (0, 0.040, −0.07), ala (0, 0.018, −0.07); taitettuna kierrä saranan (0,0.005,−0.07) ympäri.
+
+## Kivääri ja kiikarit (generoi_kivaari_kiikarit.py)
+Aja `python3 generoi_kivaari_kiikarit.py` → mallit/kivaari.glb, mallit/kiikarit.glb, hud/tahtain_kiikari.png, hud/kiikarit_naakyma.png. Esikatselu: /workspace/jahti_varmuus/esikatselu_kivaari_kiikarit.png. Sama sopimus kuin haulikossa: metrit, +Y ylös, +X oikea, piippu −Z, verteksivärit (COLOR_0), materiaalit `puu`, `teras` (sinistetty), `messinki` (ei käytössä), `kangas`. Kaikki nodet juuren lapsia, vain translation.
+
+**mallit/kivaari.glb** (1772 tris), pulttilukko, piippu 0.6 m (z −0.16…−0.76, akseli y=0.018), perä z=+0.41. Origo = liipaisimen yläpää.
+| Node | Pivot (m) | Sisältö |
+|---|---|---|
+| kivaari | (0,0,0) | juuri |
+| runko | (0,0,0) | tukki, lukkokehys, piippu, liipaisinkaari, kiikarin renkaat/jalustat |
+| lukko | (0, 0.018, 0.05) lukon akselilla | lukon vipu (osoittaa oikealle-alas). Avaus: **rotation.z ≈ +1.2 rad** (vipu ylös), sitten position.z += 0.09 (veto taakse) |
+| liipaisin | (0,0,0) | kääntö rotation.x |
+| kiikaritahtain | (0, 0.065, 0) | kiikari, optinen akseli y=0.065, takalinssi z=+0.115, objektiivi z=−0.25 |
+| kasi_oikea / kasi_vasen | (0,0,0) | oikea kahvalla (etusormi liipaisimella), vasen etutukin alla z≈−0.30 |
+| suu | (0, 0.018, −0.76) | tyhjä, piipun suu |
+| silma | (0, 0.065, 0.195) | tyhjä, silmäpiste 0.08 m takalinssin takana; katso −Z → tähtäyslinja kiikarin akselilla (kiikari ~4.7 cm piipun yläpuolella) |
+
+**mallit/kiikarit.glb** (1096 tris): juuri `kiikarit` (sisältää rungon meshin), lapset `kasi_oikea`, `kasi_vasen`. Origo okulaarien keskellä (okulaarit x=±0.033, z≈+0.012), objektiivit z=−0.165, tummanvihreä kumi + musta silta/tarkennuspyörä.
+
+**HUD** (1024×1024 RGBA, musta + pehmeä ~70 px vinjetti): tahtain_kiikari.png aukko keskellä r=440, duplex-ristikko (ohut ~2 px keskellä, 12 px paksu |etäisyys keskeltä| > 150 px). kiikarit_naakyma.png kaksi ympyrää r=330 keskipisteet (347,512) ja (677,512).
+
+## Riistaeläimet: mallit/elaimet/ (generoi_elaimet.py)
+`python3 generoi_elaimet.py` → mallit/elaimet/*.glb + /workspace/jahti_varmuus/esikatselu_elaimet.png (sivukuvat, eri mittakaava/eläin).
+Sama sopimus kuin v0.8 janis/ajokoira: metrit, +Y ylös, edessä +Z, origo maassa, COLOR_0, tasasävytys, ei luurankoa/animaatioita, jokainen node = oma mesh pivotin suhteen, nodeilla vain `translation`. v = +X, o = −X.
+
+| Tiedosto | Mitat | Tris | Nodet |
+|---|---|---|---|
+| kettu.glb | säkä ≈0.40 m, korkeus 0.54 (korvat), pituus 0.97 m (häntä mukana) | 374 | runko, paa, korva_v/o, jalka_ev/eo/tv/to, hanta |
+| peura.glb | säkä ≈0.95 m, sarvien kärki 1.54 m, pituus 1.25 m | 396 | + **kaula** (runko → kaula → paa); sarvet osa paa-nodea |
+| orava.glb | vartalo ≈0.20 m, korkeus 0.24 (häntä), pituus 0.28 m | 264 | kuten kettu |
+| teeri.glb | kukko, pituus 0.60 m, korkeus 0.32 m | 278 | runko, paa, siipi_v/o, pyrsto, jalka_v/o |
+| korppi.glb | pituus 0.63 m, korkeus 0.29 m | 208 | kuten teeri |
+
+Pivotit maailmakoordinaatteina (m), vanhempi suluissa:
+```
+kettu:  paa (0,.39,.21) kaulan tyvi | korva_v/o (±.035,.46,.27) (paa) | jalka_ev/eo (±.045,.30,.17) lapa | jalka_tv/to (±.045,.30,-.16) lonkka | hanta (0,.31,-.22)
+peura:  kaula (0,.95,.33) (runko) | paa (0,1.22,.50) (kaula) | korva_v/o (±.06,1.34,.53) (paa) | jalka_ev/eo (±.09,.80,.33) | jalka_tv/to (±.09,.82,-.33) | hanta (0,.97,-.44)
+orava:  paa (0,.09,.06) | korva_v/o (±.017,.125,.08) (paa) | jalka_ev/eo (±.025,.055,.055) | jalka_tv/to (±.025,.06,-.05) | hanta (0,.07,-.075)
+teeri:  paa (0,.22,.12) | siipi_v/o (±.065,.22,.07) olkapää | pyrsto (0,.17,-.15) | jalka_v/o (±.04,.10,0) lonkka
+korppi: paa (0,.19,.14) | siipi_v/o (±.055,.19,.09) olkapää | pyrsto (0,.14,-.15) | jalka_v/o (±.035,.08,0)
+```
+
+**Suositellut animaatiokulmat** (rad, jalat `rotation.x`: **negatiivinen = jalan kärki eteen**, positiivinen = taakse):
+| Liike | Jalat (amplitudi) | Vaihe | Muuta |
+|---|---|---|---|
+| käynti | ±0.30 (peura ±0.25) | ristiin: ev & to samassa, eo & tv vastavaiheessa | paa.rotation.x ±0.05, hanta ±0.1 |
+| juoksu (ravi/laukka) | ±0.6 (kettu, peura), orava ±0.5 | laukka: etujalat yhdessä, takajalat vaihe π (pieni 0.2 rad viive v/o) | runko.rotation.x ±0.08, kettu hanta.rotation.x +0.2 (häntä vaakaan) |
+| loikka (peura/orava) | ponnistus: etujalat +0.6, takajalat +0.9 (taakse); ilmassa etujalat −0.8 (eteen), takajalat +0.3 | ponnistus yhtä aikaa | peura hanta.rotation.x = +0.8 (valkoinen "lippu" ylös) |
+| linnun käynti | jalka_v/o ±0.35 vastavaiheessa | | paa.rotation.x nyökkäys ±0.15 |
+
+Linnut, siivet: siipi on mallinnettu **kokoon taitettuna** selän sivulle (litteä Y:ssä, ulottuu taaksepäin). Istuva asento = lepoasento (kaikki kierrot 0); orressa voi laskea runkoa (jalka_v/o.rotation.x ≈ 0.3).
+Lentoasento: aseta `siipi.rotation.order = 'ZYX'`, sitten **siipi_v.rotation.y = −π/2, siipi_o.rotation.y = +π/2** (siipi kääntyy sivulle levälleen, vaaka). Läpäytys `rotation.z`: **siipi_v positiivinen z = ylös, siipi_o negatiivinen z = ylös** (peilaa merkki). Amplitudi teeri ±0.6 rad nopeasti (~6 Hz) + liito 0; korppi ±0.45 rad ~3 Hz, liito z = +0.1/−0.1 (lievä V). Jalat lennossa rotation.x = +1.3 (taakse), pyrsto.rotation.x ≈ 0.
+
+Puutteet: ei silmiä teerellä/korpilla erillisinä (pää yhtä väriä), sarvet yksinkertaiset (runko + 1 piikki/puoli), siiven lentoasento ei ole erillinen geometria (taitettu siipi vain käännetään), orava nelijalkaisessa asennossa (istuva vaatii runko.rotation.x ≈ −0.6 + jalkakiertoja).
+
+## Heinikko (generoi_heina.py)
+Lumen läpi pilkistävä kuiva heinikko InstancedMeshille. Origo tyvessä maassa, +Y ylös, metrit.
+
+| Tiedosto | Huom. |
+|---|---|
+| tekstuurit/heina_kortti_1.png | 128×128 RGBA, kellertävä kuiva heinä, alareuna = maa |
+| tekstuurit/heina_kortti_2.png | 128×128 RGBA, ruskeampi |
+| mallit/heina/heinatupas_1.glb | korkeus 0.2 m, 2 ristikkäistä quadia (4 tris), kortti 2 |
+| mallit/heina/heinatupas_2.glb | korkeus 0.4 m, 3 quadia (6 tris), kortti 1 |
+| mallit/heina/heinatupas_3.glb | korkeus 0.6 m, 3 quadia (6 tris), kortti 2 |
+
+- Quadin leveys = korkeus. Materiaali `heina`: baseColorTexture → `../../tekstuurit/heina_kortti_N.png` (ulkoinen URI), alphaMode MASK, cutoff 0.5, doubleSided, sampler Nearest/clamp. Ei verteksivärejä.
+- Koodissa: `alphaTest: 0.5`, `side: THREE.DoubleSide`, tekstuurille `NearestFilter` (+ `colorSpace = SRGBColorSpace`). InstancedMeshissä käytä GLB:n geometriaa ja materiaalia; satunnainen Y-kierto/skaalaus per instanssi.
+- Esikatselu: /workspace/jahti_varmuus/esikatselu_heina.png
+
+## Tienvarsi ja rakennukset (generoi_tienvarsi.py)
+Talviversiot Kurikan Street View -kuvien pohjalta. Metrit, +Y ylös, etu +Z, origo maassa, COLOR_0, tasasävytys, materiaali valkoinen (rough 1). Esikatselu: /workspace/jahti_varmuus/esikatselu_tienvarsi.png. Kaikissa yksi mesh-node (nimi = tiedosto); tyhjät nodet sen lapsina.
+
+| Tiedosto | Mitat (m) | Tris | Nodet / huom. |
+|---|---|---|---|
+| mallit/tienvarsi/katuvalo.glb | pylväs 7.6, puomi +Z:aan, valaisin z 1.6–2.25, yläreuna 8.05 | 86 | `valo` (0, 7.78, 1.92) lasin alla |
+| mallit/tienvarsi/sahkopylvas.glb | pylväs 9.0, poikkiorsi X-suunnassa ±1.0 @ y 8.35–8.5 | 98 | `johto_1` (−0.85, 8.72, 0), `johto_2` (0, 9.22, 0) pylvään latvassa, `johto_3` (0.85, 8.72, 0). Johdot kulkevat Z-suunnassa pylväästä toiseen |
+| mallit/tienvarsi/vaistamismerkki.glb | kolmio sivu 0.9, kärki alas y 1.35, yläreuna 2.13 + lumihattu | 39 | etupuoli +Z |
+| mallit/tienvarsi/opaste_mantykoski.glb | kilpi 1.6 × 0.4 @ y 1.6–2.0, 2 tolppaa | 62 | 2 primitiiviä: verteksivärit + tekstuuriquad (UV, materiaali `opaste_mantykoski_teksti`, ulkoinen URI `../../tekstuurit/kyltit/kyltti_mantykoski.png`, Nearest). Etupuoli +Z |
+| tekstuurit/kyltit/kyltti_mantykoski.png | 256×64 RGBA | – | sininen, valkoinen reunus, "Mäntykoski" + nuoli oikealle, DejaVu Sans Bold ilman AA:ta |
+| mallit/tienvarsi/aurausviitta.glb | keppi 2.0 (keltainen), punavalkoinen yläosa, oranssi heijastin +Z | 72 | |
+| mallit/rakennukset/maatalous_navetta.glb | 10 × 24 (Z pitkä), kivijalka 1.0, räystäs 4.2, harja 7.6, hattu 8.6 | 374 | iso ovi +Z-päädyssä, sivuovi +X |
+| mallit/rakennukset/maatalous_varasto.glb | 6 × 10, räystäs 3.2, harja 5.6 | 166 | ovi +Z |
+| mallit/rakennukset/aitta.glb | 3.2 × 4, kulmakivillä, räystäs 2.3, harja 3.6 | 182 | ovi + porraskivi +Z |
+| mallit/rakennukset/katos.glb | 6 × 12, 8 puupilaria, räystäs 3.6, harja 5.0, punainen takaseinä −Z | 144 | avoin +Z ja sivuilta |
+
+Rakennukset: punamulta #8B2A1F, valkoiset nurkkalaudat/räystäslauta/ikkunanpuitteet, harmaa peltikatto 0.18 m lumilaatalla (pellin reuna näkyy räystäällä), lumi kivijalan päällä.
+Puutteet: ei hirsi-/lautakuviota (tasaväri), päädyt kolmioina ilman räystään alapintaa, ikkunoissa vain yksi välipuite. Esikatselun painter-renderöinti piirtää isoja kolmioita väärässä järjestyksessä (seinän läpi näkyviä lumikolmioita) – mallit itse ovat kunnossa.
