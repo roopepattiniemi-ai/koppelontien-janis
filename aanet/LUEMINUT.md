@@ -15,7 +15,13 @@ Kaikki on syntetisoitu itse (`python3 generoi_aanet.py`), eikä mukana ole sampl
 | sfx_askel_lumi_1..4 | yksittäisiä askelia, valitse satunnaisesti |
 | sfx_kavely_lumi_loop | kävelyloop |
 | sfx_janis_pakoloikka | jäniksen pakoloikat |
-| amb_talvimetsa_tuuli_loop | 30 s tuuli ja metsä: puuskat, oksilta putoava lumi ja kaukainen tiainen (saumaton) |
+| amb_talvimetsa_tuuli_loop | 60 s pehmeä, vaihteleva tuuli ja oksilta putoava lumi. v0.2: korkea sihinä poistettu, saumaton 3 s ristihäivytys |
 | musiikki_valikko_talvi | rauhallinen kantele- ja jousimattobiisi, 66 BPM, noin 58 s, loop |
 
 Haukun kuuluvuus toteutetaan pelin koodissa: etäisyys säätää äänenvoimakkuutta ja alipäästöä, tuuli säätää äänenvoimakkuutta.
+
+## GPS (v0.2)
+| sfx_gps_avaus / _sulku | laitteen avaus ja sulkeminen (M/G) |
+| sfx_gps_piippaus | sijaintipäivityksen piippaus |
+| sfx_gps_haukkuindikaattori | kolme nopeaa piippausta: koira haukkuu ajossa |
+| sfx_gps_hukka | kaksi laskevaa piippausta: koira hukassa |

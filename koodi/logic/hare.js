@@ -22,12 +22,13 @@ export class Hare {
   flush(from){ if(this.state!==H.MAKUU)return; this.state=H.PAKO;this.t=0;
     const a=Math.atan2(this.z-from.z,this.x-from.x);this.heading=a;this.loopAngle=Math.atan2(this.z-this.home.z,this.x-this.home.x)||a; }
   shoot(){this.state=H.KUOLLUT;this.alive=false;this.speed=0;}
-  update(dt,{dog,player,playerMoving=false}={}){
+  update(dt,{dog,player,playerMoving=false,playerHidden=false}={}){
+    const flushR=playerHidden?1.5:4;
     if(!this.alive)return; this.t+=dt; const d=(p)=>p?Math.hypot(p.x-this.x,p.z-this.z):1e9;
     switch(this.state){
       case H.MAKUU:
         this.speed=0;
-        if(d(dog)<12 || d(player)<4 || (playerMoving&&d(player)<9)) this.flush(d(dog)<d(player)?dog:player);
+        if(d(dog)<12 || d(player)<flushR || (playerMoving&&d(player)<9)) this.flush(d(dog)<d(player)?dog:player);
         break;
       case H.PAKO: // varovainen pako 10–30 m
         this.speed=6; this._move(dt,this.heading);

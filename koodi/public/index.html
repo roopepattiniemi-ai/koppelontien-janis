@@ -10,8 +10,8 @@ body>canvas{width:100vw;height:100vh;image-rendering:pixelated;display:block}
 #comp{display:block}#wind{width:32px;height:32px;image-rendering:pixelated;vertical-align:middle}</style>
 <script type="importmap">{"imports":{"three":"/three/build/three.module.js","three/addons/":"/three/examples/jsm/"}}</script>
 </head><body>
-<div id="hud"><div id="tl"></div><div id="tr">Tuuli <canvas id="wind" width="32" height="32"></canvas><div id="windt"></div><div><img src="/grafiikka/hud/saalis_janis_24.png" onerror="this.remove()" style="vertical-align:middle"> Saalis: <span id="bag">0</span></div></div>
-<img id="cross"><img id="gun"><div id="msg"></div></div>
+<div id="hud"><div id="tl"><span id="tls"></span><div id="passi" style="display:none;background:#b22;color:#fff;padding:2px 8px;font-size:22px;font-weight:bold">PASSISSA</div><canvas id="comp" width="128" height="32"></canvas></div><div id="tr">Tuuli <canvas id="wind" width="32" height="32"></canvas><div id="windt"></div><div><img src="/grafiikka/hud/saalis_janis_24.png" onerror="this.remove()" style="vertical-align:middle"> Saalis: <span id="bag">0</span></div></div>
+<img id="cross"><img id="gun"><img id="aim" src="/grafiikka/haulikko_tahtays.png" style="display:none;position:absolute;width:50vw;left:25vw;top:calc(50vh - 50vw*66/512);image-rendering:pixelated"><div id="msg"></div><div id="gps" style="display:none;position:absolute;left:12px;bottom:12px;width:min(24vw,240px);aspect-ratio:320/400;background:#222;border-radius:12px"><img id="gpsf" src="/grafiikka/hud/gps_kehys.png" onerror="this.remove()" style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated"><canvas id="gpsc" width="128" height="128" style="position:absolute;left:17.5%;top:22.5%;width:65%;height:44.5%;image-rendering:pixelated;background:#9ab08a"></canvas></div></div>
 <div id="menu"><h1>Koppelontien jänis</h1><p>Klikkaa aloittaaksesi</p>
-<p>WASD liiku · Hiiri katso · Vaihto juokse · P passi · Klikkaus ammu · R lataa</p></div>
+<p>WASD liiku · Hiiri katso · Vaihto juokse · P passi · G/M GPS-panta · +/− resoluutio · Klikkaus ammu · R lataa</p></div>
 <script type="module" src="/main.js"></script></body></html>

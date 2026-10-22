@@ -15,4 +15,5 @@ t('koira: haku -> yöjälki -> ylösotto -> ajo -> hukka',()=>{const h=new Hare(
 t('kuuluvuus: etäisyys ja tuuli',()=>{const s={x:0,z:0};assert.ok(audibility(s,{x:0,z:-100})>audibility(s,{x:0,z:-600}));
   const down={x:Math.sin(Math.PI/4)*800,z:-Math.cos(Math.PI/4)*800},up={x:-down.x,z:-down.z};assert.ok(audibility(s,down)>audibility(s,up));assert.equal(audibility(s,{x:5000,z:0}),0);});
 t('haulikko: lähellä osuu, kaukana ei',()=>{const o={x:0,y:1.6,z:0},dir={x:0,y:0,z:-1};assert.ok(shotgun(o,dir,{x:0,y:1.6,z:-15})>=3);assert.equal(shotgun(o,dir,{x:0,y:1.6,z:-80}),0);});
+t('passissa jänis ei havaitse 3 m päästä',()=>{const h=new Hare({seed:4});h.update(.1,{player:{x:h.x+3,z:h.z},playerHidden:true});assert.equal(h.state,H.MAKUU);});
 console.log(`${n} testiä ok`);

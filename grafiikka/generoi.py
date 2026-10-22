@@ -204,6 +204,185 @@ im=Image.new("RGBA",(16,16),(0,0,0,0)); d=ImageDraw.Draw(im)
 for a,b in (((7,1),(7,5)),((7,10),(7,14)),((1,7),(5,7)),((10,7),(14,7))): d.line(a+b,fill=(255,255,255,220))
 d.point((7,7),fill=(255,80,60,255)); im.save(P("hud","tahtain_16.png"))
 
+
+# ================= v0.2: korkeampi resoluutio (samat tiedostonimet) =================
+N=128
+n=fbm(N,1,((4,.45),(8,.3),(16,.15),(32,.1))); quant((n-n.min())/np.ptp(n)*.8+.15+rng.random((N,N))*.06,SNOW).save(P("tekstuurit","lumi_64.png"))
+n=fbm(N,2,((4,.45),(8,.3),(16,.15),(32,.1))); v=(n-n.min())/np.ptp(n)*.5+.4
+x=np.arange(N); wob=3*np.sin(np.arange(N)[:,None]*2*np.pi/N*2)
+for c in (36,92):
+    dist=np.abs(x[None,:]-c-wob); v-=np.clip(1-dist/8,0,1)*.45; v-=np.clip(1-np.abs(dist-9)/2,0,1)*-.08
+v+=rng.random((N,N))*.06; quant(np.clip(v,0,1),[(120,118,116),(150,148,150)]+SNOW[1:]).save(P("tekstuurit","metsatie_64.png"))
+n=fbm(N,3,((4,.45),(8,.3),(16,.15),(32,.1))); a=np.array(quant((n-n.min())/np.ptp(n)*.5+.45,SNOW)); r=np.random.default_rng(4)
+for row in range(4,N,8):
+    for col in range(0,N,3):
+        if r.random()<.6:
+            cx=(col+r.integers(0,2))%N
+            for k in range(r.integers(2,6)): a[(row-k)%N,cx]=[(150,128,84),(178,152,98),(120,100,66)][r.integers(0,3)]
+        if r.random()<.3: a[(row+1)%N,col%N]=(170,180,196)
+Image.fromarray(a).save(P("tekstuurit","pelto_64.png"))
+random.seed(11)
+im=Image.new("RGBA",(128,256),(0,0,0,0)); d=ImageDraw.Draw(im)
+d.rectangle((60,222,67,255),fill=(72,52,38,255)); d.line((61,222,61,255),fill=(96,72,52,255))
+for i in range(11):
+    yb=234-i*19; hw=60-i*5.2; yt=yb-34
+    d.polygon([(64-hw,yb),(64+hw,yb),(64,yt)],fill=(34,58,40,255))
+    d.polygon([(64-hw,yb),(64-hw*.2,yb-5),(64,yt)],fill=(24,44,32,255))
+    for k in range(int(hw*1.5)):
+        sx=64-hw+random.random()*hw*2; d.point((sx,yb-1-random.random()*8),fill=(28+random.randint(0,20),66,44,255))
+    d.line((64-hw+3,yb-3,64-hw*.3,yb-11),fill=(226,232,240,255),width=3)
+    d.line((64+hw*.3,yb-11,64+hw-3,yb-3),fill=(206,216,230,255),width=3)
+    for k in range(int(hw*.6)): d.point((64-hw+random.random()*hw*2,yb-2-random.random()*10),fill=(240,244,250,255))
+d.polygon([(60,12),(68,12),(64,0)],fill=(236,240,246,255)); im.save(P("tekstuurit","kuusi_billboard.png"))
+im=Image.new("RGBA",(96,256),(0,0,0,0)); d=ImageDraw.Draw(im)
+def br2(x,y,a,l,w):
+    if l<5: return
+    x2=x+math.cos(a)*l; y2=y-math.sin(a)*l; d.line((x,y,x2,y2),fill=(70,56,52,255),width=max(1,int(w)))
+    br2(x2,y2,a+.4+random.uniform(-.2,.2),l*.7,w*.65); br2(x2,y2,a-.4+random.uniform(-.2,.2),l*.7,w*.65)
+for yy in range(40,200,12): br2(48,yy,math.pi/2+random.choice((-.75,.75))+random.uniform(-.1,.1),22,2.5)
+br2(48,20,math.pi/2,16,2)
+d.polygon([(44,16),(52,16),(54,255),(42,255)],fill=(228,226,218,255)); d.line((51,16,53,255),fill=(196,194,188,255),width=2)
+for yy in range(18,255,6): xx=43+random.randint(0,4); d.line((xx,yy,xx+random.randint(2,6),yy),fill=(30,30,30,255))
+d.polygon([(42,215),(54,215),(55,255),(41,255)],fill=(60,56,52,255))
+for yy in range(215,255,4): d.line((42,yy,54,yy+random.randint(-1,1)),fill=(40,38,36,255))
+im.save(P("tekstuurit","koivu_billboard.png"))
+
+# haulikko 512x256
+def gun2(flash):
+    im=Image.new("RGBA",(512,256),(0,0,0,0)); d=ImageDraw.Draw(im); ox,oy=(18,14) if flash else (0,0)
+    W1=(112,66,34,255);W2=(78,44,22,255);W3=(146,92,48,255);M1=(44,46,52,255);M2=(92,96,106,255);M3=(18,18,22,255);M4=(64,66,74,255)
+    T=lambda pts:[(x+ox,y+oy) for x,y in pts]
+    if flash:
+        cx,cy=268+ox,78+oy
+        for rr,c in ((56,(255,190,70,120)),(38,(255,226,130,210)),(18,(255,255,226,255))):
+            pts=[(cx+math.cos(a)*rr*(1 if i%2 else .4),cy+math.sin(a)*rr*(1 if i%2 else .4)*.75) for i,a in enumerate(np.linspace(0,2*math.pi,21)[:-1])]
+            d.polygon(pts,fill=c)
+    # perä + kädensija (oikea alakulma)
+    d.polygon(T([(380,200),(430,186),(512,196),(512,256),(440,256),(400,238)]),fill=W1)
+    d.polygon(T([(380,200),(430,186),(512,196),(512,206),(430,198),(390,210)]),fill=W3)
+    d.polygon(T([(392,226),(420,222),(436,256),(404,256)]),fill=W2)  # pistoolikahva
+    for k in range(6): d.line(T([(398+k*4,230),(410+k*4,256)]),fill=(92,54,28,255))  # kuviointi
+    for k in range(5): d.arc(T([(420+k*14,200),(520+k*10,300)])[0]+T([(420+k*14,200),(520+k*10,300)])[1],200,250,fill=W2)
+    # lukko
+    d.polygon(T([(340,176),(392,168),(406,224),(356,236)]),fill=M4)
+    d.polygon(T([(344,180),(390,172),(394,186),(348,194)]),fill=M2)
+    for (px,py) in ((360,200),(384,196)): d.ellipse(T([(px-3,py-3),(px+3,py+3)]),fill=M3)
+    d.arc(T([(356,222),(392,252)])[0]+T([(356,222),(392,252)])[1],0,180,fill=M3,width=3)  # liipaisinkaari
+    d.line(T([(374,226),(372,240)]),fill=M3,width=3)
+    # piiput
+    for dx in (0,28):
+        d.polygon(T([(244+dx,86),(266+dx,86),(372+dx,256),(318+dx,256)]),fill=M1)
+        d.line(T([(248+dx,88),(330+dx,256)]),fill=M2,width=4)
+        d.line(T([(262+dx,88),(360+dx,256)]),fill=M3,width=2)
+        d.ellipse(T([(242+dx,78),(268+dx,94)]),fill=M4); d.ellipse(T([(247+dx,81),(263+dx,91)]),fill=M3)
+    d.line(T([(270,88),(362,256)]),fill=M2,width=3)  # tähtäinkisko
+    d.ellipse(T([(266,80),(274,88)]),fill=(220,214,190,255))  # jyvä
+    # etutukki
+    d.polygon(T([(298,180),(388,178),(446,256),(330,256)]),fill=W1)
+    d.polygon(T([(298,180),(388,178),(394,188),(304,190)]),fill=W3)
+    for k in range(9): d.line(T([(310+k*10,192),(340+k*12,256)]),fill=W2)
+    return im
+gun2(False).save(P("haulikko_fp.png")); gun2(True).save(P("haulikko_laukaus.png"))
+
+# jäljet 64x64
+def track2(kind):
+    im=Image.new("RGBA",(64,64),(0,0,0,0)); d=ImageDraw.Draw(im)
+    if kind=="janis":
+        for x0 in (10,38):
+            d.ellipse((x0,4,x0+16,30),fill=SH+(150,)); d.ellipse((x0+3,8,x0+13,26),fill=(108,126,152,170))
+            for t in range(4): d.ellipse((x0+1+t*4,3,x0+4+t*4,7),fill=(100,118,146,170))
+        for y0 in (36,50):
+            d.ellipse((27,y0,37,y0+12),fill=SH+(165,)); d.ellipse((29,y0+2,35,y0+10),fill=(108,126,152,180))
+    else:
+        for cx,cy in ((20,18),(44,42)):
+            d.ellipse((cx-8,cy-2,cx+8,cy+12),fill=SH+(165,)); d.ellipse((cx-5,cy+1,cx+5,cy+9),fill=(104,122,150,185))
+            for tx,ty in ((-8,-6),(-3,-10),(3,-10),(8,-6)):
+                d.ellipse((cx+tx-3,cy+ty-3,cx+tx+3,cy+ty+3),fill=(110,128,156,180))
+                d.line((cx+tx*1.2,cy+ty-4,cx+tx*1.3,cy+ty-7),fill=(80,94,120,210),width=1)
+    im.save(P("jaljet",kind+"_jalki_32.png"))
+track2("janis"); track2("koira")
+
+# mallit, tarkempi
+BKT=(20,18,18);PK=(200,150,150)
+hare2=[ellipsoid((0,.16,-.04),(.11,.12,.2),WH,12,8),ellipsoid((0,.25,.17),(.06,.068,.09),WH,10,6),
+ ellipsoid((0,.235,.245),(.035,.035,.03),WG,6,3),box((-.008,.235,.27),(.008,.248,.278),PK),
+ ellipsoid((.055,.27,.215),(.012,.014,.012),BKT,6,3),ellipsoid((-.055,.27,.215),(.012,.014,.012),BKT,6,3),
+ ellipsoid((.07,.07,-.11),(.045,.075,.11),WG,8,5),ellipsoid((-.07,.07,-.11),(.045,.075,.11),WG,8,5),
+ ellipsoid((.06,.025,.0),(.022,.02,.11),WG,6,4),ellipsoid((-.06,.025,.0),(.022,.02,.11),WG,6,4),
+ ellipsoid((.035,.07,.1),(.016,.07,.018),WH,6,4),ellipsoid((-.035,.07,.1),(.016,.07,.018),WH,6,4),
+ ellipsoid((0,.17,-.25),(.035,.035,.03),WH,6,3)]
+for sx in (1,-1):
+    hare2.append(ellipsoid((sx*.03,.37,.14),(.02,.085,.012),WG,8,5))
+    hare2.append(ellipsoid((sx*.03,.435,.14),(.016,.022,.01),BKT,6,3))
+TN2=(196,128,62)
+dog2=[ellipsoid((0,.48,0),(.13,.14,.33),TN2,12,8),ellipsoid((0,.56,-.03),(.122,.08,.27),BKT,12,4),
+ ellipsoid((0,.43,.2),(.085,.11,.12),WH,8,5),ellipsoid((0,.6,.3),(.065,.12,.075),TN2,8,4),
+ ellipsoid((0,.7,.38),(.075,.075,.09),TN2,10,6),ellipsoid((0,.665,.48),(.036,.034,.075),TN,8,4),
+ ellipsoid((0,.7,.42),(.012,.05,.04),WH,6,3),ellipsoid((0,.685,.555),(.016,.014,.012),BKT,6,3),
+ ellipsoid((.035,.72,.44),(.01,.01,.008),BKT,6,3),ellipsoid((-.035,.72,.44),(.01,.01,.008),BKT,6,3)]
+for sx in (1,-1):
+    dog2.append(ellipsoid((sx*.075,.68,.36),(.012,.065,.04),TD,6,4))
+    for z in (.22,-.22):
+        dog2.append(ellipsoid((sx*.07,.33,z),(.03,.1,.035),TN2,6,3))
+        dog2.append(ellipsoid((sx*.07,.13,z),(.02,.13,.022),WH,6,3))
+        dog2.append(ellipsoid((sx*.07,.012,z+.02),(.025,.012,.035),WH,6,2))
+for k,(y,z) in enumerate(((.58,-.33),(.6,-.42),(.6,-.5))):
+    dog2.append(ellipsoid((0,y,z),(.022,.022,.05),BKT if k<2 else TN2,6,3))
+models={}
+for nm,parts in (("janis",hare2),("ajokoira",dog2)): models[nm]=write_glb(P("mallit",nm+".glb"),parts)
+
+# GPS
+GX,GY,GW,GH=56,92,208,176
+im=Image.new("RGBA",(320,400),(0,0,0,0)); d=ImageDraw.Draw(im)
+d.rounded_rectangle((44,0,72,60),6,fill=(30,32,30,255)); d.rounded_rectangle((48,4,68,56),4,fill=(48,50,48,255))
+d.rounded_rectangle((16,40,304,396),28,fill=(26,28,26,255))
+d.rounded_rectangle((24,48,296,388),24,fill=(52,56,50,255))
+d.rounded_rectangle((30,54,290,382),20,fill=(40,43,39,255))
+for yy in (120,180,240): d.rounded_rectangle((16,yy,26,yy+40),4,fill=(200,96,30,255))
+for yy in (120,180,240): d.rounded_rectangle((294,yy,304,yy+40),4,fill=(200,96,30,255))
+d.rounded_rectangle((GX-10,GY-10,GX+GW+9,GY+GH+9),8,fill=(14,14,14,255))
+d.text((60,66),"GPS 2000",fill=(170,176,170,255),font=F)
+d.ellipse((246,64,256,74),fill=(40,160,60,255))
+cx,cy=160,330; d.ellipse((cx-34,cy-34,cx+34,cy+34),fill=(30,32,30,255)); d.ellipse((cx-26,cy-26,cx+26,cy+26),fill=(70,74,68,255))
+for dx,dy in ((0,-17),(0,17),(-17,0),(17,0)): d.polygon([(cx+dx+(4 if dy else 0)*0,cy+dy)]*1+[(cx+dx-4,cy+dy+(3 if dy<0 else -3 if dy>0 else 0)),(cx+dx+4,cy+dy+(3 if dy<0 else -3 if dy>0 else 0))] if dy else [(cx+dx,cy),(cx+dx-(3 if dx<0 else -3),cy-4),(cx+dx-(3 if dx<0 else -3),cy+4)],fill=(200,204,196,255))
+d.ellipse((cx-8,cy-8,cx+8,cy+8),fill=(110,116,108,255))
+for bx,lab in ((70,"-"),(250,"+")):
+    d.ellipse((bx-16,314,bx+16,346),fill=(30,32,30,255)); d.ellipse((bx-12,318,bx+12,342),fill=(84,88,82,255)); d.text((bx-3,323),lab,fill=(230,230,230,255),font=F)
+d.rounded_rectangle((60,360,104,372),4,fill=(84,88,82,255)); d.rounded_rectangle((216,360,260,372),4,fill=(84,88,82,255))
+for k in range(5): d.line((130+k*14,376,140+k*14,376),fill=(20,20,20,255),width=2)
+d.rectangle((GX,GY,GX+GW-1,GY+GH-1),fill=(0,0,0,0)); im.save(P("hud","gps_kehys.png"))
+def ic(): i=Image.new("RGBA",(16,16),(0,0,0,0)); return i,ImageDraw.Draw(i)
+i,d=ic(); d.polygon([(8,1),(14,14),(8,10),(2,14)],fill=(255,230,60,255),outline=(20,20,20,255)); i.save(P("hud","gps_pelaaja.png"))
+def dogic(col,ol=(20,20,20,255)):
+    i,d=ic(); d.rectangle((2,7,10,10),fill=col,outline=ol); d.rectangle((9,4,13,8),fill=col,outline=ol)
+    d.line((13,6,14,6),fill=ol); d.line((3,11,3,13),fill=ol); d.line((9,11,9,13),fill=ol); d.line((2,7,1,4),fill=ol)
+    d.point((10,4),fill=ol); return i,d
+i,d=dogic((214,140,60,255)); i.save(P("hud","gps_koira.png"))
+i,d=dogic((230,90,40,255)); d.arc((10,1,18,11),-60,60,fill=(255,255,255,255)); d.arc((8,-1,20,13),-50,50,fill=(255,255,255,255)); i.save(P("hud","gps_koira_ajo.png"))
+i,d=dogic((214,170,60,255)); d.text((10,-2),"?",fill=(255,255,255,255),font=F); d.point((15,7),fill=(255,255,255,255)); d.point((15,9),fill=(255,255,255,255)); i.save(P("hud","gps_koira_haku.png"))
+i,d=dogic((130,130,130,255),(70,70,70,255)); d.text((11,-2),"?",fill=(180,180,180,255),font=F); i.save(P("hud","gps_koira_hukka.png"))
+
+# tähtäysasento 512x256, jyvä kohdassa (256,66)
+def gun_ads():
+    im=Image.new("RGBA",(512,256),(0,0,0,0)); d=ImageDraw.Draw(im)
+    W1=(112,66,34,255);W2=(78,44,22,255);W3=(146,92,48,255);M1=(44,46,52,255);M2=(92,96,106,255);M3=(18,18,22,255);M4=(64,66,74,255)
+    GL=(58,62,50,255);GL2=(42,46,36,255)
+    for sx in (-1,1):  # piiput
+        d.polygon([(256,72),(256+sx*26,72),(256+sx*120,256),(256,256)],fill=M1)
+        d.line((256+sx*22,74,256+sx*100,256),fill=M2,width=3)
+        d.ellipse((256+sx*13-12,64,256+sx*13+12,80),fill=M4); d.ellipse((256+sx*13-8,67,256+sx*13+8,77),fill=M3)
+    d.polygon([(253,70),(259,70),(266,256),(246,256)],fill=M4)  # kisko
+    for y in range(80,256,8): d.line((256-(y-70)*.05,y,256+(y-70)*.05,y),fill=M2)
+    d.ellipse((252,62,260,70),fill=(225,218,192,255)); d.point((256,66),fill=(255,255,240,255))  # jyvä
+    d.polygon([(150,190),(256,180),(362,190),(400,256),(112,256)],fill=W1)  # etutukki
+    d.polygon([(150,190),(256,180),(362,190),(366,198),(256,190),(146,198)],fill=W3)
+    for k in range(10): d.line((170+k*19,196,140+k*25,256),fill=W2)
+    d.polygon([(214,232),(298,232),(318,256),(194,256)],fill=W2)  # perä/lukko alhaalla
+    for sx in (-1,1):  # käsineet
+        d.ellipse((256+sx*150-38,200,256+sx*150+38,256),fill=GL)
+        for k in range(3): d.line((256+sx*(120+k*14),204,256+sx*(112+k*14),228),fill=GL2,width=3)
+    return im
+gun_ads().save(P("haulikko_tahtays.png"))
 # --- esikatselu ---
 def render(tv,tc,view,sz=200):
     im=Image.new("RGB",(sz,sz),(70,80,96)); d=ImageDraw.Draw(im)
@@ -219,15 +398,15 @@ def render(tv,tc,view,sz=200):
     return im
 items=[("lumi",P("tekstuurit","lumi_64.png")),("metsatie",P("tekstuurit","metsatie_64.png")),("pelto",P("tekstuurit","pelto_64.png")),
  ("taivas",P("tekstuurit","taivas_256x128.png")),("kuusi",P("tekstuurit","kuusi_billboard.png")),("koivu",P("tekstuurit","koivu_billboard.png")),
- ("haulikko",P("haulikko_fp.png")),("laukaus",P("haulikko_laukaus.png")),("janis_jalki",P("jaljet","janis_jalki_32.png")),
+ ("haulikko",P("haulikko_fp.png")),("laukaus",P("haulikko_laukaus.png")),("tahtays",P("haulikko_tahtays.png")),("janis_jalki",P("jaljet","janis_jalki_32.png")),
  ("koira_jalki",P("jaljet","koira_jalki_32.png")),("kompassi",P("hud","kompassi_256x32.png")),("tuuli",P("hud","tuuli_nuoli_32.png")),
- ("saalis",P("hud","saalis_janis_24.png")),("tahtain",P("hud","tahtain_16.png"))]
-sheet=Image.new("RGB",(1100,1400),(40,46,56)); d=ImageDraw.Draw(sheet); x=y=10; rowh=0
+ ("saalis",P("hud","saalis_janis_24.png")),("tahtain",P("hud","tahtain_16.png")),("gps_kehys",P("hud","gps_kehys.png"))]+[(n,P("hud",n+".png")) for n in ("gps_pelaaja","gps_koira","gps_koira_ajo","gps_koira_haku","gps_koira_hukka")]
+sheet=Image.new("RGB",(1300,1800),(40,46,56)); d=ImageDraw.Draw(sheet); x=y=10; rowh=0
 for nm,p in items:
-    im=Image.open(p).convert("RGBA"); k=2 if im.width>=128 else 3
-    if nm in("lumi","metsatie","pelto"): t=Image.new("RGBA",(128,128)); [t.paste(im,(i*64,j*64)) for i in (0,1) for j in (0,1)]; im=t; k=2
+    im=Image.open(p).convert("RGBA"); k=1 if im.width>=256 else (2 if im.width>=48 else 3)
+    if nm in("lumi","metsatie","pelto"): t=Image.new("RGBA",(256,256)); [t.paste(im,(i*128,j*128)) for i in (0,1) for j in (0,1)]; im=t; k=1
     im=im.resize((im.width*k,im.height*k),Image.NEAREST)
-    if x+im.width>1090: x=10; y+=rowh+20; rowh=0
+    if x+im.width>1290: x=10; y+=rowh+20; rowh=0
     bg=Image.new("RGBA",im.size,(110,124,140,255)); bg.alpha_composite(im); sheet.paste(bg.convert("RGB"),(x,y))
     d.text((x,y+im.height+2),nm,fill=(255,255,255)); x+=im.width+12; rowh=max(rowh,im.height)
 y+=rowh+20; x=10
