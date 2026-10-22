@@ -1,10 +1,10 @@
 # Koppelontien jänis: äänet (MVP)
-Kaikki on syntetisoitu itse (`python3 generoi_aanet.py`), eikä mukana ole samplejä. Jokaisesta äänestä on sekä .ogg- että .mp3-versio, ja Phaser lataa ne muodossa `[ogg, mp3]`.
+Pääosa äänistä on syntetisoitu itse (`python3 generoi_aanet.py`). **v0.9 aidot äänitteet** (lähteet ja lisenssit ovat tiedostossa LAHTEET.md): sfx_askel_lumi_1..4, sfx_kavely_lumi_loop, amb_talvimetsa_tuuli_loop, amb_korppi_1..2, amb_tikka_1, sfx_vitara_kaynnistys ja sfx_vitara_tyhjakaynti_loop. Synteettiset alkuperäiset ovat kansiossa /workspace/jahti_varmuus/aanet_synteettinen/. Jokaisesta äänestä on sekä .ogg- että .mp3-versio, ja Phaser lataa ne muodossa `[ogg, mp3]`.
 
 | Tiedosto | Käyttö |
 |---|---|
-| sfx_koira_haukku_1..4 | lyhyitä ajohaukkuja, joista koodi rakentaa rytmin (tiheä rytmi = jänis lähellä) |
-| sfx_koira_haukku_5..6 | pitkiä ulvovia ajohaukkuja |
+| sfx_koira_haukku_1..4 | lyhyitä löytöhaukkuja ("vau") v0.8 |
+| sfx_koira_haukku_5..6 | kumeita ulvovia ajohaukkuja ("vouuu", noin 1 s) v0.8 |
 | sfx_koira_ajo_tiivis / _harva | valmiit ajojaksot, joissa jänis on lähellä tai jälki vanhempi |
 | sfx_koira_ylosotto | jänis lähtee liikkeelle, koira kiljahtaa ja aloittaa ajon |
 | sfx_koira_nuuhkii / _hidas | haku ja hukan kiertäminen |
@@ -15,7 +15,9 @@ Kaikki on syntetisoitu itse (`python3 generoi_aanet.py`), eikä mukana ole sampl
 | sfx_askel_lumi_1..4 | yksittäisiä askelia, valitse satunnaisesti |
 | sfx_kavely_lumi_loop | kävelyloop |
 | sfx_janis_pakoloikka | jäniksen pakoloikat |
-| amb_talvimetsa_tuuli_loop | 60 s pehmeä, vaihteleva tuuli ja oksilta putoava lumi. v0.2: korkea sihinä poistettu, saumaton 3 s ristihäivytys |
+| amb_talvimetsa_tuuli_loop | 60 s pehmeä, vaihteleva tuuli ja oksilta putoava lumi. v0.2: korkea sihinä poistettu, saumaton 3 s ristihäivytys. v0.9: aito äänite, 45 s |
+| amb_korppi_1..2 | v0.9 aito: korpin raakkaus (1,5 s), soita satunnaisesti tuulen päälle |
+| amb_tikka_1 | v0.9 aito: palokärjen rummutus (4,2 s), satunnaisesti |
 | musiikki_valikko_talvi | rauhallinen kantele- ja jousimattobiisi, 66 BPM, noin 58 s, loop |
 
 Haukun kuuluvuus toteutetaan pelin koodissa: etäisyys säätää äänenvoimakkuutta ja alipäästöä, tuuli säätää äänenvoimakkuutta.

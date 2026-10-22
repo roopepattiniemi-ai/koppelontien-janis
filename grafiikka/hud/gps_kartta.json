@@ -9,16 +9,16 @@
   512.0
  ],
  "mokki_maailma": [
-  -200,
-  160
+  0,
+  0
  ],
  "mokki_px": [
-  341.3,
-  648.5
+  512.0,
+  512.0
  ],
  "mokki_geo": [
-  62.376739611111105,
-  22.93040611111111
+  62.3759391,
+  22.9240875
  ],
  "suunnat": "+x = itä = oikealle, +z = etelä = alas, pohjoinen ylös",
  "muunnos": "px = (x + 600)/m_per_px, py = (z + 600)/m_per_px",
@@ -33,5 +33,6 @@
   "rak": "#6A6A6A",
   "mokki": "#C0392B"
  },
+ "huom": "pelikentässä metsä on oletusmaankäyttö (satelliittikuvan mukaan); pihatie, ura ja Koppelontien oja lisätty satelliittikuvasta",
  "lahde": "© OpenStreetMap contributors (ODbL), OSM API map-kysely 22.10.2026"
 }

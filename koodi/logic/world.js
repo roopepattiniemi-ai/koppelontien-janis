@@ -1,38 +1,39 @@
-// Yksinkertaistettu Kollinmäki–Koppelontie (n. 62.377 N, 22.927 E), OSM-henkinen käsin tehty layout.
-// Koordinaatit metreinä, x = itä, z = etelä. Alue 1200 x 1200 m, keskipiste (0,0).
+// v0.8: Koppelontie 30 (62.3759391 N, 22.9240875 E) = maailman origo = mökki. OSM + satelliittikuva, ks. ../../osm/rakenna_kentta.py
+// Koordinaatit metreinä, x = itä, z = etelä. Alue 1200 x 1200 m.
 import { mulberry32 } from './rng.js';
 import { HM, HM_N, HM_STEP, HM_MIN } from './korkeus_data.js';
+import { ROADS, FIELDS, WATER, BUILDINGS, CABIN, YARD, START, SIGNS } from './kartta_data.js';
+export { ROADS, FIELDS, WATER, BUILDINGS, CABIN, YARD, START, SIGNS };
 export const SIZE = 1200;
-// Kollinmäki (OSM: bussipysäkit 'Kollinmäki P/E' Yli-Vallintiellä) ~ maailmassa (-117,197)
-export const KOLLINMAKI={x:-117,z:197};
-// Koppelontie: metsätie lounaasta koilliseen
-export const ROAD = [[-600,380],[-300,250],[-80,120],[60,-20],[220,-200],[420,-340],[600,-420]];
-// Pelto Koppelontien varressa
-export const FIELD = { x0:-420, z0:180, x1:-120, z1:420 };
-// Korkeus: oikea korkeusdata (AWS Terrarium, ks. ../korkeus/), metreinä suhteessa mökkiin, pystykorostus 1.5x
+// Korkeus: AWS Terrarium, metreinä suhteessa mökkiin, kerroin 0.75, 17 m suodatus
 export function height(x,z){
   const fx=Math.max(0,Math.min(HM_N-1.001,(x-HM_MIN)/HM_STEP)),fz=Math.max(0,Math.min(HM_N-1.001,(z-HM_MIN)/HM_STEP));
   const i=fx|0,j=fz|0,ax=fx-i,az=fz-j,h=(a,b)=>HM[b*HM_N+a];
   return (h(i,j)*(1-ax)+h(i+1,j)*ax)*(1-az)+(h(i,j+1)*(1-ax)+h(i+1,j+1)*ax)*az;
 }
-export function distToRoad(x,z){
-  let best=1e9;
-  for(let i=0;i<ROAD.length-1;i++){const[ax,az]=ROAD[i],[bx,bz]=ROAD[i+1];
-    const dx=bx-ax,dz=bz-az;let t=((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz);t=Math.max(0,Math.min(1,t));
-    best=Math.min(best,Math.hypot(x-ax-t*dx,z-az-t*dz));}
-  return best;
-}
-// Mökki (Koppelontie 30) Koppelontien pohjoispuolella, piha tien ja mökin välissä
-export const CABIN={x:-200,z:160,rot:0}, YARD={x:-196,z:176,r:16};
+function segDist(x,z,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,L=dx*dx+dz*dz||1;let t=((x-ax)*dx+(z-az)*dz)/L;t=Math.max(0,Math.min(1,t));return Math.hypot(x-ax-t*dx,z-az-t*dz);}
+function lineDist(x,z,pts){let b=1e9;for(let i=0;i<pts.length-1;i++){const[ax,az]=pts[i],[bx,bz]=pts[i+1];if(Math.abs(x-ax)>b+400&&Math.abs(x-bx)>b+400)continue;b=Math.min(b,segDist(x,z,ax,az,bx,bz));}return b;}
+// etäisyys tien reunaan (0 = tiellä); kaikki tieluokat (tie, piha, ura)
+export function distToRoad(x,z,cls){let b=1e9;for(const r of ROADS){if(cls&&r.c!==cls)continue;b=Math.min(b,lineDist(x,z,r.pts)-r.w/2);}return Math.max(0,b);}
+export function distToWater(x,z){let b=1e9;for(const w of WATER)b=Math.min(b,lineDist(x,z,w.pts));return b;}
+function inPoly(x,z,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const[xi,zi]=P[i],[xj,zj]=P[j];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)c=!c;}return c;}
+export const inField=(x,z)=>FIELDS.some(P=>inPoly(x,z,P));
+export const inBuilding=(x,z,m=0)=>BUILDINGS.some(P=>{let cx=0,cz=0;for(const[a,b]of P){cx+=a;cz+=b;}cx/=P.length;cz/=P.length;return Math.hypot(x-cx,z-cz)<12+m&&inPolyM(x,z,P,cx,cz,m);})||Math.hypot(x-CABIN.x,z-CABIN.z)<5+m;
+function inPolyM(x,z,P,cx,cz,m){return m<=0?inPoly(x,z,P):Math.hypot(x-cx,z-cz)<12+m;}
 export const inYard=(x,z)=>Math.hypot(x-YARD.x,z-YARD.z)<YARD.r;
-export const drivable=(x,z)=>distToRoad(x,z)<4||inYard(x,z)||inField(x,z);
-export const inField=(x,z)=>x>FIELD.x0&&x<FIELD.x1&&z>FIELD.z0&&z<FIELD.z1;
-export const isForest=(x,z)=>!inField(x,z)&&distToRoad(x,z)>6&&Math.hypot(x-YARD.x,z-YARD.z)>YARD.r+8;
-export function trees(seed=7,n=2600){
-  const r=mulberry32(seed),out=[];
-  while(out.length<n){const x=(r()-.5)*SIZE,z=(r()-.5)*SIZE; if(isForest(x,z)) out.push({x,z,kind:r()<.75?'kuusi':'koivu',s:0.7+r()*0.6});}
+export const drivable=(x,z)=>(distToRoad(x,z)<0.6||inYard(x,z)||inField(x,z))&&!inBuilding(x,z)&&Math.abs(x)<SIZE/2&&Math.abs(z)<SIZE/2;
+// metsä = oletusmaankäyttö (satelliittikuvan mukaan tiheät kuusikot), ei pellolla, teillä, pihassa, talojen tai ojien päällä
+export const isForest=(x,z)=>!inField(x,z)&&distToRoad(x,z)>3&&distToWater(x,z)>2.5&&Math.hypot(x-YARD.x,z-YARD.z)>YARD.r+3&&!inBuilding(x,z,6);
+export function trees(seed=7,n=12000){
+  const r=mulberry32(seed),out=[];let tries=0;
+  while(out.length<n&&tries++<n*6){const x=(r()-.5)*SIZE,z=(r()-.5)*SIZE;
+    if(isForest(x,z)){const q=r();const m=q<.74?'kuusi_'+(1+(r()*4|0)):q<.82?'manty_'+(1+(r()*2|0)):q<.89?'koivu_'+(1+(r()*2|0)):q<.95?'taimi_'+(1+(r()*2|0)):q<.99?'kanto_'+(1+(r()*2|0)):'kaatunut_runko_1';
+      out.push({x,z,model:m,kind:m.startsWith('koivu')?'koivu':'kuusi',s:0.8+r()*0.4,rot:r()*Math.PI*2});}
+    else if(distToWater(x,z)<4&&!inField(x,z)&&distToRoad(x,z)>3&&r()<.3) out.push({x,z,model:'koivu_'+(1+(r()*2|0)),kind:'koivu',s:0.9,rot:r()*6.28}); }  // puurivi ojan varrella
   return out;
 }
+// jäniksen makuu: metsässä, kaukana taloista/teistä, 120–500 m mökistä
+export function hareSpot(rand){for(let i=0;i<500;i++){const a=rand()*Math.PI*2,d=120+rand()*380,x=Math.cos(a)*d,z=Math.sin(a)*d;if(Math.abs(x)<520&&Math.abs(z)<520&&isForest(x,z)&&distToRoad(x,z)>25&&!inBuilding(x,z,30))return{x,z};}return{x:-200,z:150};}
 // Tuuli: suunta johon tuuli PUHALTAA (rad, 0 = pohjoiseen eli -z), voimakkuus m/s
 export const WIND = { dir: Math.PI*0.25, speed: 5 }; // lounaistuuli, puhaltaa koilliseen
 export function windVec(w=WIND){ return { x: Math.sin(w.dir), z: -Math.cos(w.dir) }; }

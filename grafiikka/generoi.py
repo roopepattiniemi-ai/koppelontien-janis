@@ -467,3 +467,8 @@ for nm,(tv,tc,nt) in models.items():
         sheet.paste(render(tv,tc,vw),(x,y)); d.text((x,y+202),f"{nm}.glb {vw} ({nt} tris)",fill=(255,255,255)); x+=215
 sheet.save(P("esikatselu.png"))
 for nm,(tv,tc,nt) in models.items(): print(nm,nt,"tris, bbox",tv.min(0).round(2),tv.max(0).round(2))
+
+# ===== v0.8: ajetaan v0.8-skriptit lopuksi (haulikko v08 + nodetetut GLB:t yhden meshin malleista) =====
+import subprocess, sys
+for _s in ("generoi_haulikko_v08.py","generoi_mallit_v08.py"):
+    subprocess.run([sys.executable,P(_s)],check=True)

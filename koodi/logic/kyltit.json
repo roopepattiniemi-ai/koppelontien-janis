@@ -1,0 +1,48 @@
+{
+ "selite": "maailman metrit, x = itä, z = etelä; suunta = kyltin etupinnan katsesuunta rad, 0 = pohjoinen (-z), pi/2 = itä",
+ "aloitus": {
+  "x": 261.7,
+  "z": 37.7,
+  "heading": 0.671,
+  "autossa": true
+ },
+ "kyltit": [
+  {
+   "tyyppi": "tienviitta",
+   "teksti": "Löyhingintie",
+   "x": 308.5,
+   "z": -26.6,
+   "suunta": -2.512,
+   "huom": "Yli-Vallintien varressa, näkyy aloitussuunnasta"
+  },
+  {
+   "tyyppi": "tienviitta",
+   "teksti": "Yli-Vallintie 6921",
+   "x": 325.5,
+   "z": -40.6,
+   "suunta": -0.454
+  },
+  {
+   "tyyppi": "tienviitta",
+   "teksti": "Koppelontie",
+   "nuoli": "vasen (länteen)",
+   "x": 308.7,
+   "z": -82.3,
+   "suunta": 2.966
+  },
+  {
+   "tyyppi": "postilaatikko",
+   "teksti": "",
+   "x": 19,
+   "z": -97,
+   "suunta": 0.0
+  },
+  {
+   "tyyppi": "osoitekilpi",
+   "teksti": "Koppelontie 30",
+   "x": 20.5,
+   "z": -97,
+   "suunta": 0.0
+  }
+ ]
+}

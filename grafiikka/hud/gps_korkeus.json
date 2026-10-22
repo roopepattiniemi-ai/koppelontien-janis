@@ -4,8 +4,8 @@
   1024
  ],
  "min_m": 122.94,
- "max_m": 160.08,
- "mokki_m": 138.28,
+ "max_m": 160.07,
+ "mokki_m": 139.12,
  "kaava": "h_m = min_m + arvo/65535*(max_m-min_m)",
  "kohdistus": "sama kuin gps_kartta.json",
  "lahde": "AWS Terrain Tiles (Terrarium, z15; Suomessa pohjana mm. MML-korkeusmalli), h = R*256+G+B/256-32768, haettu 22.10.2026"

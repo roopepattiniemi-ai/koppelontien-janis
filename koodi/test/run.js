@@ -5,7 +5,7 @@ import { audibility } from '../logic/hearing.js';
 import { Car } from '../logic/car.js';
 import { YARD, drivable } from '../logic/world.js';
 import { shotgun } from '../logic/shot.js';
-let n=0;const t=(name,f)=>{f();n++;console.log('ok',name);};
+let n=0;const mulberryT=s=>{let a=s;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};};const t=(name,f)=>{f();n++;console.log('ok',name);};
 t('jänis makuulla, paluuperät + sivuloikka yöjäljessä',()=>{const h=new Hare({seed:3});assert.equal(h.state,H.MAKUU);assert.ok(h.nightTrail.at(-1).jump);assert.ok(h.nightTrail.length>90);});
 t('jänis lähtee kun koira lähellä, kierto <~1 km',()=>{const h=new Hare({seed:3});h.update(.1,{dog:{x:h.x+5,z:h.z}});assert.equal(h.state,H.PAKO);
   let maxR=0,states=new Set();for(let i=0;i<20000;i++){h.update(.05,{dog:{x:h.x+100,z:h.z},player:{x:9999,z:9999}});states.add(h.state);maxR=Math.max(maxR,Math.hypot(h.x-h.home.x,h.z-h.home.z));}
@@ -33,6 +33,13 @@ t('täällä: jäljellä -> koira tulee ja nostaa jäljen, ilman jälkeä = tän
 t('Vitara: nousu vaatii narun, pysyy ajettavalla maalla',()=>{const c=new Car({x:YARD.x,z:YARD.z});const g=new Dog({x:YARD.x,z:YARD.z,leashed:true});
   assert.ok(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok);g.command('irti',{x:0,z:0});assert.equal(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok,false);
   for(let i=0;i<2000;i++){c.update(.05,{throttle:1,steer:i%300<150?1:-.3});assert.ok(drivable(c.x,c.z));}});
-{const {height}=await import('../logic/world.js');t('korkeus: mökki≈0, vaihtelua >10 m, Vitara pinnalla',()=>{assert.ok(Math.abs(height(-200,160))<2);let mn=1e9,mx=-1e9;for(let x=-590;x<590;x+=20)for(let z=-590;z<590;z+=20){const h=height(x,z);mn=Math.min(mn,h);mx=Math.max(mx,h);}assert.ok(mx-mn>10,mx-mn);
+{const {height}=await import('../logic/world.js');t('korkeus: mökki≈0, vaihtelua >10 m, Vitara pinnalla',()=>{assert.ok(Math.abs(height(0,0))<1);let mn=1e9,mx=-1e9;for(let x=-590;x<590;x+=20)for(let z=-590;z<590;z+=20){const h=height(x,z);mn=Math.min(mn,h);mx=Math.max(mx,h);}assert.ok(mx-mn>10,mx-mn);
   const c=new Car({x:YARD.x,z:YARD.z});for(let i=0;i<500;i++){c.update(.05,{throttle:1,steer:.3});assert.ok(c.y>=height(c.x,c.z)-1e-6);assert.ok(Math.abs(c.pitch)<0.6);}});}
+{const W=await import('../logic/world.js');t('v0.8 kenttä: jänis metsässä, puut eivät pelloilla/taloissa/teillä, piha ajettava',()=>{const r=mulberryT(5);
+  for(let i=0;i<30;i++){const p=W.hareSpot(r);assert.ok(W.isForest(p.x,p.z)&&!W.inBuilding(p.x,p.z,20));const h=new Hare({...p,seed:i});assert.ok(!W.inBuilding(h.home.x,h.home.z));}
+  for(const t of W.trees(3,800)){assert.ok(!W.inBuilding(t.x,t.z));assert.ok(W.distToRoad(t.x,t.z)>2);}
+  assert.ok(W.drivable(W.YARD.x,W.YARD.z));assert.ok(W.drivable(W.START.x,W.START.z));
+  // reitti Yli-Vallintie -> Löyhingintie -> Koppelontie -> pihatie: tiepisteet kentällä ajettavia (näytteet 2 m välein)
+  for(const nm of ['Yli-Vallintie','Löyhingintie','Koppelontie','pihatie']){const r=W.ROADS.find(o=>o.n===nm);for(let i=0;i<r.pts.length-1;i++){const[a,b]=r.pts[i],[c,d]=r.pts[i+1],L=Math.hypot(c-a,d-b);
+    for(let s=0;s<=L;s+=2){const x=a+(c-a)*s/L,z=b+(d-b)*s/L;if(Math.abs(x)<590&&Math.abs(z)<590&&!W.inBuilding(x,z))assert.ok(W.drivable(x,z),nm+' '+x.toFixed(0)+','+z.toFixed(0));}}}assert.ok(W.ROADS.some(r=>r.n==='Koppelontie'));});}
 console.log(`${n} testiä ok`);

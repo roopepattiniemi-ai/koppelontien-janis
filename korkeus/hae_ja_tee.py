@@ -29,13 +29,14 @@ Image.fromarray(img).save('../grafiikka/hud/gps_korkeus.png')
 cab=h(CLAT,CLON)
 json.dump({'koko_px':[PX,PX],'min_m':round(mn,2),'max_m':round(mx,2),'mokki_m':round(cab,2),'kaava':'h_m = min_m + arvo/65535*(max_m-min_m)','kohdistus':'sama kuin gps_kartta.json',
  'lahde':'AWS Terrain Tiles (Terrarium, z15; Suomessa pohjana mm. MML-korkeusmalli), h = R*256+G+B/256-32768, haettu 22.10.2026'},open('../grafiikka/hud/gps_korkeus.json','w'),indent=1,ensure_ascii=False)
-# pelin heightmap: 121x121 ruudukko 10 m välein, suhteellinen mökkiin, pystykorostus 1.5
+# pelin heightmap: 121x121 ruudukko 10 m välein, 15x15 px (~17 m) laatikkosuodatus, suhteellinen mökkiin, korkeuskerroin 0.75
+r=7;P=np.pad(H,r,mode='edge');S=P.cumsum(0).cumsum(1);S=np.pad(S,((1,0),(1,0)));k=2*r+1;B=(S[k:,k:]-S[:-k,k:]-S[k:,:-k]+S[:-k,:-k])/(k*k);SC=0.75
+bcab=B[int((CW[1]+600)/MPP),int((CW[0]+600)/MPP)]
 G=121;hm=[]
 for j in range(G):
   for i in range(G):
-    x=-600+i*10;z=-600+j*10;hm.append(round((h(*geo(x,z))-cab)*1.5,2))
-open('../koodi/logic/korkeus_data.js','w').write('// Generoitu: ../../korkeus/hae_ja_tee.py (AWS Terrarium, suhteessa mökkiin, korostus 1.5x)\nexport const HM_N=%d, HM_STEP=10, HM_MIN=-600;\nexport const HM=%s;\n'%(G,json.dumps(hm,separators=(',',':'))))
+    x=-600+i*10;z=-600+j*10;hm.append(round(float(B[min(1023,int((z+600)/MPP)),min(1023,int((x+600)/MPP))]-bcab)*SC,2))
+open('../koodi/logic/korkeus_data.js','w').write('// Generoitu: ../../korkeus/hae_ja_tee.py (AWS Terrarium, suhteessa mökkiin, kerroin 0.75, 17 m suodatus)\nexport const HM_N=%d, HM_STEP=10, HM_MIN=-600;\nexport const HM=%s;\n'%(G,json.dumps(hm,separators=(',',':'))))
 # Kollinmäki: korkein kohta alueella
 j,i=np.unravel_index(H.argmax(),H.shape);print('min',mn,'max',mx,'mokki',cab,'huippu px',i,j,'maailma',(i+.5)*MPP-600,(j+.5)*MPP-600,'geo',geo((i+.5)*MPP-600,(j+.5)*MPP-600))
 np.save('korkeus_1024.npy',H)
-# HUOM: lopullinen ../koodi/logic/korkeus_data.js tehtiin lisäksi 15x15 px (~17 m) laatikkosuodatuksella korkeus_1024.npy:stä (pehmentää metsän/latvuston kuoppia).
