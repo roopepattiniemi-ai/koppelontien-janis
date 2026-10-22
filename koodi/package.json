@@ -1,0 +1,3 @@
+{"name":"koppelontien-janis","version":"0.1.0","private":true,"type":"module",
+"scripts":{"start":"node server.js","test":"node test/run.js"},
+"dependencies":{"three":"^0.169.0"},"engines":{"node":">=18"}}
