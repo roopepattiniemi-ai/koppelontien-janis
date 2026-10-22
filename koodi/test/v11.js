@@ -1,0 +1,89 @@
+// v1.1 testit: rele, synkviestit, haulit/veri, jäljet, haavoittuminen, nouto, näppäimet
+import assert from 'node:assert/strict';import fs from 'node:fs';
+import { Relay } from '../logic/relay.js';
+import { roomSeed, enc, dec, packWorld, applyWorld, Interp, seatFor, newRoomCode } from '../logic/sync.js';
+import { pelletPattern, swarmR, swarmHits, judgeHits, woundDmg, groundImpacts, PELLETS, SWARM_KILL } from '../logic/shot.js';
+import { Hare, H } from '../logic/hare.js';
+import { Dog, D } from '../logic/dog.js';
+import { spreadHares } from '../logic/world.js';
+import { mulberry32 } from '../logic/rng.js';
+import { pelletAt } from '../logic/shot.js';
+import { toLocal, rayEllipsoid, region, HARE_BODY } from '../logic/osumat.js';
+let n=0;const t=(name,f)=>{f();n++;console.log('ok',name);};
+const peer=()=>({});
+t('rele: 2/huone, eka isäntä, kolmas torjutaan, viesti vain toiselle',()=>{const r=new Relay(),a=peer(),b=peer(),c=peer();
+  assert.equal(r.join('abc12',a).role,'h');assert.equal(r.join('ABC12',b).role,'v');assert.equal(r.join('ABC12',c).ok,false);
+  assert.deepEqual(r.route(a,'{"t":"p"}'),[b]);assert.deepEqual(r.route(a,'x'.repeat(20000)),[]);assert.equal(r.join('a b',peer()).ok,false);
+  r.leave(a);assert.equal(b.role,'h');r.leave(b);assert.equal(r.rooms.size,0);});
+t('huonesiemen: sama koodi -> sama maailma (jänikset)',()=>{const s1=roomSeed('KX7PQ'),s2=roomSeed('KX7PQ');assert.equal(s1,s2);assert.notEqual(s1,roomSeed('KX7PR'));
+  const a=spreadHares(10,mulberry32(s1)),b=spreadHares(10,mulberry32(s2));assert.deepEqual(a,b);
+  const ha=new Hare({...a[0],seed:s1%1e6}),hb=new Hare({...b[0],seed:s2%1e6});assert.deepEqual(ha.nightTrail,hb.nightTrail);assert.match(newRoomCode(),/^[A-Z2-9]{5}$/);});
+t('synkviestit: enc/dec, packWorld->applyWorld, interpolointi, istumapaikka',()=>{assert.equal(dec('roskaa'),null);assert.deepEqual(dec(enc({t:'s',seed:5})),{t:'s',seed:5});
+  const hs=[new Hare({seed:1,x:10,z:5})];hs[0].shoot('h');hs[0].carried=true;const dog={x:1,z:2,dir:.5,state:'ajo',barking:true};
+  const m=dec(enc(packWorld({dog,hares:hs})));const hs2=[new Hare({seed:9})],dog2={};applyWorld(m,{dog:dog2,hares:hs2});
+  assert.equal(hs2[0].alive,false);assert.equal(hs2[0].carried,true);assert.equal(Math.round(hs2[0].x),10);assert.equal(dog2.state,'ajo');
+  const ip=new Interp(0.1);ip.push(0,{x:0,yaw:3.1});ip.push(1,{x:10,yaw:-3.1});const v=ip.at(0.6);assert.ok(Math.abs(v.x-5)<1e-9);assert.ok(Math.abs(Math.abs(v.yaw)-3.14)<0.1);
+  assert.equal(seatFor('kuski'),'pelkaaja');assert.equal(seatFor(null),'kuski');});
+t('haulit: 20–30 kpl, parvi 0.5 m@20 m ja 1.5 m@40 m, siemen toistuu',()=>{assert.ok(PELLETS>=20&&PELLETS<=30);assert.ok(Math.abs(2*swarmR(20)-0.5)<0.02);assert.ok(Math.abs(2*swarmR(40)-1.5)<0.03);
+  assert.deepEqual(pelletPattern(42),pelletPattern(42));assert.notDeepEqual(pelletPattern(42),pelletPattern(43));});
+t('haulit: lähellä kaatuu aina, kaukana haavoittaa/ohi, ohi menneet maahan',()=>{const o={x:0,y:1.5,z:0},hit=d=>{const L=Math.hypot(d,1.3);return{x:d/L,y:-1.3/L,z:0};};
+  for(let s=1;s<40;s++)assert.equal(judgeHits(swarmHits(o,hit(15),{x:15,y:0.2,z:0},0.22,pelletPattern(s)).length),'kaatui');
+  let w=0;for(let s=1;s<200;s++){const k=swarmHits(o,hit(45),{x:45,y:0.2,z:0},0.22,pelletPattern(s)).length;if(judgeHits(k)==='haavoittui')w++;}assert.ok(w>5,'haavakoita '+w);
+  const g=groundImpacts(o,hit(15),pelletPattern(3),()=>0,[]);assert.ok(g.length>=20);assert.ok(woundDmg(1)<woundDmg(4));assert.ok(SWARM_KILL<=6);});
+t('haavoittuminen: vahinko hidastaa, tauot ja verijälki tihenevät',()=>{const run=dmg=>{const h=new Hare({seed:5});h.update(.1,{dog:{x:h.x+3,z:h.z}});h.wound(dmg);let pause=0,dist=0,px=h.x,pz=h.z;
+    for(let i=0;i<1200;i++){h.update(.05,{dog:{x:h.x+15,z:h.z}});if(h.paused)pause++;dist+=Math.hypot(h.x-px,h.z-pz);px=h.x;pz=h.z;}return{pause,dist,blood:(h.blood||[]).length/Math.max(dist,1)};};
+  const a=run(0.15),b=run(0.8);assert.ok(b.dist<a.dist,'hidastus');assert.ok(b.pause>a.pause,'tauot');assert.ok(b.blood>a.blood,'verijälki');});
+t('koira: nappaa haavoittuneen, kantaa omalle metsästäjälle ja pudottaa viereen',()=>{const h=new Hare({seed:5,x:0,z:0});h.update(.1,{dog:{x:3,z:0}});h.wound(0.9);h.owner='v';
+  const g=new Dog({x:-10,z:0,seed:2});g.command('irti',{x:-10,z:0});g.target=h;g.state=D.AJO;g.idx=0;const hun={x:-40,z:20},me={x:60,z:60};
+  for(let i=0;i<20000&&!h.delivered;i++){g.update(.05,{hares:[h],hare:h,player:me,players:{h:me,v:hun}});h.update(.05,{dog:g.pos,player:me});}
+  assert.equal(h.alive,false);assert.equal(h.killedBy,'koira');assert.ok(h.delivered);assert.ok(Math.hypot(h.x-hun.x,h.z-hun.z)<2.5,'pudotus vieraan viereen');assert.ok(!h.counted,'pisteet vasta tarkastelun jälkeen');});
+t('koira: noutaa ammutun jäniksen maasta',()=>{const h=new Hare({seed:6,x:30,z:0});h.shoot('h');const g=new Dog({x:0,z:0,seed:2});g.command('irti',{x:0,z:0});const me={x:0,z:0};
+  for(let i=0;i<4000&&!h.delivered;i++)g.update(.05,{hares:[h],hare:h,player:me,players:{h:me}});assert.ok(h.delivered);assert.ok(Math.hypot(h.x,h.z)<2.5);});
+t('jäljet: yöjälki ruokapaikalta, muodon vaihto jatkaa jälkeä, suorituskyky',()=>{const feed=(x,z)=>x>0;const t0=performance.now();const hs=[];for(let k=0;k<20;k++)hs.push(new Hare({seed:k+1,feed}));
+  const ms=performance.now()-t0;assert.ok(ms<500,'20 jänistä '+ms.toFixed(0)+' ms');const h=hs[0],L=h.nightTrail.length,home={...h.home};h.relocate();assert.ok(h.nightTrail.length>L);assert.notDeepEqual(h.home,home);});
+t('näppäimet: autossa R radio, Q kanava; C kyykky; E konteksti; Tab ei autossa',()=>{const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
+  assert.match(src,/if\(pl\.inCar\)\{if\(e\.code==='KeyR'\)\{radio\.on=/);assert.match(src,/e\.code==='KeyQ'\)\{radio\.ch=/);assert.match(src,/!pl\.inCar&&e\.code==='KeyC'/);
+  assert.match(src,/janis:'E – ota jänis'/);assert.match(src,/if\(e\.code==='Tab'\)return;/);assert.match(src,/ikoni_kyykky\.png','kyykky'/);assert.match(src,/ikoni_gps\.png','GPS','gps-ikoni'/);
+  const ik=fs.readFileSync(new URL('../IKONILISTA.md',import.meta.url),'utf8');assert.match(ik,/ikoni_kyykky\.png/);});
+t('render: web-palvelu, ws-riippuvuus, sama portti',()=>{const y=fs.readFileSync(new URL('../../render.yaml',import.meta.url),'utf8');assert.match(y,/type: web/);
+  assert.ok(JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url))).dependencies.ws);assert.match(fs.readFileSync(new URL('../server.js',import.meta.url),'utf8'),/WebSocketServer\(\{server,path:'\/ws'/);});
+import { Critter } from '../logic/wild.js';import { BUILDINGS, SIZE } from '../logic/world.js';import { BOUND } from '../logic/bounds.js';import { judgeShot } from '../logic/rules.js';
+t('kentän raja: pitkä simulaatio, kukaan (jänis, koira, riista) ei poistu',()=>{const r=mulberry32(7),hs=spreadHares(10,r).map((p,k)=>new Hare({...p,seed:k+1}));const L=BOUND;
+  const cr=[];for(const [k,c] of [['peura',6],['kettu',2],['orava',8]])for(let i=0;i<c;i++)cr.push(new Critter(k,{x:(r()-.5)*2*L*0.95,z:(r()-.5)*2*L*0.95,seed:i+3}));
+  const dog=new Dog({x:0,z:0,seed:2});dog.command('irti',{x:0,z:0});const out=new Set(),o=(e,id)=>{if(Math.abs(e.x)>L||Math.abs(e.z)>L)out.add(id);};
+  for(let i=0;i<36000;i++){const ch={x:Math.cos(i/900)*L*.97,z:Math.sin(i/700)*L*.97};dog.update(.05,{hares:hs,player:ch});hs.forEach((h,k)=>{h.update(.05,{dog:dog.pos,player:ch});o(h,'j'+k);});
+    cr.forEach((c,k)=>{c.update(.05,{threats:[ch,dog.pos]});o(c,c.kind+k);});o(dog,'koira');}assert.equal(out.size,0,[...out].join(' '));});
+t('kentän raja: kaikki rakennukset maaston sisällä',()=>{for(const b of BUILDINGS)for(const [x,z] of b){assert.ok(Math.abs(x)<SIZE/2-15&&Math.abs(z)<SIZE/2-15,JSON.stringify(b));}});
+t('teeri: haulikolla saalis, korppi rauhoitettu, pyrähdys koira 15 m / ihminen 25 m',()=>{assert.equal(judgeShot('teeri','haulikko').huomautus,null);assert.equal(judgeShot('korppi','haulikko').saalis,false);
+  const v=fs.readFileSync(new URL('../public/v09.js',import.meta.url),'utf8');assert.match(v,/FLUSH=\{koira:15,ihminen:25\}/);assert.match(fs.readFileSync(new URL('../public/aloitus.js',import.meta.url),'utf8'),/teeri/i);
+  assert.match(fs.readFileSync(new URL('../public/v08.js',import.meta.url),'utf8'),/E – ulos autosta/);});
+t('osumat: jakauma lentoradan mukaan – sivulta kylki, takaa takaosa',()=>{const {C,R}=HARE_BODY;
+  const run=(from,heading)=>{const pos={x:0,y:0,z:0},tg={x:0,y:0.2,z:0},o={x:tg.x+from.x,y:1.6,z:tg.z+from.z},L=Math.hypot(tg.x-o.x,tg.y-o.y,tg.z-o.z),d={x:(tg.x-o.x)/L,y:(tg.y-o.y)/L,z:(tg.z-o.z)/L};
+    const cnt={};let n=0;for(let sd=1;sd<=20;sd++)for(const i of swarmHits(o,d,tg,0.25,pelletPattern(sd))){const q=pelletAt(o,d,pelletPattern(sd)[i],L),pd={x:q.x-o.x,y:q.y-o.y,z:q.z-o.z},l=Math.hypot(pd.x,pd.y,pd.z);
+      const lo=toLocal(o,pos,heading),ld=toLocal({x:pd.x/l,y:pd.y/l,z:pd.z/l},pos,heading,true),e=rayEllipsoid(lo,ld,C,R);if(!e)continue;n++;const r=region(e.p,C,R);cnt[r]=(cnt[r]||0)+1;}return{cnt,n};};
+  // jänis kulkee +x-suuntaan (heading 0): sivulta = z-akselilta, takaa = -x:stä
+  const side=run({x:0,z:10},0),back=run({x:-10,z:0},0);
+  assert.ok(side.n>50&&(side.cnt.kylki||0)/side.n>0.5,'sivu '+JSON.stringify(side));assert.ok((side.cnt.etu||0)/side.n<0.2);
+  assert.ok(back.n>50&&(back.cnt.taka||0)/back.n>0.5,'taka '+JSON.stringify(back));
+  const m=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');assert.match(m,/rayEllipsoid\(LO,LD/);assert.match(m,/SIZES=\{veri:0\.17/);});
+console.log(`${n} v1.1-testiä ok`);
+
+t('osumat: jokainen reikä enintään 1 cm mallin pinnasta', async () => {
+  const { closestOnTris, ellipsoidFromBox, rayEllipsoid } = await import('../logic/osumat.js');
+  // Testimalli: laatikko (12 kolmiota), eri muotoinen kuin ellipsoidi
+  const mn = { x: -0.08, y: 0.05, z: -0.2 }, mx = { x: 0.08, y: 0.3, z: 0.18 };
+  const V = (i) => [i & 1 ? mx.x : mn.x, i & 2 ? mx.y : mn.y, i & 4 ? mx.z : mn.z];
+  const F = [[0,1,3,2],[4,6,7,5],[0,4,5,1],[2,3,7,6],[0,2,6,4],[1,5,7,3]], T = [];
+  for (const [a,b,c,d] of F) T.push(...V(a),...V(b),...V(c),...V(a),...V(c),...V(d));
+  const E = ellipsoidFromBox(mn, mx);
+  let n = 0;
+  for (let i = 0; i < 300; i++) {
+    const th = i * 2.399, o = { x: Math.cos(th) * 1.5, y: 0.6, z: Math.sin(th) * 1.5 };
+    const tgt = { x: (i % 7 - 3) * 0.03, y: 0.17 + (i % 5 - 2) * 0.04, z: (i % 11 - 5) * 0.03 };
+    const L = Math.hypot(tgt.x - o.x, tgt.y - o.y, tgt.z - o.z), d = { x: (tgt.x - o.x) / L, y: (tgt.y - o.y) / L, z: (tgt.z - o.z) / L };
+    const e = rayEllipsoid(o, d, E.C, E.R); if (!e) continue;
+    const c = closestOnTris([e.p.x, e.p.y, e.p.z], T);
+    const dd = closestOnTris(c.p, T).d; assert.ok(dd <= 0.01, 'reikä ' + dd + ' m pinnasta'); n++;
+  }
+  assert.ok(n > 200);
+});

@@ -4,7 +4,8 @@ import { mulberry32 } from './rng.js';
 import { HM, HM_N, HM_STEP, HM_MIN } from './korkeus_data.js';
 import { ROADS, FIELDS, WATER, BUILDINGS, CABIN, YARD, START, SIGNS } from './kartta_data.js';
 export { ROADS, FIELDS, WATER, BUILDINGS, CABIN, YARD, START, SIGNS };
-export const SIZE = 1200;
+import { SIZE, BOUND, inBounds } from './bounds.js';
+export { SIZE, BOUND, inBounds };
 // Korkeus: AWS Terrarium, metreinä suhteessa mökkiin, kerroin 0.375, 17 m suodatus (+ tienvarsiojat, ks. ditch)
 export function baseHeight(x,z){
   const fx=Math.max(0,Math.min(HM_N-1.001,(x-HM_MIN)/HM_STEP)),fz=Math.max(0,Math.min(HM_N-1.001,(z-HM_MIN)/HM_STEP));
@@ -30,15 +31,21 @@ export const inField=(x,z)=>FIELDS.some(P=>inPoly(x,z,P));
 export const inBuilding=(x,z,m=0)=>BUILDINGS.some(P=>{let cx=0,cz=0;for(const[a,b]of P){cx+=a;cz+=b;}cx/=P.length;cz/=P.length;return Math.hypot(x-cx,z-cz)<12+m&&inPolyM(x,z,P,cx,cz,m);})||Math.hypot(x-CABIN.x,z-CABIN.z)<5+m;
 function inPolyM(x,z,P,cx,cz,m){return m<=0?inPoly(x,z,P):Math.hypot(x-cx,z-cz)<12+m;}
 export const inYard=(x,z)=>Math.hypot(x-YARD.x,z-YARD.z)<YARD.r;
-export const drivable=(x,z)=>(distToRoad(x,z)<0.6||inYard(x,z)||inField(x,z))&&!inBuilding(x,z)&&Math.abs(x)<SIZE/2&&Math.abs(z)<SIZE/2;
+export const drivable=(x,z)=>(distToRoad(x,z)<0.6||inYard(x,z)||inField(x,z))&&!inBuilding(x,z)&&inBounds(x,z,2);
 // metsä = oletusmaankäyttö (satelliittikuvan mukaan tiheät kuusikot), ei pellolla, teillä, pihassa, talojen tai ojien päällä
 export const isForest=(x,z)=>!inField(x,z)&&distToRoad(x,z)>3&&distToWater(x,z)>2.5&&Math.hypot(x-YARD.x,z-YARD.z)>YARD.r+3&&!inBuilding(x,z,6);
-export function trees(seed=7,n=12000){
+export function trees(seed=7,n=Math.round(12000*(SIZE/1200)**2)){
   const r=mulberry32(seed),out=[];let tries=0;
   while(out.length<n&&tries++<n*6){const x=(r()-.5)*SIZE,z=(r()-.5)*SIZE;
     if(isForest(x,z)){const q=r();const m=q<.74?'kuusi_'+(1+(r()*4|0)):q<.82?'manty_'+(1+(r()*2|0)):q<.89?'koivu_'+(1+(r()*2|0)):q<.95?'taimi_'+(1+(r()*2|0)):q<.99?'kanto_'+(1+(r()*2|0)):'kaatunut_runko_1';
       out.push({x,z,model:m,kind:m.startsWith('koivu')?'koivu':'kuusi',s:0.8+r()*0.4,rot:r()*Math.PI*2});}
     else if(distToWater(x,z)<4&&!inField(x,z)&&distToRoad(x,z)>3&&r()<.3) out.push({x,z,model:'koivu_'+(1+(r()*2|0)),kind:'koivu',s:0.9,rot:r()*6.28}); }  // puurivi ojan varrella
+  // v1.1b reunametsä: harveneva, sekapuinen ja vaihtelevan korkuinen vyö (ei seinää); tiet jätetään auki
+  const E0=BOUND-25,EW=90,L=SIZE/2+70;
+  for(let k=0;k<4*2*L*EW*0.012;k++){const t=(r()-.5)*2*L,d=E0+r()*EW,sd=r()*4|0,x=sd<2?(sd?d:-d):t,z=sd<2?t:(sd===2?d:-d);
+    const f=1-(d-E0)/EW;if(r()>f*f*0.9+0.05||distToRoad(x,z)<=5||inField(x,z))continue;
+    const q=r(),m=q<.55?'kuusi_'+(1+(r()*4|0)):q<.72?'manty_'+(1+(r()*2|0)):q<.9?'koivu_'+(1+(r()*2|0)):'taimi_'+(1+(r()*2|0));
+    out.push({x,z,model:m,kind:m.startsWith('koivu')?'koivu':'kuusi',s:0.55+r()*0.95,rot:r()*6.28});}
   return out;
 }
 // jäniksen makuu: metsässä, kaukana taloista/teistä, 120–500 m mökistä

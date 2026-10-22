@@ -36,13 +36,15 @@ export function animHare(n,st){if(!n)return;const t=st.t,s=st.spd;
   for(const k of['jalka_ev','jalka_eo'])n[k]&&(n[k].rotation.x=c*a);for(const k of['jalka_tv','jalka_to'])n[k]&&(n[k].rotation.x=-c*a*1.2);
   if(n.runko)n.runko.position.y=Math.max(0,Math.sin(ph+0.6))*(s>3?0.12:0.05);
   n.korva_v&&(n.korva_v.rotation.x=-0.5-0.3*Math.min(1,s/5));n.korva_o&&(n.korva_o.rotation.x=-0.5-0.3*Math.min(1,s/5));n.hanta&&(n.hanta.rotation.x=-0.3);}
-export function animDog(n,st){if(!n)return;const t=st.t,s=st.spd;
+// st.k: per-koira animaatioskaala (ajokoira 1, jagdterrieri ≈0.565: makuun lasku 0.16 m, juoksupomppu 0.017 m)
+export const DOG_K={ajokoira:1,terrieri:0.565};
+export function animDog(n,st){if(!n)return;const t=st.t,s=st.spd,K=st.k??1;
   for(const k of ['jalka_ev','jalka_eo','jalka_tv','jalka_to','paa','korva_v','korva_o','hanta','leuka'])if(n[k])n[k].rotation.set(0,0,0);if(n.runko){n.runko.position.y=0;n.runko.scale.set(1,1,1);}
-  if(st.lying){for(const k of['jalka_ev','jalka_eo'])n[k]&&(n[k].rotation.x=-1.4);for(const k of['jalka_tv','jalka_to'])n[k]&&(n[k].rotation.x=1.3);if(n.runko){n.runko.position.y=-0.28;n.runko.scale.y=1+Math.sin(t*2.2)*0.015;}
+  if(st.lying){for(const k of['jalka_ev','jalka_eo'])n[k]&&(n[k].rotation.x=-1.4);for(const k of['jalka_tv','jalka_to'])n[k]&&(n[k].rotation.x=1.3);if(n.runko){n.runko.position.y=-0.28*K;n.runko.scale.y=1+Math.sin(t*2.2)*0.015;}
     n.paa&&(n.paa.rotation.y=Math.sin(t*0.45)*0.7,n.paa.rotation.x=0.1*Math.sin(t*0.3));}
   else if(s>0.3){const f=s>3?3.2:1.8,ph=t*f*Math.PI*2,a=Math.min(0.8,0.3+s*0.08);
     n.jalka_ev&&(n.jalka_ev.rotation.x=Math.sin(ph)*a);n.jalka_eo&&(n.jalka_eo.rotation.x=Math.sin(ph+(s>3?0.4:Math.PI))*a);n.jalka_tv&&(n.jalka_tv.rotation.x=Math.sin(ph+Math.PI)*a);n.jalka_to&&(n.jalka_to.rotation.x=Math.sin(ph+(s>3?Math.PI+0.4:0))*a);
-    if(n.runko)n.runko.position.y=Math.abs(Math.sin(ph))*0.03;n.paa&&(n.paa.rotation.x=st.sniff?0.5:0.05*Math.sin(ph*2));
+    if(n.runko)n.runko.position.y=Math.abs(Math.sin(ph))*0.03*K;n.paa&&(n.paa.rotation.x=st.sniff?0.5:0.05*Math.sin(ph*2));
     const fl=Math.sin(ph*2)*0.25*Math.min(1,s/3);n.korva_v&&(n.korva_v.rotation.z=0.1+fl);n.korva_o&&(n.korva_o.rotation.z=-0.1-fl);}
   else{n.paa&&(n.paa.rotation.y=Math.sin(t*0.6)*0.3);n.runko&&(n.runko.scale.y=1+Math.sin(t*2.5)*0.01);}
   n.hanta&&(n.hanta.rotation.y=Math.sin(t*(st.barking?14:5))*(st.barking?0.6:0.3),n.hanta.rotation.x=st.barking?-0.5:-0.2);
@@ -100,6 +102,12 @@ export function setupInterior(scene){
     for(const k of['ratti','vaihdekeppi','radio_naytto','kamera_kuljettaja','koira_paikka'])it.n[k]=gl.scene.getObjectByName(k);
     if(it.n.ratti)it.n.ratti.userData.rx=it.n.ratti.rotation.x;
     const rn=it.n.radio_naytto;if(rn){const m=rn.isMesh?rn:rn.getObjectByProperty('isMesh',true);if(m)m.material=new THREE.MeshBasicMaterial({map:tex});rn.scale.multiplyScalar(1.6);rn.position.y+=0.16;rn.position.z-=0.006;rn.rotation.y-=0.3;}
+    // tarra radion alla: canvas-tekstuuri kuten radion näyttö
+    const tarra=(txt,name,dy,dx=0)=>{const sc=document.createElement('canvas');sc.width=1024;sc.height=116;const g=sc.getContext('2d');g.fillStyle='#e8e2c8';g.fillRect(0,0,1024,116);g.strokeStyle='#333';g.lineWidth=6;g.strokeRect(3,3,1018,110);
+      g.fillStyle='#111';g.font='bold 64px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,512,60,995);
+      const st=new THREE.CanvasTexture(sc);st.anisotropy=8;const sm=new THREE.Mesh(new THREE.PlaneGeometry(0.30,0.034),new THREE.MeshBasicMaterial({map:st,side:THREE.DoubleSide}));
+      sm.name=name;rn.parent.add(sm);sm.position.copy(rn.position);sm.quaternion.copy(rn.quaternion);sm.translateY(dy);sm.translateX(dx);return [sm,sc];};
+    if(rn){[it.n.tarra,it.tarraCanvas]=tarra('R radio päälle – Q kanavan vaihto','radio_tarra',-0.02,-0.2);[it.n.tarraE,it.tarraECanvas]=tarra('E – ulos autosta','ulos_tarra',0);it.n.tarra.scale.x=-1;it.n.tarra.add(it.n.tarraE);it.n.tarraE.position.set(0,-0.04,0.001);it.n.tarraE.quaternion.identity();}
     // Lattialevy + karmien muotoiset lasit (pisteet mitattu sisa_kori-meshistä). Näkyvät vain sisänäkymässä.
     const ex=new THREE.Group();it.extra=ex;ex.visible=false;gl.scene.add(ex);
     const fl=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.04,2.2),new THREE.MeshLambertMaterial({color:0x3a3d42,flatShading:true}));fl.position.set(0,0.44,-0.53);ex.add(fl);
@@ -117,3 +125,14 @@ export function setupInterior(scene){
     g.fillStyle=on?'#020802':'#050805';g.fillRect(46,16,163,32);if(on){g.fillStyle='#EFFFEF';g.textAlign='center';g.font='bold 15px monospace';g.fillText(name,127,31,158);g.font='bold 10px monospace';g.fillText(freq+' MHz',127,44);}tex.needsUpdate=true;};
   return it;
 }
+// v1.1: toisen pelaajan low-poly metsästäjä huomioliivissä (katsoo -z). userData.sit(istuu, kyykky)
+export function makeHunter(){const g=new THREE.Group(),M=c=>new THREE.MeshLambertMaterial({color:c}),B=(w,h,d,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);return o;};
+  const pants=M(0x3b4a2e),vest=M(0xff7a00),refl=new THREE.MeshBasicMaterial({color:0xe8f0f0}),skin=M(0xe0b090),cap=M(0xff5a00),boot=M(0x222222);
+  const legs=new THREE.Group();legs.add(B(0.16,0.82,0.18,pants,-0.11,0.47,0),B(0.16,0.82,0.18,pants,0.11,0.47,0),B(0.18,0.1,0.28,boot,-0.11,0.05,-0.04),B(0.18,0.1,0.28,boot,0.11,0.05,-0.04));g.add(legs);
+  const up=new THREE.Group();up.position.y=0.88;g.add(up);
+  up.add(B(0.46,0.62,0.28,vest,0,0.31,0),B(0.47,0.05,0.29,refl,0,0.22,0),B(0.47,0.05,0.29,refl,0,0.40,0));
+  up.add(B(0.12,0.56,0.14,vest,-0.30,0.30,0),B(0.12,0.56,0.14,vest,0.30,0.30,-0.05));
+  up.add(B(0.22,0.24,0.22,skin,0,0.76,0),B(0.25,0.08,0.25,cap,0,0.91,0),B(0.2,0.03,0.12,cap,0,0.88,-0.16));
+  const gun=B(0.05,0.05,1.1,M(0x2a2420),0.30,0.05,-0.25);gun.rotation.x=-0.9;up.add(gun);
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});g.name='toinen_pelaaja';
+  g.userData.sit=(sit,crouch)=>{legs.visible=!sit;up.position.y=sit?0:crouch?0.45:0.88;legs.scale.y=crouch?0.5:1;};return g;}

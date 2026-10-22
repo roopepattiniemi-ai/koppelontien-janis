@@ -272,3 +272,17 @@ Puutteet: ei hirsi-/lautakuviota (tasaväri), päädyt kolmioina ilman räystä�
 - aloitus_tausta_mobiili.png 810×1080: pystyrajaus x=745–1555 (hahmot keskellä).
 - logo_koppelontien_janis.png 1200×300 RGBA: DejaVu Sans Bold, kermainen teksti, tumma ääriviiva+varjo, oranssi alleviivaus. Tehty PIL:llä.
 - Esikatselu: /workspace/jahti_varmuus/aloitus_esikatselu.png (logo 960×240 kohtaan (480,30)).
+
+## HUD-pikatoimintokuvakkeet (hud/ikonit/)
+- 128×128 RGBA, läpinäkyvä, ei laattaa: kerma/jäänsininen symboli, paksu tumma ääriviiva, pieni oranssi korostus. Generaattori grafiikka/generoi_ikonit.py (PIL, 4× → LANCZOS). Näppäinkirjainta ei piirretä.
+- ikoni_kiikarit (B), ikoni_haulikko / ikoni_kivaari (Tab), ikoni_auto (E), ikoni_radio (R autossa), ikoni_kanava (Q/Tab autossa), ikoni_naru_kiinni / ikoni_naru_irti (F, vaihtaa tilaa), ikoni_gps (G/M, main.js:171).
+- ikoni_kyykky (C): tehty etukäteen, kyykky tulossa koodiin (ei vielä main.js:ssä 22.10.2026).
+- Ei tehty: pilli/huuto – ei näppäintä koodissa.
+- Esikatselu: /workspace/jahti_varmuus/ikonit_esikatselu.png
+
+## Saksanmetsästysterrieri (toisen pelaajan koira)
+- `mallit/koira_jagdterrier.glb`, generaattori `generoi_jagdterrier.py` (`python3 generoi_jagdterrier.py`).
+- Black and tan Jagdterrier, säkä ~0.35 m, korkeus ~0.46 m (pää), ~1150 kolmiota, vertex-värit, +Y ylös, +Z eteen, origo maassa.
+- Samat nodet ja hierarkia kuin `ajokoira.glb`: runko > (paa > leuka, korva_v, korva_o), jalka_ev/eo/tv/to, hanta.
+  Pivotit = ajokoiran pivotit × 0.565 (korvat hieman muokattu) → `V8.bindNodes`/`animDog` toimii sellaisenaan. Ei GLB-animaatioita.
+- Huom: `animDog` makuuasento laskee runkoa absoluuttisesti 0.28 m (mitoitettu ajokoiralle); pienellä koiralla arvo pitäisi skaalata.

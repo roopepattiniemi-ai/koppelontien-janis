@@ -4,7 +4,7 @@ export const OHJEET=[
  ['Tab / rulla','vaihda ase (haulikko ↔ kivääri)',['Tab']],['Rulla tähdätessä','kiikarin zoomi (kivääri)'],['B','kiikarit',['KeyB']],['R','lataa',['KeyR']],
  ['F','naru irti / kiinni',['KeyF']],['1','koira tänne',['Digit1']],['2','koira seuraa',['Digit2']],['3','koira etsi',['Digit3']],['4','täällä',['Digit4']],
  ['G / M','GPS-panta (pieni / iso / pois)',['KeyG','KeyM']],['+ / −','GPS-zoomi (GPS auki) tai resoluutio',['Equal','Minus','NumpadAdd','NumpadSubtract']],
- ['E','autoon / ulos autosta (koira jää maastoon, naru irtoaa)',['KeyE']],['Autolla maastoon','tiellä täysi vauhti, maastossa −30 %; ojat ylittyvät, puut ja talot pysäyttävät'],['Autossa W/S, A/D','kaasu/jarru, ohjaus'],['Autossa R','radio päälle/pois'],['Autossa Q / Tab','vaihda kanavaa',['KeyQ']],['Esc','taukovalikko']];
+ ['C','kyykky päälle/pois (matalampi katse, hidas liike)',['KeyC']],['L','grafiikka Matala/Keski/Korkea (pudottaa automaattisesti, jos FPS on matala)',['KeyL']],['Riista','jänis ja teeri haulikolla (teeri myös lennosta), valkohäntäpeura kiväärillä; kettu, orava, korppi ja tiainen rauhoitettuja. Teeri pyrähtää kun koira < 15 m tai olet < 25 m; koira noutaa kaatuneen',[]],['E / Esc','ota kaatunut jänis/teeri/peura tarkasteltavaksi, hiiri kääntää; E tai Esc laskee ja kirjaa saaliin',['KeyE','Escape']],['E','autoon / ulos autosta (koira jää maastoon, naru irtoaa)',['KeyE']],['Autolla maastoon','tiellä täysi vauhti, maastossa −30 %; ojat ylittyvät, puut ja talot pysäyttävät'],['Autossa W/S, A/D','kaasu/jarru, ohjaus'],['Autossa R','radio päälle/pois'],['Autossa Q','vaihda kanavaa',['KeyQ']],['Esc','taukovalikko']];
 export const KREDIITIT='Äänet: Gravity Sound (tuuli), Benboncan (haukku), Lukas Beck (CC BY 4.0) · Alexander Kürthy (SanoAK), Marie-Lan Taÿ Pamart, Benoît Van Hecke, Anthony Wetherhill, Livlandfahrer (CC BY-SA 4.0) – Wikimedia Commons · YleArkisto (CC BY 4.0), Pierre Grandjean (CC BY 3.0) – Freesound · Kartta © OpenStreetMap contributors';
 const H='/grafiikka/hud/';
 const css=`#aloitus{position:fixed;inset:0;z-index:50;overflow:hidden;background:linear-gradient(180deg,#5d7896 0%,#9fb4cc 55%,#dfe7f0 100%);font-family:sans-serif;color:#fff;cursor:default}
@@ -21,7 +21,7 @@ export const aanetPaalla=()=>localStorage.getItem('jahti_aanet')!=='0';
 export function setupAloitus({onStart,onAanet}){const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const d=document.createElement('div');d.id='aloitus';d.innerHTML=`<picture><source id="al-mob" media="(max-aspect-ratio: 1/1)"><img class="bg" id="al-bg" alt="" style="display:none"></picture>
 <div id="al-tlogo">Koppelontien jänis</div><img id="al-logo" alt="Koppelontien jänis" style="display:none">
-<div id="al-napit"><button id="al-aloita">Aloita jahti</button><button id="al-ohje">Ohjeet</button><button id="al-aani"></button></div>
+<div id="al-napit"><button id="al-aloita">Aloita jahti</button><button id="al-kutsu">Kutsu kaveri</button><button id="al-ohje">Ohjeet</button><button id="al-aani"></button></div>
 <div id="al-ohjeet"><h2 style="text-align:center;margin-top:0">Ohjeet</h2><table>${OHJEET.map(([k,t])=>`<tr><td>${k}</td><td>${t}</td></tr>`).join('')}</table><p style="text-align:center"><button id="al-sulje" style="font:700 18px sans-serif;padding:8px 24px">Sulje</button></p></div>
 <div id="al-kred">${KREDIITIT}</div>`;document.body.appendChild(d);const $=s=>d.querySelector(s);
   // kuvat: kokeile, uusi yritys kunnes löytyy

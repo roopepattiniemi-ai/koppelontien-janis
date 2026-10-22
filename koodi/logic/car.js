@@ -1,9 +1,9 @@
 // Vitara: yksinkertainen arcade-ajo. Tie/piha täysi teho, maastossa (pelto, metsä, ojat) huippunopeus ja kiihtyvyys −30 %.
 // Pysäyttävät: rakennukset, kartan reuna ja this.blocked(x,z) (puut, asetetaan main.js:ssä).
-import { height, distToRoad, inYard, inBuilding, SIZE } from './world.js';
+import { height, distToRoad, inYard, inBuilding, SIZE, inBounds } from './world.js';
 export const MAASTO=0.7;
 export const onRoad=(x,z)=>distToRoad(x,z)<0.6||inYard(x,z);
-export const carFree=(x,z)=>!inBuilding(x,z)&&Math.abs(x)<SIZE/2-2&&Math.abs(z)<SIZE/2-2;
+export const carFree=(x,z)=>!inBuilding(x,z)&&inBounds(x,z);
 export class Car {
   constructor({x=0,z=0,heading=0}={}){this.x=x;this.z=z;this.heading=heading;this.speed=0;this.occupied=false;this.blocked=()=>false;this.pose();}
   // heading 0 = pohjoiseen (-z)
