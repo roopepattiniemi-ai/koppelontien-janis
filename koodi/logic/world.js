@@ -17,8 +17,12 @@ export function distToRoad(x,z){
     best=Math.min(best,Math.hypot(x-ax-t*dx,z-az-t*dz));}
   return best;
 }
+// Mökki (Koppelontie 30) Koppelontien pohjoispuolella, piha tien ja mökin välissä
+export const CABIN={x:-200,z:160,rot:0}, YARD={x:-196,z:176,r:16};
+export const inYard=(x,z)=>Math.hypot(x-YARD.x,z-YARD.z)<YARD.r;
+export const drivable=(x,z)=>distToRoad(x,z)<4||inYard(x,z)||inField(x,z);
 export const inField=(x,z)=>x>FIELD.x0&&x<FIELD.x1&&z>FIELD.z0&&z<FIELD.z1;
-export const isForest=(x,z)=>!inField(x,z)&&distToRoad(x,z)>6;
+export const isForest=(x,z)=>!inField(x,z)&&distToRoad(x,z)>6&&Math.hypot(x-YARD.x,z-YARD.z)>YARD.r+8;
 export function trees(seed=7,n=2600){
   const r=mulberry32(seed),out=[];
   while(out.length<n){const x=(r()-.5)*SIZE,z=(r()-.5)*SIZE; if(isForest(x,z)) out.push({x,z,kind:r()<.75?'kuusi':'koivu',s:0.7+r()*0.6});}

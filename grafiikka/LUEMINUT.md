@@ -44,3 +44,15 @@ Kaikki PNG:t on tarkoitettu NearestFilter-suodatukselle (retro). Läpinäkyvät 
 - Haulikko on nyt päällekkäispiippuinen (over-under): haulikko_fp/laukaus/tahtays. haulikko_hihna.png ennallaan (ase ei näy siinä).
 - Tekstuurit viilennetty: matalampi saturaatio, sinertävä valo, kuuset/koivut sumuun sekoitettu, porrastetut sävyt (12 tason askel). GLB-värejä viilennetty hieman.
 - Suositus koodiin: sumun väri **#B0BED2** (176,190,210), ambientti valo **#C8D4E8**, suuntavalo #F0F0F4 matala kulma.
+
+## v0.4 mallit (generoi_mallit_v04.py)
+Kaikki: metrit, +Y ylös, etuosa +Z, origo maassa, verteksivärit (COLOR_0), ei animaatioita. Esikatselu: mallit_esikatselu_v04.png.
+
+| Tiedosto | Mitat | Tris | Nodet |
+|---|---|---|---|
+| mallit/mokki.glb | runko 6.0 (x) × 5.0 (z), räystäineen 6.7 × 5.9, harja 4.5 m (+lumi), piippu 5.2 m; kuisti ja portaat +Z-puolella (ulottuu z=4.05) | ~840 | `mokki` (juuri) → `mokki_runko` |
+| mallit/vitara.glb | 3.6 (z) × 1.7 (x; peilit 1.9) × 1.7 m; vararengas takana ulottuu z=-2.04 | ~750 | `vitara` (juuri) → `vitara_kori`, `pyora_ev`, `pyora_eo`, `pyora_tv`, `pyora_to`, `ovi_kuljettaja`, `ovi_takaluukku` |
+
+- Pyörät: noden origo = pyörän keskipiste (r=0.33 m, leveys 0.22), akseli X → pyöritä `rotation.x`. ev = etu vasen (+x), eo = etu oikea (-x), tv/to taka vasen/oikea. (Huom: +Z edessä, joten auton oma vasen on +X.)
+- `ovi_kuljettaja` (0.90, 1.0, 0.10): tyhjä node kuljettajan oven ulkopuolella (vasemmanpuoleinen ohjaus, auton vasen = +X). `ovi_takaluukku` (0, 1.0, -2.10): takaluukun takana.
+- Väri tummanvihreä #224830, mustat puskurit, ei logoja/tekstejä.

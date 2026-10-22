@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { Hare, H } from '../logic/hare.js';
-import { Dog, D } from '../logic/dog.js';
+import { Dog, D, nearTrack } from '../logic/dog.js';
 import { audibility } from '../logic/hearing.js';
+import { Car } from '../logic/car.js';
+import { YARD, drivable } from '../logic/world.js';
 import { shotgun } from '../logic/shot.js';
 let n=0;const t=(name,f)=>{f();n++;console.log('ok',name);};
 t('jänis makuulla, paluuperät + sivuloikka yöjäljessä',()=>{const h=new Hare({seed:3});assert.equal(h.state,H.MAKUU);assert.ok(h.nightTrail.at(-1).jump);assert.ok(h.nightTrail.length>90);});
@@ -20,6 +22,15 @@ t('narussa -> irti -> haku; kiinni vain lähellä',()=>{const h=new Hare({seed:6
   for(let i=0;i<200;i++){g.update(.05,{hare:h,player:P});}assert.equal(g.state,D.NARUSSA);assert.ok(Math.hypot(g.x-P.x,g.z-P.z)<3);
   assert.ok(g.command('irti',P).ok);assert.equal(g.state,D.HAKU);g.x=P.x+50;assert.equal(g.command('kiinni',P).syy,'Koira liian kaukana');
   assert.ok(g.command('tanne',P).ok);for(let i=0;i<400;i++)g.update(.05,{hare:h,player:P});assert.equal(g.state,D.TANNE);assert.ok(Math.hypot(g.x-P.x,g.z-P.z)<2);
-  assert.ok(g.command('kiinni',P).ok);assert.equal(g.state,D.NARUSSA);g._haku();g.x=P.x+400;assert.equal(g.command('hae',P).syy,'Koira ei kuule');});
+  assert.ok(g.command('kiinni',P).ok);assert.equal(g.state,D.NARUSSA);g._haku();g.x=P.x+400;assert.equal(g.command('etsi',P).syy,'Koira ei kuule');});
 t('ajossa ~70 % komennoista ohitetaan',()=>{const h=new Hare({seed:6});const g=new Dog({seed:9});let ok=0;for(let i=0;i<1000;i++){g.state=D.AJO;if(g.command('seuraa',{x:10,z:0}).ok)ok++;}assert.ok(ok>230&&ok<370,ok);});
+t('haku ei suunnista jänikseen: kaukana jäljistä pysyy haussa',()=>{const h=new Hare({seed:6});const P={x:h.home.x+900,z:h.home.z+900};const g=new Dog({x:P.x,z:P.z,seed:3});
+  for(let i=0;i<4000;i++){g.update(.05,{hare:h,player:P});assert.ok(Math.hypot(g.x-P.x,g.z-P.z)<400);}assert.equal(g.state,D.HAKU);});
+t('täällä: jäljellä -> koira tulee ja nostaa jäljen, ilman jälkeä = tänne',()=>{const h=new Hare({seed:6});const tp=h.nightTrail[20],P={x:tp.x+1,z:tp.z};const g=new Dog({x:P.x+60,z:P.z,seed:4});
+  assert.ok(nearTrack(h,P,3));const r=g.command('taalla',P,h);assert.ok(r.ok&&r.jalki);assert.equal(g.state,D.TAALLA);
+  for(let i=0;i<600;i++)g.update(.05,{hare:h,player:P});assert.ok([D.YOJALKI,D.YLOSOTTO,D.AJO].includes(g.state),g.state);
+  const g2=new Dog({x:P.x+60,z:P.z});assert.equal(g2.command('taalla',{x:P.x+500,z:P.z+500},h).ok,false);const Q={x:h.home.x+700,z:h.home.z};const g3=new Dog({x:Q.x+20,z:Q.z});g3.command('taalla',Q,h);assert.equal(g3.state,D.TANNE);});
+t('Vitara: nousu vaatii narun, pysyy ajettavalla maalla',()=>{const c=new Car({x:YARD.x,z:YARD.z});const g=new Dog({x:YARD.x,z:YARD.z,leashed:true});
+  assert.ok(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok);g.command('irti',{x:0,z:0});assert.equal(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok,false);
+  for(let i=0;i<2000;i++){c.update(.05,{throttle:1,steer:i%300<150?1:-.3});assert.ok(drivable(c.x,c.z));}});
 console.log(`${n} testiä ok`);

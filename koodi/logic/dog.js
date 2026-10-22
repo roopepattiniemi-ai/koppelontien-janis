@@ -1,7 +1,14 @@
 // Suomenajokoira: haku -> yöjälki -> ylösotto -> ajo (haukkuen) -> hukka -> ajo
 import { mulberry32 } from './rng.js';
-export const HEAR_CMD=150, IGNORE_AJO=0.7;
-export const D = { NARUSSA:'narussa', TANNE:'tänne', SEURAA:'seuraa', HAKU:'haku', YOJALKI:'yöjälki', YLOSOTTO:'ylösotto', AJO:'ajo', HUKKA:'hukka' };
+export const HEAR_CMD=150, IGNORE_AJO=0.7, SCENT_R=4;
+// lähin jäniksen jälki (yöjälki tai pakojälki) annetun pisteen säteellä, tai makuualue (6 m)
+export function nearTrack(hare,p,r){
+  if(hare.state==='makuu'&&Math.hypot(hare.x-p.x,hare.z-p.z)<6)return{kind:'yo',idx:hare.nightTrail.length-1};
+  let best=null,bd=r;
+  const scan=(arr,kind)=>{for(let i=0;i<arr.length;i++){const d=Math.hypot(arr[i].x-p.x,arr[i].z-p.z);if(d<bd){bd=d;best={kind,idx:i};}}};
+  if(hare.state==='makuu')scan(hare.nightTrail,'yo');else if(hare.alive)scan(hare.trail,'ajo');
+  return best;}
+export const D = { NARUSSA:'narussa', TANNE:'tänne', SEURAA:'seuraa', TAALLA:'täällä', HAKU:'haku', YOJALKI:'yöjälki', YLOSOTTO:'ylösotto', AJO:'ajo', HUKKA:'hukka' };
 export class Dog {
   constructor({x=0,z=0,leashed=false,seed=2,speed=4.2,hukkaChance=1}={}){
     this.rand=mulberry32(seed);this.x=x;this.z=z;this.state=leashed?D.NARUSSA:D.HAKU;this.t=0;this.ang=0;this.ring=40;
@@ -11,8 +18,8 @@ export class Dog {
   _go(tx,tz,dt,sp=this.speed){const dx=tx-this.x,dz=tz-this.z,d=Math.hypot(dx,dz);if(d<1e-6)return 0;const s=Math.min(d,sp*dt);
     this.x+=dx/d*s;this.z+=dz/d*s;this.dir=Math.atan2(dx,-dz);const l=this.trail.at(-1);if(!l||Math.hypot(l.x-this.x,l.z-this.z)>1.2)this.trail.push({x:this.x,z:this.z,dir:this.dir});return d-s;}
   get leashed(){return this.state===D.NARUSSA;}
-  // komennot: 'irti' | 'kiinni' | 'tanne' | 'seuraa' | 'hae'. Palauttaa {ok, syy}
-  command(cmd,player){
+  // komennot: 'irti' | 'kiinni' | 'tanne' | 'seuraa' | 'etsi'. Palauttaa {ok, syy}
+  command(cmd,player,hare){
     const d=Math.hypot(player.x-this.x,player.z-this.z);
     if(cmd==='kiinni'){ if(d>3)return{ok:false,syy:'Koira liian kaukana'}; this.state=D.NARUSSA;this.t=0;return{ok:true}; }
     if(cmd==='irti'){ if(this.state!==D.NARUSSA)return{ok:false,syy:'Koira ei ole narussa'}; this._haku(); return{ok:true}; }
@@ -21,20 +28,29 @@ export class Dog {
     if(this.state===D.AJO&&this.rand()<IGNORE_AJO)return{ok:false,syy:'Koira ei tottele – ajo päällä'};
     if(cmd==='tanne'){this.state=D.TANNE;this.t=0;return{ok:true};}
     if(cmd==='seuraa'){this.state=D.SEURAA;this.t=0;return{ok:true};}
-    if(cmd==='hae'){this._haku();return{ok:true};}
+    if(cmd==='etsi'){this._haku();return{ok:true};}
+    if(cmd==='taalla'){const tr=hare&&nearTrack(hare,player,3);
+      if(!tr){this.state=D.TANNE;this.t=0;return{ok:true,jalki:false};}
+      this.state=D.TAALLA;this.t=0;this.found=tr;this.searchT=1.5+this.rand()*2;return{ok:true,jalki:true};}
     return{ok:false,syy:'?'};
   }
-  _haku(){this.state=D.HAKU;this.t=0;this.idx=0;}
+  _haku(){this.state=D.HAKU;this.t=0;this.idx=0;this.wp=null;this.sniffT=0;}
+  _onTrack(f){if(f.kind==='yo'){this.state=D.YOJALKI;this.idx=f.idx;}else{this.state=D.AJO;this.idx=f.idx;}this.t=0;}
   update(dt,{hare,player}){
     this.t+=dt;this.barking=false;
     switch(this.state){
       case D.NARUSSA: case D.SEURAA:{ // kulkee kintereillä
         const d=Math.hypot(player.x-this.x,player.z-this.z); if(d>1.3)this._go(player.x,player.z,dt,d>(this.state===D.NARUSSA?2:6)?this.speed:2); break;}
       case D.TANNE:{const d=Math.hypot(player.x-this.x,player.z-this.z); if(d>1.5)this._go(player.x,player.z,dt); break;} // tulee ja odottaa
-      case D.HAKU:{ // laajenevat lenkit pelaajan ympärillä, hiljaa
-        this.ang+=dt*this.speed/this.ring;this.ring=40+400*Math.abs(Math.sin(this.t*0.006));
-        this._go(player.x+Math.cos(this.ang)*this.ring,player.z+Math.sin(this.ang)*this.ring,dt);
-        const nt=hare.nightTrail;for(let i=0;i<nt.length;i+=3)if(Math.hypot(nt[i].x-this.x,nt[i].z-this.z)<35){this.state=D.YOJALKI;this.idx=i;this.t=0;break;}
+      case D.HAKU:{ // vaeltaa satunnaisiin pisteisiin pelaajan ympäristössä, nuuskii; ei tiedä jäniksen paikkaa
+        if(this.sniffT>0){this.sniffT-=dt;}
+        else{ if(!this.wp||Math.hypot(this.wp.x-this.x,this.wp.z-this.z)<2){const a=this.rand()*Math.PI*2,r=40+this.rand()*260;this.wp={x:player.x+Math.cos(a)*r,z:player.z+Math.sin(a)*r};if(this.rand()<.5)this.sniffT=1+this.rand()*3;}
+          this._go(this.wp.x,this.wp.z,dt);}
+        const f=nearTrack(hare,this,SCENT_R); if(f)this._onTrack(f);
+        break;}
+      case D.TAALLA:{ // juoksee pelaajan luo, etsii jäljen siitä hetken
+        const d=Math.hypot(player.x-this.x,player.z-this.z);
+        if(d>1.5)this._go(player.x,player.z,dt); else if((this.searchT-=dt)<=0)this._onTrack(this.found);
         break;}
       case D.YOJALKI:{ // selvittää yöjälkeä hitaasti makuuta kohti
         const nt=hare.nightTrail,p=nt[this.idx];

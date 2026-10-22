@@ -25,3 +25,19 @@ Haukun kuuluvuus toteutetaan pelin koodissa: etäisyys säätää äänenvoimakk
 | sfx_gps_piippaus | sijaintipäivityksen piippaus |
 | sfx_gps_haukkuindikaattori | kolme nopeaa piippausta: koira haukkuu ajossa |
 | sfx_gps_hukka | kaksi laskevaa piippausta: koira hukassa |
+| aani_taalla_1..2 | v0.4: "Tule tänne, täällä!" jäljillä, kaksi ääntä |
+| aani_etsi_1..2 | v0.4: "Etsi!" (korvaa aani_hae_*, joka jää varalle) |
+
+## Vitara (v0.4)
+| sfx_vitara_ovi_auki / _ovi_kiinni | ovi (E) |
+| sfx_vitara_kaynnistys / _sammutus | moottori käyntiin ja sammuksiin |
+| sfx_vitara_tyhjakaynti_loop / _ajo_loop | 4 s loopit; säädä ajossa nopeuden mukaan playbackRatea 0.8–1.5 ja ristihäivytä loopien välillä |
+| sfx_koira_hyppy | v0.5: koira hyppää Vitaran kyytiin (ponnistus, tömähdys, pannan kilinä) |
+
+## Vitaran radio (v0.6)
+| radio_parkano_1..2 | Parkano Rock: hard rock, noin 1:41 |
+| radio_country_1..2 | Jalasjärven Country: banjo, boom-chak-basso ja lap steel, noin 1:38 |
+| radio_tekno_1..2 | Koppelontien Tekno: 90-luvun acid/rave, noin 1:41 |
+| radio_parkano_tunnus, radio_country_tunnus, radio_tekno_tunnus (myös radio_tunnus_*) | juontajan tunnus kanavalle vaihdettaessa |
+| sfx_radio_kanava | kanavanvaihdon kohina (0,45 s) |
+Biisit loppuvat häivytykseen. Soita kanavan biisit vuorotellen.
