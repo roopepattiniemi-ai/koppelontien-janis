@@ -1,14 +1,19 @@
 // Yksinkertaistettu Kollinmäki–Koppelontie (n. 62.377 N, 22.927 E), OSM-henkinen käsin tehty layout.
 // Koordinaatit metreinä, x = itä, z = etelä. Alue 1200 x 1200 m, keskipiste (0,0).
 import { mulberry32 } from './rng.js';
+import { HM, HM_N, HM_STEP, HM_MIN } from './korkeus_data.js';
 export const SIZE = 1200;
+// Kollinmäki (OSM: bussipysäkit 'Kollinmäki P/E' Yli-Vallintiellä) ~ maailmassa (-117,197)
+export const KOLLINMAKI={x:-117,z:197};
 // Koppelontie: metsätie lounaasta koilliseen
 export const ROAD = [[-600,380],[-300,250],[-80,120],[60,-20],[220,-200],[420,-340],[600,-420]];
 // Pelto Koppelontien varressa
 export const FIELD = { x0:-420, z0:180, x1:-120, z1:420 };
-export function height(x,z){ // Kollinmäki koillisessa + loivaa aaltoilua
-  const d = Math.hypot(x-250, z+250);
-  return 18*Math.exp(-(d*d)/(2*220*220)) + 2*Math.sin(x*0.013)*Math.cos(z*0.011);
+// Korkeus: oikea korkeusdata (AWS Terrarium, ks. ../korkeus/), metreinä suhteessa mökkiin, pystykorostus 1.5x
+export function height(x,z){
+  const fx=Math.max(0,Math.min(HM_N-1.001,(x-HM_MIN)/HM_STEP)),fz=Math.max(0,Math.min(HM_N-1.001,(z-HM_MIN)/HM_STEP));
+  const i=fx|0,j=fz|0,ax=fx-i,az=fz-j,h=(a,b)=>HM[b*HM_N+a];
+  return (h(i,j)*(1-ax)+h(i+1,j)*ax)*(1-az)+(h(i,j+1)*(1-ax)+h(i+1,j+1)*ax)*az;
 }
 export function distToRoad(x,z){
   let best=1e9;

@@ -33,4 +33,6 @@ t('täällä: jäljellä -> koira tulee ja nostaa jäljen, ilman jälkeä = tän
 t('Vitara: nousu vaatii narun, pysyy ajettavalla maalla',()=>{const c=new Car({x:YARD.x,z:YARD.z});const g=new Dog({x:YARD.x,z:YARD.z,leashed:true});
   assert.ok(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok);g.command('irti',{x:0,z:0});assert.equal(c.canEnter({x:YARD.x+1,z:YARD.z},g).ok,false);
   for(let i=0;i<2000;i++){c.update(.05,{throttle:1,steer:i%300<150?1:-.3});assert.ok(drivable(c.x,c.z));}});
+{const {height}=await import('../logic/world.js');t('korkeus: mökki≈0, vaihtelua >10 m, Vitara pinnalla',()=>{assert.ok(Math.abs(height(-200,160))<2);let mn=1e9,mx=-1e9;for(let x=-590;x<590;x+=20)for(let z=-590;z<590;z+=20){const h=height(x,z);mn=Math.min(mn,h);mx=Math.max(mx,h);}assert.ok(mx-mn>10,mx-mn);
+  const c=new Car({x:YARD.x,z:YARD.z});for(let i=0;i<500;i++){c.update(.05,{throttle:1,steer:.3});assert.ok(c.y>=height(c.x,c.z)-1e-6);assert.ok(Math.abs(c.pitch)<0.6);}});}
 console.log(`${n} testiä ok`);

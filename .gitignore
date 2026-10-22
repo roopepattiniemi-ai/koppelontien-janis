@@ -2,3 +2,5 @@ node_modules/
 *.log
 __pycache__/
 venv/
+kartta_yleiskuva_*.png
+smoke_*.png

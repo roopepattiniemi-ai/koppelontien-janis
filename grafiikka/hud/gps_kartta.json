@@ -1,0 +1,37 @@
+{
+ "koko_px": [
+  1024,
+  1024
+ ],
+ "m_per_px": 1.171875,
+ "maailma_origo_px": [
+  512.0,
+  512.0
+ ],
+ "mokki_maailma": [
+  -200,
+  160
+ ],
+ "mokki_px": [
+  341.3,
+  648.5
+ ],
+ "mokki_geo": [
+  62.376739611111105,
+  22.93040611111111
+ ],
+ "suunnat": "+x = itä = oikealle, +z = etelä = alas, pohjoinen ylös",
+ "muunnos": "px = (x + 600)/m_per_px, py = (z + 600)/m_per_px",
+ "varit": {
+  "bg": "#7A8070",
+  "metsa": "#1E3A24",
+  "pelto": "#A8B890",
+  "suo": "#4E5E3A",
+  "vesi": "#2E4E6E",
+  "tie": "#F0E8C0",
+  "metsatie": "#C8B880",
+  "rak": "#6A6A6A",
+  "mokki": "#C0392B"
+ },
+ "lahde": "© OpenStreetMap contributors (ODbL), OSM API map-kysely 22.10.2026"
+}

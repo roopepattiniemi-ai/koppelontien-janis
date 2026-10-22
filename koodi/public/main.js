@@ -93,7 +93,7 @@ function play(n,{gain=1,pan=0,loop=false}={}){if(!AC||gain<=0.001)return null;co
 // ---------- peli ----------
 const hare=new Hare({x:60,z:-60,seed:Date.now()%1e6|0}), dog=new Dog({x:YARD.x+1,z:YARD.z+1,seed:7,leashed:true});
 const pl={x:YARD.x,z:YARD.z+2,yaw:Math.PI*0.75,inCar:false,pitch:0,passi:false,raise:0,raising:false,revealT:0,shells:2,bag:0,moving:false};
-let engine=null;let gpsOn=false,gpsT=0;const gi={};for(const n of['pelaaja','koira','koira_ajo','koira_haku','koira_hukka']){gi[n]=new Image();gi[n].src=G+'hud/gps_'+n+'.png';}
+let engine=null;let gpsOn=false,gpsT=0;const gpsMap=new Image();let gpsGeo={m_per_px:SIZE/1024,maailma_origo_px:[512,512]};gpsMap.src=G+'hud/gps_kartta.png';fetch(G+'hud/gps_kartta.json').then(r=>r.ok&&r.json()).then(j=>{if(j)gpsGeo=j;}).catch(()=>{});const gi={};for(const n of['pelaaja','koira','koira_ajo','koira_haku','koira_hukka']){gi[n]=new Image();gi[n].src=G+'hud/gps_'+n+'.png';}
 let hn=0,dn=0,barkT=0,stepT=0,msgT=0,lastDog=dog.state,shotFlash=0,hareFlushed=false;
 for(const p of hare.nightTrail)addTrack('janis',p);
 // ---------- autoradio ----------
@@ -151,7 +151,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   // pelaaja
   let f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);
   if(pl.inCar){car.update(dt,{throttle:f,steer:s});car.steer=s;pl.x=car.x;pl.z=car.z;dog.x=car.x;dog.z=car.z;if(engine){const v=Math.min(1,Math.abs(car.speed)/16),r=0.8+0.7*v;for(const k in engine)if(engine[k])engine[k].s.playbackRate.value=r;if(engine.idle)engine.idle.g.gain.value=0.5*(1-v);if(engine.drive)engine.drive.g.gain.value=0.5*v;if(radio.out)radio.out.g.gain.value=0.35-0.1*v;}f=s=0;}
-  carObj.position.set(car.x,height(car.x,car.z),car.z);carObj.rotation.y=Math.PI-car.heading;
+  carObj.rotation.order='YXZ';carObj.position.set(car.x,car.y,car.z);carObj.rotation.set(-car.pitch,Math.PI-car.heading,-car.roll);
   for(const n in wheels){const w=wheels[n];if(!w)continue;w.rotation.x+=car.speed*dt/0.33;if(n==='pyora_ev'||n==='pyora_eo')w.rotation.y=(pl.inCar?car.steer||0:0)*0.45;}
   if(door){doorT=Math.max(0,doorT-dt);door.rotation.y=door.userData.r0+Math.sin(doorT*Math.PI)*1.0;}
   pl.moving=!!(f||s);
@@ -161,7 +161,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   $('passi').style.display=pl.passi?'inline-block':'none';
   if(pl.moving){const sp=keys.ShiftLeft?4:1.6;pl.x+=(-Math.sin(pl.yaw)*f+Math.cos(pl.yaw)*s)*sp*dt;pl.z+=(-Math.cos(pl.yaw)*f-Math.sin(pl.yaw)*s)*sp*dt;stepT-=dt;}
   if(walk)walk.g.gain.value=pl.moving?0.4:0;
-  cam.position.set(pl.x,height(pl.x,pl.z)+(pl.inCar?1.45:1.65),pl.z);if(pl.inCar){pl.yaw=-car.heading;}cam.rotation.set(pl.pitch,pl.yaw,0);window._sky.position.copy(cam.position);
+  cam.position.set(pl.x,(pl.inCar?car.y+1.45:height(pl.x,pl.z)+1.65),pl.z);if(pl.inCar){pl.yaw=-car.heading;}cam.rotation.set(pl.pitch,pl.yaw,0);window._sky.position.copy(cam.position);
   // tekoäly
   const P={x:pl.x,z:pl.z};if(!pl.inCar)dog.update(dt,{hare,player:P});hare.update(dt,{dog:dog.pos,player:P,playerMoving:pl.moving||pl.revealT>0,playerHidden:pl.passi&&pl.revealT<=0});
   if(hare.state===H.PAKO&&!hareFlushed){hareFlushed=true;play('sfx_janis_pakoloikka',{gain:audibility(hare.pos,P)});}
@@ -186,9 +186,11 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   if(windArrow.complete&&windArrow.naturalWidth)wc.drawImage(windArrow,-16,-16);else{wc.fillStyle='#fff';wc.beginPath();wc.moveTo(0,-14);wc.lineTo(6,10);wc.lineTo(-6,10);wc.fill();}wc.restore();
   $('windt').textContent=`${windFromText()} ${WIND.speed} m/s`;
   $('bag').textContent=pl.bag;
-  if(gpsOn){gpsT-=dt;const c=$('gpsc').getContext('2d'),S=128/800;c.fillStyle='#9ab08a';c.fillRect(0,0,128,128);
-    const m=(x,z)=>[64+(x-pl.x)*S,64+(z-pl.z)*S];c.strokeStyle='#6b5a3a';c.lineWidth=2;c.beginPath();ROAD.forEach(([x,z],i)=>{const[a,b]=m(x,z);i?c.lineTo(a,b):c.moveTo(a,b);});c.stroke();
-    const[fx,fz]=m(FIELD.x0,FIELD.z0);c.fillStyle='#d8dcc8';c.fillRect(fx,fz,(FIELD.x1-FIELD.x0)*S,(FIELD.z1-FIELD.z0)*S);
+  if(gpsOn){gpsT-=dt;const c=$('gpsc').getContext('2d'),S=128/800;c.imageSmoothingEnabled=false;const m=(x,z)=>[64+(x-pl.x)*S,64+(z-pl.z)*S];
+    if(gpsMap.complete&&gpsMap.naturalWidth){const k=gpsGeo.m_per_px,o=gpsGeo.maailma_origo_px,span=800/k;c.fillStyle='#7A8070';c.fillRect(0,0,128,128);c.drawImage(gpsMap,o[0]+pl.x/k-span/2,o[1]+pl.z/k-span/2,span,span,0,0,128,128);}
+    else{c.fillStyle='#9ab08a';c.fillRect(0,0,128,128);
+    c.strokeStyle='#6b5a3a';c.lineWidth=2;c.beginPath();ROAD.forEach(([x,z],i)=>{const[a,b]=m(x,z);i?c.lineTo(a,b):c.moveTo(a,b);});c.stroke();
+    const[fx,fz]=m(FIELD.x0,FIELD.z0);c.fillStyle='#d8dcc8';c.fillRect(fx,fz,(FIELD.x1-FIELD.x0)*S,(FIELD.z1-FIELD.z0)*S);}
     const ic=(img,x,y,rot,col)=>{c.save();c.translate(x,y);c.rotate(rot);if(img.complete&&img.naturalWidth)c.drawImage(img,-6,-6,12,12);else{c.fillStyle=col;c.fillRect(-3,-3,6,6);}c.restore();};
     const di=dog.state===D.AJO?gi.koira_ajo:dog.state===D.HUKKA?gi.koira_hukka:dog.state===D.HAKU?gi.koira_haku:gi.koira;c.fillStyle='#000';c.font='9px monospace';c.fillText(STATE_FI[dog.state],3,124);
     const[dx,dz]=m(dog.x,dog.z);ic(di,Math.max(4,Math.min(124,dx)),Math.max(4,Math.min(124,dz)),0,dog.barking?'#f33':'#a52');ic(gi.pelaaja,64,64,-pl.yaw,'#00f');
@@ -198,4 +200,4 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   updateLeash();{const f=$('cmdF').querySelector('img');const want=G+'hud/'+(dog.leashed?'komento_irti':'komento_kiinni')+'.png';if(!f.src.endsWith(want.slice(G.length)))f.src=want;}
   renderer.render(scene,cam);}
 loop();
-window.__game={pl,car,dog};
+window.__game={pl,car,dog,scene,renderer,cam,THREE};

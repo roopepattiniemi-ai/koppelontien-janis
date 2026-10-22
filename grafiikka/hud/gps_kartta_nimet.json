@@ -1,0 +1,42 @@
+{
+ "mokki_px": [
+  341.3,
+  648.5
+ ],
+ "koppelontie_polyline_px": [
+  [
+   321.3,
+   650.1
+  ],
+  [
+   272.5,
+   646.4
+  ],
+  [
+   160.0,
+   641.2
+  ],
+  [
+   64.8,
+   634.6
+  ]
+ ],
+ "koppelontie_ankkuri_px": [
+  160.0,
+  641.2
+ ],
+ "muut_tiet_ankkuri_px": {
+  "Löyhingintie": [
+   374.1,
+   286.3
+  ],
+  "Yli-Vallintie": [
+   356.3,
+   684.7
+  ],
+  "Komsintie": [
+   104.8,
+   393.1
+  ]
+ }
+}
