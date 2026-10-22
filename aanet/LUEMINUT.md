@@ -38,6 +38,6 @@ Haukun kuuluvuus toteutetaan pelin koodissa: etäisyys säätää äänenvoimakk
 | radio_parkano_1..2 | Parkano Rock: hard rock, noin 1:41 |
 | radio_country_1..2 | Jalasjärven Country: banjo, boom-chak-basso ja lap steel, noin 1:38 |
 | radio_tekno_1..2 | Koppelontien Tekno: 90-luvun acid/rave, noin 1:41 |
-| radio_parkano_tunnus, radio_country_tunnus, radio_tekno_tunnus (myös radio_tunnus_*) | juontajan tunnus kanavalle vaihdettaessa |
+| radio_parkano_tunnus, radio_country_tunnus, radio_tekno_tunnus | juontajan tunnus kanavalle vaihdettaessa |
 | sfx_radio_kanava | kanavanvaihdon kohina (0,45 s) |
 Biisit loppuvat häivytykseen. Soita kanavan biisit vuorotellen.
