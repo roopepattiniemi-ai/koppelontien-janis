@@ -100,6 +100,17 @@ export function setupInterior(scene){
     for(const k of['ratti','vaihdekeppi','radio_naytto','kamera_kuljettaja','koira_paikka'])it.n[k]=gl.scene.getObjectByName(k);
     if(it.n.ratti)it.n.ratti.userData.rx=it.n.ratti.rotation.x;
     const rn=it.n.radio_naytto;if(rn){const m=rn.isMesh?rn:rn.getObjectByProperty('isMesh',true);if(m)m.material=new THREE.MeshBasicMaterial({map:tex});}
+    // Lattialevy + karmien muotoiset lasit (pisteet mitattu sisa_kori-meshistä). Näkyvät vain sisänäkymässä.
+    const ex=new THREE.Group();it.extra=ex;ex.visible=false;gl.scene.add(ex);
+    const fl=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.04,2.2),new THREE.MeshLambertMaterial({color:0x3a3d42,flatShading:true}));fl.position.set(0,0.44,-0.53);ex.add(fl);
+    const fw=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.6,0.04),fl.material);fw.position.set(0,0.74,0.56);ex.add(fw); // tulipelti jalkatilan eteen
+    const glass=new THREE.MeshBasicMaterial({color:0xa8c8e8,transparent:true,opacity:0.12,depthWrite:false,side:THREE.DoubleSide});
+    const poly=pts=>{const g=new THREE.BufferGeometry(),v=[];for(let i=1;i<pts.length-1;i++)v.push(...pts[0],...pts[i],...pts[i+1]);g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));const m=new THREE.Mesh(g,glass);m.renderOrder=10;ex.add(m);};
+    for(const x of[0.79,-0.79]){ // sivut (z,y): kalteva A-pilari etuikkunassa
+      poly([[x,1.12,-0.15],[x,1.12,0.48],[x,1.6,0.09],[x,1.6,-0.15]]);
+      poly([[x,1.12,-1.55],[x,1.12,-0.25],[x,1.6,-0.25],[x,1.6,-1.55]]);}
+    poly([[-0.78,1.12,0.5],[0.78,1.12,0.5],[0.76,1.62,0.1],[-0.76,1.62,0.1]]); // tuulilasi
+    poly([[-0.78,1.12,-1.61],[0.78,1.12,-1.61],[0.78,1.6,-1.61],[-0.78,1.6,-1.61]]); // takalasi
     it.loaded=true;},undefined,e=>{it.err=String(e.message||e);});
   it.drawRadio=(on,name,freq)=>{const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,256,64);
     if(panel.complete&&panel.naturalWidth)g.drawImage(panel,0,0,256,64);else{g.fillStyle='#222';g.fillRect(0,0,256,64);}

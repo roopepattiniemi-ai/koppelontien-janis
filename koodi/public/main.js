@@ -13,7 +13,7 @@ const G='/grafiikka/', $=id=>document.getElementById(id);
 let RW=640,RH=400;const RES=[[320,200],[640,400],[960,600]];let resI=+(new URLSearchParams(location.search).get('res')??1);[RW,RH]=RES[resI]||RES[1]; const renderer=new THREE.WebGLRenderer({antialias:false});
 renderer.setPixelRatio(1); renderer.setSize(RW,RH,false); document.body.prepend(renderer.domElement);
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0xb0bed2); scene.fog=new THREE.Fog(0xb0bed2,15,170);
-const cam=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.1,600); cam.rotation.order='YXZ';
+const cam=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.05,600); cam.rotation.order='YXZ';
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();});
 scene.add(new THREE.HemisphereLight(0xc8d4e8,0x8899aa,1.6)); const sun=new THREE.DirectionalLight(0xf0f0f4,1.1); sun.position.set(-1,0.35,1); scene.add(sun);
 // ---------- tekstuurit: oikea tiedosto tai proseduraalinen varatekstuuri ----------
@@ -204,6 +204,8 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   if(pl.moving){const sp=keys.ShiftLeft?4:1.6;pl.x+=(-Math.sin(pl.yaw)*f+Math.cos(pl.yaw)*s)*sp*dt;pl.z+=(-Math.cos(pl.yaw)*f-Math.sin(pl.yaw)*s)*sp*dt;stepT-=dt;}
   if(walk)walk.g.gain.value=pl.moving?0.4:0;
   interior.g.position.copy(carObj.position);interior.g.rotation.copy(carObj.rotation);interior.g.visible=interior.loaded;
+  // Sisänäkymässä ulkokori (vitara_kori, DoubleSide) peitti tuulilasin/ikkunat/radion/lattian 0.2–1.1 m päässä kamerasta → piiloon
+  {const kori=carObj.getObjectByName('vitara_kori');if(kori)kori.visible=!(pl.inCar&&interior.loaded);if(interior.extra)interior.extra.visible=pl.inCar;}
   if(pl.inCar){interior.g.updateMatrixWorld();const cp=new THREE.Vector3(0.40,1.15,-0.55);interior.g.localToWorld(cp);cam.position.copy(cp);pl.yaw=-car.heading;cam.rotation.set(pl.pitch,pl.yaw+(pl.lookYaw||0),0);
     if(interior.n.ratti)interior.n.ratti.rotation.z=-(car.steer||0)*1.6;if(interior.n.vaihdekeppi)interior.n.vaihdekeppi.rotation.x=car.speed>0.3?-0.25:car.speed<-0.3?0.25:0;}
   else{pl.lookYaw=0;cam.position.set(pl.x,height(pl.x,pl.z)+1.65,pl.z);cam.rotation.set(pl.pitch,pl.yaw,0);}window._sky.position.copy(cam.position);
