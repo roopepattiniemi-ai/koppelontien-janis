@@ -28,7 +28,15 @@ export function distToRoad(x,z,cls){let b=1e9;for(const r of ROADS){if(cls&&r.c!
 export function distToWater(x,z){let b=1e9;for(const w of WATER)b=Math.min(b,lineDist(x,z,w.pts));return b;}
 function inPoly(x,z,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const[xi,zi]=P[i],[xj,zj]=P[j];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)c=!c;}return c;}
 export const inField=(x,z)=>FIELDS.some(P=>inPoly(x,z,P));
-export const inBuilding=(x,z,m=0)=>BUILDINGS.some(P=>{let cx=0,cz=0;for(const[a,b]of P){cx+=a;cz+=b;}cx/=P.length;cz/=P.length;return Math.hypot(x-cx,z-cz)<12+m&&inPolyM(x,z,P,cx,cz,m);})||Math.hypot(x-CABIN.x,z-CABIN.z)<5+m;
+// Koppelontie 30:n piha. Mökki = MML-rakennus OSM-tuonnista (way 1555565441, changeset 188554681).
+// Tynnyrisauna ja L-navetta mitattu MML-ortokuvasta (Kapsi WMS, EPSG:3067, 0,15 m/px, mökki ±60 m, 23.10.2026).
+// Ne eivät ole rakennusvektorissa eivätkä taustakartan symboleina. x = itä, z = etelä.
+export const CABIN_POLY=[[2.67,5.69],[-3.13,5.21],[-2.35,-4.43],[3.45,-3.95]];
+export const SAUNA_POLY=[[-17.13,7.56],[-14.34,8.35],[-12.97,3.54],[-15.76,2.75]];
+export const NAVETTA_POLY=[[-12.6,3.3],[-7.6,4.0],[-7.6,7.0],[5.0,10.0],[4.6,16.2],[-12.6,12.1]];
+export const YARD_POLYS=[CABIN_POLY,SAUNA_POLY,NAVETTA_POLY];
+function distPoly(x,z,P){if(inPoly(x,z,P))return 0;let b=1e9;for(let i=0,j=P.length-1;i<P.length;j=i++)b=Math.min(b,segDist(x,z,P[j][0],P[j][1],P[i][0],P[i][1]));return b;}
+export const inBuilding=(x,z,m=0)=>BUILDINGS.some(P=>{let cx=0,cz=0;for(const[a,b]of P){cx+=a;cz+=b;}cx/=P.length;cz/=P.length;return Math.hypot(x-cx,z-cz)<12+m&&inPolyM(x,z,P,cx,cz,m);})||YARD_POLYS.some(P=>distPoly(x,z,P)<=m);
 function inPolyM(x,z,P,cx,cz,m){return m<=0?inPoly(x,z,P):Math.hypot(x-cx,z-cz)<12+m;}
 export const inYard=(x,z)=>Math.hypot(x-YARD.x,z-YARD.z)<YARD.r;
 export const drivable=(x,z)=>(distToRoad(x,z)<0.6||inYard(x,z)||inField(x,z))&&!inBuilding(x,z)&&inBounds(x,z,2);
@@ -59,18 +67,6 @@ export const WIND = { dir: Math.PI*0.25, speed: 5 }; // lounaistuuli, puhaltaa k
 export function windVec(w=WIND){ return { x: Math.sin(w.dir), z: -Math.cos(w.dir) }; }
 const DIRS=['pohjoisesta','koillisesta','idästä','kaakosta','etelästä','lounaasta','lännestä','luoteesta'];
 export function windFromText(w=WIND){ const from=(w.dir+Math.PI)%(2*Math.PI); return DIRS[Math.round(from/(Math.PI/4))%8]; }
-// Maatilan rakennukset samaan kohtaan kuin public/tienvarsi.js (navetta, lato, konekatos, aitta).
-// yaw = Three.js rotation.y, hx/hz = laatikon paikallinen puolikas (X/Z).
-const LOYH_KOPP={x:302.7,z:-87.3};
-let _farms;
-export function farmFootprints(){if(_farms)return _farms;
-  const loy=ROADS.find(r=>r.n==='Löyhingintie'),p0=loy.pts[0],p1=loy.pts[3]||loy.pts[1];
-  const L=Math.hypot(p1[0]-p0[0],p1[1]-p0[1])||1,ux=(p1[0]-p0[0])/L,uz=(p1[1]-p0[1])/L;
-  const at=(s,side)=>({x:p0[0]+ux*s-uz*side,z:p0[1]+uz*s+ux*side}),face=Math.atan2(ux,uz);
-  const kp=ROADS.find(r=>r.n==='Koppelontie').pts,kx=kp[1][0]-kp[0][0],kz=kp[1][1]-kp[0][1],kl=Math.hypot(kx,kz)||1;
-  const nav=at(70,45),lato=at(22,48),katos=at(30,17),ap={x:LOYH_KOPP.x+kx/kl*14+kz/kl*9,z:LOYH_KOPP.z+kz/kl*14-kx/kl*9};
-  return _farms=[
-    {n:'navetta',x:nav.x,z:nav.z,yaw:face+Math.PI/2,hx:12,hz:6},
-    {n:'lato',x:lato.x,z:lato.z,yaw:face,hx:6,hz:3.5},
-    {n:'konekatos',x:katos.x,z:katos.z,yaw:Math.atan2(uz,-ux),hx:7,hz:4},
-    {n:'aitta',x:ap.x,z:ap.z,yaw:Math.atan2(kx,kz),hx:2.5,hz:2}];}
+// Löyhingintien risteyksen keksityt navetta, lato, konekatos ja aitta eivät ole kartalla.
+// Pihan törmäykset ovat YARD_POLYS-polygoneja (mökki, tynnyrisauna, L-navetta).
+export function farmFootprints(){return [];}

@@ -1,9 +1,9 @@
 // Suomenajokoira: haku -> yöjälki -> ylösotto -> ajo (haukkuen) -> hukka -> ajo
 import { mulberry32 } from './rng.js';
 import { clampB } from './bounds.js';
-import { BUILDINGS, CABIN, farmFootprints } from './world.js';
+import { BUILDINGS, YARD_POLYS, farmFootprints } from './world.js';
 export const HEAR_CMD=150, IGNORE_AJO=0.7, SCENT_R=4;
-// Rakennukset (OSM-talot, mökki, maatila) ja valinnaiset laatikkoesteet (Vitara). Sama polygoni kuin auton inBuilding.
+// Rakennukset (OSM-talot ja pihan mökki, tynnyrisauna, L-navetta) ja valinnaiset laatikkoesteet (Vitara). Sama polygoni kuin auton inBuilding.
 const LOOK=3.6;
 function inPoly(x,z,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const[xi,zi]=P[i],[xj,zj]=P[j];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)c=!c;}return c;}
 function orient(ax,az,bx,bz,cx,cz){return (bx-ax)*(cz-az)-(bz-az)*(cx-ax);}
@@ -13,28 +13,26 @@ function segHit(ax,az,bx,bz,cx,cz,dx,dz){
   if((o1>0)!==(o2>0)&&(o3>0)!==(o4>0))return true;
   if(o1===0&&onSeg(ax,az,bx,bz,cx,cz))return true;if(o2===0&&onSeg(ax,az,bx,bz,dx,dz))return true;
   if(o3===0&&onSeg(cx,cz,dx,dz,ax,az))return true;if(o4===0&&onSeg(cx,cz,dx,dz,bx,bz))return true;return false;}
-const SOLIDS=BUILDINGS.map(P=>{let cx=0,cz=0,minx=1e9,maxx=-1e9,minz=1e9,maxz=-1e9;const e=[];
+const SOLIDS=[...BUILDINGS,...YARD_POLYS].map(P=>{let cx=0,cz=0,minx=1e9,maxx=-1e9,minz=1e9,maxz=-1e9;const e=[];
   for(const[a,b]of P){cx+=a;cz+=b;minx=Math.min(minx,a);maxx=Math.max(maxx,a);minz=Math.min(minz,b);maxz=Math.max(maxz,b);}
   for(let i=0;i<P.length;i++){const[a,b]=P[i],[c,d]=P[(i+1)%P.length];if(a!==c||b!==d)e.push(a,b,c,d);}
   return {P,e,cx:cx/P.length,cz:cz/P.length,minx,maxx,minz,maxz};});
 const FARMS=farmFootprints().map(f=>({...f,c:Math.cos(f.yaw),s:Math.sin(f.yaw)}));
 function into(o,x,z){const dx=x-o.x,dz=z-o.z,c=o.c??Math.cos(o.yaw||0),s=o.s??Math.sin(o.yaw||0);return [dx*c-dz*s,dx*s+dz*c];}
 function inFarm(f,x,z){const [lx,lz]=into(f,x,z);return Math.abs(lx)<=f.hx&&Math.abs(lz)<=f.hz;}
-function inCabin(x,z){return Math.hypot(x-CABIN.x,z-CABIN.z)<5;}
 function segAABB(x0,z0,x1,z1,minx,minz,maxx,maxz){const dx=x1-x0,dz=z1-z0;let t0=0,t1=1;const p=[-dx,dx,-dz,dz],q=[x0-minx,maxx-x0,z0-minz,maxz-z0];
   for(let i=0;i<4;i++){if(Math.abs(p[i])<1e-12){if(q[i]<0)return false;}else{const t=q[i]/p[i];if(p[i]<0){if(t>t1)return false;if(t>t0)t0=t;}else{if(t<t0)return false;if(t<t1)t1=t;}}}return t0<=t1;}
 function inBox(o,x,z){if(o.r!=null)return (x-o.x)**2+(z-o.z)**2<o.r*o.r;const [lx,lz]=into(o,x,z);
   const minx=o.minx??-o.hx,maxx=o.maxx??o.hx,minz=o.minz??-o.hz,maxz=o.maxz??o.hz;return lx>=minx&&lx<=maxx&&lz>=minz&&lz<=maxz;}
 function boxBlocks(o,x0,z0,x1,z1){if(inBox(o,x0,z0))return false;if(o.r!=null){const dx=x1-x0,dz=z1-z0,fx=x0-o.x,fz=z0-o.z,a=dx*dx+dz*dz||1e-12;let t=Math.max(0,Math.min(1,-(fx*dx+fz*dz)/a));return (fx+dx*t)**2+(fz+dz*t)**2<o.r*o.r;}
   const [lx0,lz0]=into(o,x0,z0),[lx1,lz1]=into(o,x1,z1);return segAABB(lx0,lz0,lx1,lz1,o.minx??-o.hx,o.minz??-o.hz,o.maxx??o.hx,o.maxz??o.hz);}
-// id: -1 mökki, 0.. OSM, 100+ maatila. null = ulkona.
-export function solidAt(x,z){if(inCabin(x,z))return -1;for(let i=0;i<SOLIDS.length;i++){const b=SOLIDS[i];if(x<b.minx||x>b.maxx||z<b.minz||z>b.maxz)continue;if(inPoly(x,z,b.P))return i;}
+// id: polygoni (OSM, sitten piha), 100+ maatilan laatikko. null = ulkona.
+export function solidAt(x,z){for(let i=0;i<SOLIDS.length;i++){const b=SOLIDS[i];if(x<b.minx||x>b.maxx||z<b.minz||z>b.maxz)continue;if(inPoly(x,z,b.P))return i;}
   for(let i=0;i<FARMS.length;i++)if(inFarm(FARMS[i],x,z))return 100+i;return null;}
 export function dogInside(x,z){return solidAt(x,z)!==null;}
 function overlaps(minx,maxx,minz,maxz,b){return !(maxx<b.minx||minx>b.maxx||maxz<b.minz||minz>b.maxz);}
 // true jos askel x0,z0 -> x1,z1 menee esteeseen. skip = kohteen rakennus (saa mennä sisään), start ohitetaan (ulos pääsee).
 function pathBlocked(x0,z0,x1,z1,skip,extras){const start=solidAt(x0,z0),minx=Math.min(x0,x1),maxx=Math.max(x0,x1),minz=Math.min(z0,z1),maxz=Math.max(z0,z1);
-  if(skip!==-1&&start!==-1){const cx=CABIN.x,cz=CABIN.z;if(!(maxx<cx-5||minx>cx+5||maxz<cz-5||minz>cz+5)){const dx=x1-x0,dz=z1-z0,fx=x0-cx,fz=z0-cz,a=dx*dx+dz*dz||1e-12;let t=Math.max(0,Math.min(1,-(fx*dx+fz*dz)/a));if((fx+dx*t)**2+(fz+dz*t)**2<25)return true;}}
   for(let i=0;i<SOLIDS.length;i++){if(i===skip||i===start)continue;const b=SOLIDS[i];if(!overlaps(minx,maxx,minz,maxz,b))continue;
     if(inPoly(x1,z1,b.P))return true;const e=b.e;for(let k=0;k<e.length;k+=4)if(segHit(x0,z0,x1,z1,e[k],e[k+1],e[k+2],e[k+3]))return true;}
   for(let i=0;i<FARMS.length;i++){const id=100+i;if(id===skip||id===start)continue;const f=FARMS[i];if(!overlaps(minx,maxx,minz,maxz,{minx:f.x-f.hx-f.hz,maxx:f.x+f.hx+f.hz,minz:f.z-f.hx-f.hz,maxz:f.z+f.hx+f.hz}))continue;if(boxBlocks(f,x0,z0,x1,z1))return true;}

@@ -3,7 +3,7 @@ import { Hare, H } from '../logic/hare.js';
 import { Dog, D, nearTrack, dogInside } from '../logic/dog.js';
 import { audibility } from '../logic/hearing.js';
 import { Car, bodyBox } from '../logic/car.js';
-import { YARD, START, drivable, inBuilding, BUILDINGS, farmFootprints } from '../logic/world.js';
+import { YARD, START, drivable, inBuilding, BUILDINGS, farmFootprints, YARD_POLYS } from '../logic/world.js';
 import { shotgun } from '../logic/shot.js';
 import { judgeShot } from '../logic/rules.js';
 import { Critter } from '../logic/wild.js';
@@ -84,7 +84,9 @@ t('radiojuonto: ~50 % biisien välissä, ei samaa kahdesti peräkkäin, oikea ka
 t('tienvarsi: pylväät ojan ulkopuolella, rakennukset irti teistä',async()=>{globalThis.window=globalThis.window||{};globalThis.document=globalThis.document||{createElement:()=>({getContext:()=>new Proxy({},{get:()=>()=>{}})})};
   const W=await import('../logic/world.js'),TV=await import('../public/tienvarsi.js'),THREE=await import('three');const i=TV.setupRoadside(new THREE.Scene(),{ROADS:W.ROADS,height:W.height,distToRoad:W.distToRoad,SIZE:W.SIZE});
   assert.ok(i.valot.length>10&&i.sahko.length>10,[i.valot.length,i.sahko.length]);for(const p of[...i.valot,...i.sahko]){assert.ok(W.distToRoad(p.x,p.z)>0.6+1.8,'ojassa');assert.equal(W.ditch(p.x,p.z),0);}
-  for(const p of[...Object.values(i.tilat),i.aitta])assert.ok(W.distToRoad(p.x,p.z)>5);assert.ok(window.__tienvarsi.johtosegmentteja>100);});
+  assert.deepEqual(i.tilat,{});assert.equal(i.aitta,undefined);
+  for(const P of W.YARD_POLYS){let cx=0,cz=0;for(const[x,z]of P){cx+=x;cz+=z;}cx/=P.length;cz/=P.length;assert.ok(W.distToRoad(cx,cz)>5,cx.toFixed(1)+','+cz.toFixed(1));assert.ok(W.inBuilding(cx,cz));}
+  assert.ok(W.inBuilding(0,0));assert.ok(!W.inBuilding(W.YARD.x,W.YARD.z));assert.ok(window.__tienvarsi.johtosegmentteja>100);});
 t('puut: ei puita 3 m lähempänä rakennuksia, kylttejä tai pylväitä',async()=>{const W=await import('../logic/world.js'),TV=await import('../public/tienvarsi.js'),THREE=await import('three');
   const info=TV.setupRoadside(new THREE.Scene(),{ROADS:W.ROADS,height:W.height,distToRoad:W.distToRoad,SIZE:W.SIZE});const all=W.trees(),T=TV.suodataPuut(all,info,{SIGNS:W.SIGNS,inBuilding:W.inBuilding});
   assert.ok(T.length<all.length&&T.length>all.length*0.8,[all.length,T.length]);const E=TV.esteet(info,W.SIGNS);
@@ -108,7 +110,7 @@ t('koira kiertää rakennukset eikä ole sisällä pitkässä simulaatiossa',()=
   const run=(A,B)=>{let hit=false;for(let t=0.08;t<1;t+=0.08)if(inside(A.x+(B.x-A.x)*t,A.z+(B.z-A.z)*t))hit=true;if(!hit)return;
     const g=new Dog({x:A.x,z:A.z,seed:2});let i=0;while(Math.hypot(g.x-B.x,g.z-B.z)>2&&i++<7000){g._go(B.x,B.z,0.05,4.5);steps++;assert.ok(!inside(g.x,g.z),'sisällä '+g.x.toFixed(1)+','+g.z.toFixed(1));}
     assert.ok(i<7000,'jumissa');cross++;};
-  for(const P of BUILDINGS){const ip=ipOf(P);if(!ip)continue;for(const ang of[0,Math.PI/2,-Math.PI/3]){const A=out(ip.x,ip.z,ang),B=out(ip.x,ip.z,ang+Math.PI);if(A&&B)run(A,B);}}
+  for(const P of [...BUILDINGS,...YARD_POLYS]){const ip=ipOf(P);if(!ip)continue;for(const ang of[0,Math.PI/2,-Math.PI/3]){const A=out(ip.x,ip.z,ang),B=out(ip.x,ip.z,ang+Math.PI);if(A&&B)run(A,B);}}
   for(const f of farmFootprints())for(const ang of[0,Math.PI/2]){const A=out(f.x,f.z,ang),B=out(f.x,f.z,ang+Math.PI);if(A&&B)run(A,B);}
   run(out(0,0,0.4),out(0,0,0.4+Math.PI));
   const box=bodyBox(new Car({x:120,z:-40,heading:0.6})),gv=new Dog({x:120,z:-70,seed:1});gv.obstacles=[box];

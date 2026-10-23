@@ -7,7 +7,7 @@ import * as AL from '/aloitus.js';
 import { pickJuonto, BIISIT } from '/logic/radio.js';
 import { judgeShot, LAJIT } from '/logic/rules.js';
 import { Car, bodyBox } from '/logic/car.js';
-import { CABIN, YARD, START, SIGNS, inBuilding } from '/logic/world.js';
+import { CABIN, YARD, START, SIGNS, inBuilding, SAUNA_POLY, NAVETTA_POLY } from '/logic/world.js';
 import { spreadHares, aiInterval } from '/logic/world.js';
 import { clampB } from '/logic/bounds.js';
 import { height, ROADS, WATER, BUILDINGS, SIZE, trees, inField, isForest, distToRoad, hareSpot, WIND, windFromText } from '/logic/world.js';
@@ -126,7 +126,19 @@ function model(files,fb,pos,rot,onLoad){const g=new THREE.Group();g.add(fb);g.po
 const cabinFb=new THREE.Group();{const w=box(8,3,6,0x9a2a20,1.5);cabinFb.add(w);for(const[x,z]of[[-4,-3],[4,-3],[-4,3],[4,3]]){const c=box(0.3,3,0.3,0xffffff,1.5);c.position.x=x;c.position.z=z;cabinFb.add(c);}
   const r=new THREE.Mesh(new THREE.ConeGeometry(6.2,2.2,4),new THREE.MeshLambertMaterial({color:0xf4f6fa,flatShading:true}));r.position.y=4.1;r.rotation.y=Math.PI/4;r.scale.z=0.8;cabinFb.add(r);
   const d=box(1,2,0.1,0x5a3a20,1);d.position.z=3.05;cabinFb.add(d);}
-model(['mokki.glb'],cabinFb,CABIN,CABIN.rot);
+const cabinM=model(['mokki.glb'],cabinFb,CABIN,CABIN.rot);if(CABIN.sx)cabinM.scale.set(CABIN.sx,1,CABIN.sz);
+// Tynnyrisauna (Ø 2,9 × 5,0 m) ja L-navetta: sama pohja kuin world.js:n törmäyspolygonit.
+{const wood=new THREE.MeshLambertMaterial({color:0x6a3a22}),band=new THREE.MeshLambertMaterial({color:0x8a9098});
+ const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(1.45,1.45,5,18),wood);body.rotation.z=Math.PI/2;g.add(body);
+ for(const x of[-1.6,0,1.6]){const t=new THREE.Mesh(new THREE.TorusGeometry(1.48,0.055,6,16),band);t.rotation.y=Math.PI/2;t.position.x=x;g.add(t);}
+ const door=box(0.08,1.15,0.7,0x3a2418,0.85);door.position.set(2.52,0,0);g.add(door);
+ let sx=0,sz=0;for(const[x,z]of SAUNA_POLY){sx+=x;sz+=z;}sx/=SAUNA_POLY.length;sz/=SAUNA_POLY.length;
+ g.rotation.y=Math.atan2(0.962,0.272);g.position.set(sx,height(sx,sz)+1.45,sz);scene.add(g);
+ const polyMesh=(pts,h,color,y0)=>{const s=new THREE.Shape(),p=pts.map(([x,z])=>[x,-z]);let a=0;for(let i=0,j=p.length-1;i<p.length;j=i++)a+=p[j][0]*p[i][1]-p[i][0]*p[j][1];const q=a<0?[...p].reverse():p;
+  s.moveTo(q[0][0],q[0][1]);for(let i=1;i<q.length;i++)s.lineTo(q[i][0],q[i][1]);const geo=new THREE.ExtrudeGeometry(s,{depth:h,bevelEnabled:false});geo.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color}));m.position.y=y0;scene.add(m);};
+ let nx=0,nz=0;for(const[x,z]of NAVETTA_POLY){nx+=x;nz+=z;}nx/=NAVETTA_POLY.length;nz/=NAVETTA_POLY.length;const gy=height(nx,nz);
+ polyMesh(NAVETTA_POLY,3.8,0x8e2a20,gy);polyMesh(NAVETTA_POLY,0.4,0xe8eef2,gy+3.8);}
 const car=START?.autossa?new Car({x:START.x,z:START.z,heading:START.heading}):new Car({x:YARD.x+4,z:YARD.z-5,heading:0});
 // kyltit (logic/kyltit.json + grafiikka/tekstuurit/kyltit)
 V8.setupSigns(scene,SIGNS||[],height);
