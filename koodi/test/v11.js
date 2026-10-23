@@ -69,6 +69,30 @@ t('osumat: jakauma lentoradan mukaan – sivulta kylki, takaa takaosa',()=>{cons
   assert.ok(side.n>50&&(side.cnt.kylki||0)/side.n>0.5,'sivu '+JSON.stringify(side));assert.ok((side.cnt.etu||0)/side.n<0.2);
   assert.ok(back.n>50&&(back.cnt.taka||0)/back.n>0.5,'taka '+JSON.stringify(back));
   const m=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');assert.match(m,/rayEllipsoid\(LO,LD/);assert.match(m,/SIZES=\{veri:0\.17/);});
+import { saunaPiste, saunaEtu, nearSauna, yhteenveto, riviPaikat, yhteenvetoTeksti, lopetusPyynto, PISTE, SAUNA_SADE } from '../logic/lopetus.js';
+import { inBuilding } from '../logic/world.js';
+t('lopetus: saunan luona, saalisrivi ja yhteenveto',()=>{const p=saunaPiste(),e=saunaEtu();
+  assert.ok(nearSauna(p.x,p.z,p));assert.ok(!nearSauna(p.x+SAUNA_SADE+0.2,p.z,p));assert.ok(Math.hypot(e.x-p.x,e.z-p.z)>2.5);
+  assert.equal(lopetusPyynto('v',true),'pyynto');assert.equal(lopetusPyynto('h',true),'itse');assert.equal(lopetusPyynto('v',false),'itse');
+  const elaimet=[{kind:'janis',alive:false,owner:'h'},{kind:'teeri',alive:false,owner:'v'},{kind:'peura',alive:false},{kind:'janis',alive:true,owner:'h'},{kind:'kettu',alive:false,owner:'h'}];
+  const lauk={h:{laukaukset:4,osumat:2},v:{laukaukset:1,osumat:1}};
+  const y=yhteenveto({elaimet,laukaukset:lauk,noudot:3,moninpeli:true});
+  assert.equal(y.pelaajat.h.janis,1);assert.equal(y.pelaajat.h.peura,1);assert.equal(y.pelaajat.h.pisteet,PISTE.janis+PISTE.peura);
+  assert.equal(y.pelaajat.v.teeri,1);assert.equal(y.pelaajat.v.pisteet,PISTE.teeri);assert.equal(y.rivi.length,3);assert.equal(y.noudot,3);
+  assert.equal(y.pelaajat.h.laukaukset,4);assert.equal(y.pelaajat.v.osumat,1);
+  const solo=yhteenveto({elaimet,laukaukset:lauk,noudot:1,moninpeli:false});
+  assert.equal(solo.pelaajat.v,undefined);assert.equal(solo.pelaajat.h.teeri,1);assert.equal(solo.pelaajat.h.janis,1);
+  const txt=yhteenvetoTeksti(y);assert.match(txt,/Isäntä/);assert.match(txt,/Vieras/);assert.match(txt,/pisteet/);assert.match(txt,/laukaukset 4 · osumat 2/);assert.match(txt,/Koiran noudot: 3/);
+  const pa=riviPaikat(e,y.rivi,2,2);assert.equal(pa.elaimet.length,3);assert.equal(pa.ihmiset.length,4);
+  for(const a of pa.elaimet){const da=Math.hypot(a.x-p.x,a.z-p.z);assert.ok(!inBuilding(a.x,a.z),'saalis rakennuksessa');
+    for(const h of pa.ihmiset)assert.ok(da>Math.hypot(h.x-p.x,h.z-p.z),'saalis saunan edessä');}
+  const t0=performance.now();for(let i=0;i<4000;i++)yhteenveto({elaimet,laukaukset:lauk,noudot:3,moninpeli:true});assert.ok(performance.now()-t0<80);
+  const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
+  const html=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  assert.match(src,/E – lopeta jahti saunalle/);assert.match(src,/janis:'E – ota jänis'/);assert.match(html,/id="lopeta"/);
+  assert.match(src,/t:'loppu'/);assert.match(src,/t:'lopeta'/);assert.match(src,/musiikki_lopetus/);assert.ok(!/SND=\[[^\]]*musiikki_lopetus/.test(src));
+  for(const ext of['ogg','mp3']){const st=fs.statSync(new URL('../../aanet/musiikki_lopetus.'+ext,import.meta.url));assert.ok(st.size>80000,ext);}
+});
 console.log(`${n} v1.1-testiä ok`);
 
 t('osumat: jokainen reikä enintään 1 cm mallin pinnasta', async () => {
