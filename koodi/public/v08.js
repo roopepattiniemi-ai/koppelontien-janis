@@ -62,8 +62,8 @@ export function makeAudio3D(AC){
     const p=AC.createPanner();p.panningModel='HRTF';p.distanceModel=model;p.refDistance=ref;p.maxDistance=max;p.rolloffFactor=roll;
     const send=AC.createGain();send.gain.value=0;g.connect(lp).connect(p).connect(out);p.connect(send).connect(conv);return{g,lp,p,send};}
   function setPos(h,x,y,z){const t=AC.currentTime;h.p.positionX.setValueAtTime(x,t);h.p.positionY.setValueAtTime(y,t);h.p.positionZ.setValueAtTime(z,t);h.pos={x,y,z};}
-  function play(buf,{x=0,y=1,z=0,gain=1,loop=false,ref=10,max=3000,roll=1,far=true}={}){if(!buf)return null;const h=chain({ref,max,roll});h.far=far;h.g.gain.value=gain;setPos(h,x,y,z);
-    const s=AC.createBufferSource();s.buffer=buf;s.loop=loop;s.connect(h.g);s.start();h.s=s;live.add(h);s.onended=()=>live.delete(h);h.setPos=(a,b,c)=>setPos(h,a,b,c);return h;}
+  function play(buf,{x=0,y=1,z=0,gain=1,loop=false,ref=10,max=3000,roll=1,far=true,rate=1}={}){if(!buf)return null;const h=chain({ref,max,roll});h.far=far;h.g.gain.value=gain;setPos(h,x,y,z);
+    const s=AC.createBufferSource();s.buffer=buf;s.loop=loop;if(rate!==1)s.playbackRate.value=rate;s.connect(h.g);s.start();h.s=s;live.add(h);s.onended=()=>live.delete(h);h.setPos=(a,b,c)=>setPos(h,a,b,c);return h;}
   function updateListener(cam){const l=AC.listener,t=AC.currentTime,p=cam.getWorldPosition(new THREE.Vector3()),f=new THREE.Vector3(0,0,-1).applyQuaternion(cam.quaternion),u=new THREE.Vector3(0,1,0).applyQuaternion(cam.quaternion);
     if(l.positionX){l.positionX.setValueAtTime(p.x,t);l.positionY.setValueAtTime(p.y,t);l.positionZ.setValueAtTime(p.z,t);l.forwardX.setValueAtTime(f.x,t);l.forwardY.setValueAtTime(f.y,t);l.forwardZ.setValueAtTime(f.z,t);l.upX.setValueAtTime(u.x,t);l.upY.setValueAtTime(u.y,t);l.upZ.setValueAtTime(u.z,t);}
     else{l.setPosition(p.x,p.y,p.z);l.setOrientation(f.x,f.y,f.z,u.x,u.y,u.z);}

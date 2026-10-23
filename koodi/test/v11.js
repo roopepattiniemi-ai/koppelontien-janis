@@ -93,6 +93,57 @@ t('lopetus: saunan luona, saalisrivi ja yhteenveto',()=>{const p=saunaPiste(),e=
   assert.match(src,/t:'loppu'/);assert.match(src,/t:'lopeta'/);assert.match(src,/musiikki_lopetus/);assert.ok(!/SND=\[[^\]]*musiikki_lopetus/.test(src));
   for(const ext of['ogg','mp3']){const st=fs.statSync(new URL('../../aanet/musiikki_lopetus.'+ext,import.meta.url));assert.ok(st.size>80000,ext);}
 });
+import { lisaa, lataa, ennatykset, paivakirjaHtml, paivitaKoira, jahdinTeksti } from '../logic/paivakirja.js';
+import { haukkuTila, haukkuVali, haukkuSavel, haukkuAani } from '../logic/haukku.js';
+import { OTSIKOT, MAINOKSET, lehti, lehtiHtml, osuuPelaajaan, LEHDEN_NIMI } from '../logic/lehti.js';
+const mem=()=>{const m=new Map();return{getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v))};};
+t('päiväkirja: kaato, noutaja ja ennätykset',()=>{const s=mem();
+  assert.equal(lisaa(s,{laji:'kettu',paiva:'2026-10-23',pisteet:1,jahti:'a'}),null);
+  const a=lisaa(s,{laji:'janis',paiva:'2026-10-23',matka:120.4,osumat:3,pisteet:10,ampuja:'h',jahti:'a'});
+  assert.equal(a.matka,120);assert.equal(a.osumat,3);assert.equal(a.koira,null);assert.equal(a.ampuja,'h');
+  lisaa(s,{laji:'teeri',paiva:'2026-10-23',matka:18,osumat:5,pisteet:8,ampuja:'v',koira:'terrieri',jahti:'a'});
+  lisaa(s,{laji:'peura',paiva:'2026-10-22',matka:40,osumat:1,pisteet:25,ampuja:'koira',koira:'ajokoira',jahti:'b'});
+  const e=ennatykset(lataa(s));assert.equal(e.pisin.matka,120);assert.equal(e.paras.pisteet,25);assert.equal(e.eniten.maara,2);
+  assert.ok(paivitaKoira(s,'a',0,'ajokoira'));assert.equal(lataa(s).find(k=>k.laji==='janis').koira,'ajokoira');
+  assert.ok(!paivitaKoira(s,'a',0,'terrieri'));
+  const html=paivakirjaHtml(lataa(s));assert.match(html,/Saalispäiväkirja/);assert.match(html,/Ennätykset/);assert.match(html,/120/);
+  assert.match(jahdinTeksti(lataa(s),'a'),/Tämän jahdin kaadot/);assert.match(jahdinTeksti(lataa(s),'a'),/nouti ajokoira/);
+  assert.match(jahdinTeksti([],'x'),/ei kaatoja/);});
+t('haukku: jälki harva, näköajo tiheä, hukka epävarma, terrieri kimeämpi',()=>{
+  assert.equal(haukkuTila('yöjälki',80,true),'jalki');assert.equal(haukkuTila('ylösotto',10,true),'jalki');
+  assert.equal(haukkuTila('ajo',10,true),'nako');assert.equal(haukkuTila('ajo',80,true),'jalki');
+  assert.equal(haukkuTila('hukka',5,false),'epavarma');assert.equal(haukkuTila('haku',5,true),null);
+  assert.ok(haukkuVali('nako',10)<haukkuVali('jalki',10));assert.ok(haukkuVali('jalki',10)<haukkuVali('epavarma',10));
+  assert.ok(haukkuSavel('terrieri')>haukkuSavel('ajokoira'));
+  assert.notEqual(haukkuAani('nako','terrieri',0),haukkuAani('nako','ajokoira',0));
+  assert.equal(haukkuAani('epavarma','terrieri',1),'sfx_koira_vinkuu');
+  const d={x:1,z:2,dir:0,state:'ajo',barking:true,haukku:'nako',kimea:true};
+  const packed=packWorld({dog:d,hares:[new Hare({seed:1})]});const g={};applyWorld(packed,{dog:g,hares:[new Hare({seed:2})]});
+  assert.equal(g.haukku,'nako');assert.equal(g.kimea,true);});
+t('lehti: kahdeksan otsikkoa, sama siemen, parodiamainos, osuma kaveriin',()=>{
+  assert.ok(OTSIKOT.length>=8);assert.equal(LEHDEN_NIMI,'Ilta-Jänis');
+  const otsikot=OTSIKOT.map(o=>o[0]).join('\n');
+  assert.match(otsikot,/Metsästäjä luuli metsäkaveria ihmisjänikseksi/);
+  assert.match(otsikot,/Se loikki ihan kuin jänis/);
+  assert.match(otsikot,/Kurikan mies ampui kaveriaan/);
+  const a=lehti(5,61),b=lehti(5,61);assert.equal(a.otsikko,b.otsikko);assert.equal(a.ingressi,b.ingressi);assert.deepEqual(a.mainos,b.mainos);assert.equal(a.pisteet,61);
+  const ots=new Set(),ads=new Set();for(let i=0;i<48;i++){const l=lehti(i*97+3,i);ots.add(l.otsikko);ads.add(l.mainos.nimi);}
+  assert.ok(ots.size>=8,'otsikoita '+ots.size);assert.ok(ads.size>=3,'mainoksia '+ads.size);
+  assert.ok(MAINOKSET.some(m=>m.nimi==='Jallovviina'&&/muovipullo 1,5 l/.test(m.rivi)));
+  const html=lehtiHtml(a);assert.match(html,/Ilta-Jänis/);assert.match(html,/61/);assert.match(html,/ij-pullo/);
+  const kielletty=/Iltalehti|Ilta-Sanomat|Helsingin Sanomat|Jaloviina|Koskenkorva/;
+  assert.ok(!kielletty.test(html+otsikot+MAINOKSET.map(m=>m.nimi+' '+m.rivi).join(' ')));
+  const o={x:0,y:1.5,z:0},suora={x:1,y:0,z:0},kohde={x:8,y:1.2,z:0};
+  assert.ok(osuuPelaajaan(o,suora,'kivaari',1,kohde));
+  assert.ok(!osuuPelaajaan(o,{x:0,y:0,z:1},'kivaari',1,kohde));
+  assert.ok(!osuuPelaajaan(o,suora,'kivaari',1,{x:8,y:1.2,z:3}));
+  assert.ok(osuuPelaajaan(o,suora,'haulikko',3,kohde));
+  const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
+  const al=fs.readFileSync(new URL('../public/aloitus.js',import.meta.url),'utf8');
+  assert.match(al,/Saalispäiväkirja/);assert.match(src,/t:'lehti'/);assert.match(src,/musiikki_urut/);assert.match(src,/jahdinTeksti/);
+  assert.ok(!/SND=\[[^\]]*musiikki_urut/.test(src));
+  for(const ext of['ogg','mp3']){const st=fs.statSync(new URL('../../aanet/musiikki_urut.'+ext,import.meta.url));assert.ok(st.size>80000,ext);}
+});
 console.log(`${n} v1.1-testiä ok`);
 
 t('osumat: jokainen reikä enintään 1 cm mallin pinnasta', async () => {

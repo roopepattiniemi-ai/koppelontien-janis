@@ -1,5 +1,6 @@
 // Suomenajokoira: haku -> yöjälki -> ylösotto -> ajo (haukkuen) -> hukka -> ajo
 import { mulberry32 } from './rng.js';
+import { haukkuTila } from './haukku.js';
 import { clampB } from './bounds.js';
 import { BUILDINGS, YARD_POLYS, farmFootprints } from './world.js';
 export const HEAR_CMD=150, IGNORE_AJO=0.7, SCENT_R=4;
@@ -178,6 +179,9 @@ export class Dog {
         if(this.t>this.hukkaTime){this.state=D.AJO;this.t=0;}
         break;}
     }
+    const ht=hare?Math.hypot((hare.x??0)-this.x,(hare.z??0)-this.z):1e9;
+    this.haukku=haukkuTila(this.state,ht,!!(hare&&hare.alive));
+    if(this.haukku==='jalki'||this.haukku==='nako')this.barking=true;
   }
   _carry(h){h.carried=true;this.target=h;this.state=D.KANTO;this.t=0;}
   // haukkuväli s: tiheä kun lähellä jänistä

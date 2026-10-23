@@ -16,12 +16,16 @@ const css=`#aloitus{position:fixed;inset:0;z-index:50;overflow:hidden;background
 #al-napit button:hover{background:#3a6a98ee}#al-napit #al-aloita{background:#b8481ecc;font-size:24px}
 #al-kred{position:absolute;bottom:8px;left:4vw;right:4vw;text-align:center;font-size:11px;opacity:.85;text-shadow:0 1px 2px #000}
 #al-ohjeet{position:absolute;inset:8vh 8vw;background:#0f2236ee;border:2px solid #fff;border-radius:8px;padding:18px 24px;overflow:auto;display:none;z-index:2}
-#al-ohjeet table{border-collapse:collapse;font-size:16px;margin:auto}#al-ohjeet td{padding:4px 14px;border-bottom:1px solid #fff3}#al-ohjeet td:first-child{font-weight:700;text-align:right;white-space:nowrap;color:#ffd9a0}`;
+#al-ohjeet table{border-collapse:collapse;font-size:16px;margin:auto}#al-ohjeet td{padding:4px 14px;border-bottom:1px solid #fff3}#al-ohjeet td:first-child{font-weight:700;text-align:right;white-space:nowrap;color:#ffd9a0}
+#al-paiva{position:absolute;inset:8vh 6vw;background:#0f2236ee;border:2px solid #fff;border-radius:8px;padding:18px 24px;overflow:auto;display:none;z-index:2;text-align:left}
+#al-paiva h2,#al-paiva h3{margin:12px 0 6px}#al-paiva table{border-collapse:collapse}#al-paiva td{padding:4px 12px;border-bottom:1px solid #fff3}#al-paiva li{margin:2px 0}`;
+import { lataa, paivakirjaHtml } from '../logic/paivakirja.js';
 export const aanetPaalla=()=>localStorage.getItem('jahti_aanet')!=='0';
 export function setupAloitus({onStart,onAanet}){const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const d=document.createElement('div');d.id='aloitus';d.innerHTML=`<picture><source id="al-mob" media="(max-aspect-ratio: 1/1)"><img class="bg" id="al-bg" alt="" style="display:none"></picture>
 <div id="al-tlogo">Koppelontien jänis</div><img id="al-logo" alt="Koppelontien jänis" style="display:none">
-<div id="al-napit"><button id="al-aloita">Aloita jahti</button><button id="al-kutsu">Kutsu kaveri</button><button id="al-ohje">Ohjeet</button><button id="al-aani"></button></div>
+<div id="al-napit"><button id="al-aloita">Aloita jahti</button><button id="al-kutsu">Kutsu kaveri</button><button id="al-paivakirja">Saalispäiväkirja</button><button id="al-ohje">Ohjeet</button><button id="al-aani"></button></div>
+<div id="al-paiva"></div>
 <div id="al-ohjeet"><h2 style="text-align:center;margin-top:0">Ohjeet</h2><table>${OHJEET.map(([k,t])=>`<tr><td>${k}</td><td>${t}</td></tr>`).join('')}</table><p style="text-align:center"><button id="al-sulje" style="font:700 18px sans-serif;padding:8px 24px">Sulje</button></p></div>
 <div id="al-kred">${KREDIITIT}</div>`;document.body.appendChild(d);const $=s=>d.querySelector(s);
   // kuvat: kokeile, uusi yritys kunnes löytyy
@@ -42,6 +46,8 @@ export function setupAloitus({onStart,onAanet}){const st=document.createElement(
   const aaniTxt=()=>$('#al-aani').textContent='Äänet: '+(aanetPaalla()?'päällä':'pois');aaniTxt();
   $('#al-aani').onclick=()=>{localStorage.setItem('jahti_aanet',aanetPaalla()?'0':'1');aaniTxt();if(aanetPaalla())tryPlay();else mus.pause();onAanet&&onAanet(aanetPaalla());};
   $('#al-ohje').onclick=()=>{$('#al-ohjeet').style.display='block';};$('#al-sulje').onclick=()=>{$('#al-ohjeet').style.display='none';};
+  const paiva=$('#al-paiva');
+  $('#al-paivakirja').onclick=()=>{paiva.innerHTML=paivakirjaHtml(lataa(localStorage))+'<p style="text-align:center"><button id="al-paiva-sulje" style="font:700 18px sans-serif;padding:8px 24px">Sulje</button></p>';paiva.style.display='block';paiva.querySelector('#al-paiva-sulje').onclick=()=>{paiva.style.display='none';};};
   $('#al-aloita').onclick=()=>{d.style.display='none';// tunnari himmenee pois 1.5 s
     removeEventListener('pointerdown',ele);removeEventListener('keydown',ele);if(mAC&&mG){const t=mAC.currentTime;mG.gain.setValueAtTime(mG.gain.value,t);mG.gain.linearRampToValueAtTime(0,t+1.5);setTimeout(()=>{try{mSrc&&mSrc.stop();mAC.close();}catch{}},1700);}
     window.__peliAlkanut=true;onStart();};
