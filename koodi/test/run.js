@@ -3,7 +3,7 @@ import { Hare, H } from '../logic/hare.js';
 import { Dog, D, nearTrack, dogInside } from '../logic/dog.js';
 import { audibility } from '../logic/hearing.js';
 import { Car, bodyBox } from '../logic/car.js';
-import { YARD, drivable, inBuilding, BUILDINGS, farmFootprints } from '../logic/world.js';
+import { YARD, START, drivable, inBuilding, BUILDINGS, farmFootprints } from '../logic/world.js';
 import { shotgun } from '../logic/shot.js';
 import { judgeShot } from '../logic/rules.js';
 import { Critter } from '../logic/wild.js';
@@ -125,4 +125,18 @@ t('koira kiertää rakennukset eikä ole sisällä pitkässä simulaatiossa',()=
   const dn=new Dog({x:A.x,z:A.z,seed:6});dn.state=D.NOUTO;dn.target=hare;
   for(let i=0;i<5000&&!hare.carried;i++){dn.update(.05,{hare,hares:[hare],player:{x:A.x,z:A.z+40}});steps++;assert.ok(!inside(dn.x,dn.z),'nouto');}
   assert.ok(hare.carried,'nouto');assert.ok(steps>8000&&cross>=8,[steps,cross]);});
+t('kyyti: koira pysyy autossa ja hyppy vie korin ulkopuolelle',()=>{
+  const c=new Car({x:120,z:-40,heading:0.6}),box=bodyBox(c);
+  const loc=(wx,wz)=>{const dx=wx-box.x,dz=wz-box.z,co=Math.cos(box.yaw),si=Math.sin(box.yaw);return [dx*co-dz*si,dx*si+dz*co];};
+  const inn=p=>{const [lx,lz]=loc(p.x,p.z);return lx>=box.minx&&lx<=box.maxx&&lz>=box.minz&&lz<=box.maxz;};
+  assert.ok(inn(c.cargo(0))&&inn(c.cargo(1)),'tavaratila');assert.ok(!inn(c.dogExit(0))&&!inn(c.dogExit(1)),'hyppy ulos');
+  const g=new Dog({x:0,z:0,seed:1,riding:true});
+  for(let i=0;i<200;i++)g.update(.05,{player:{x:400,z:0},hares:[],ride:{x:12,z:-4,dir:1}});
+  assert.equal(g.x,12);assert.equal(g.z,-4);assert.equal(g.state,D.HAKU);
+  g.riding=false;const p=c.dogExit(0);g.x=p.x;g.z=p.z;g._haku();
+  for(let i=0;i<30;i++)g.update(.05,{player:{x:400,z:0},hares:[]});
+  assert.ok(Math.hypot(g.x-p.x,g.z-p.z)>1);
+  const c2=new Car({x:START.x,z:START.z,heading:START.heading});
+  for(let i=0;i<30;i++)c2.update(.05,{throttle:1});
+  assert.ok(Math.hypot(c2.x-START.x,c2.z-START.z)>5,'lähtöpaikalta pääsee ajamaan');});
 console.log(`${n} testiä ok`);

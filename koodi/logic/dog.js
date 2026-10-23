@@ -49,9 +49,9 @@ export function nearTrack(hare,p,r){
 export const D = { NARUSSA:'narussa', TANNE:'tänne', SEURAA:'seuraa', TAALLA:'täällä', HAKU:'haku', YOJALKI:'yöjälki', YLOSOTTO:'ylösotto', AJO:'ajo', HUKKA:'hukka', PALUU:'paluu', NOUTO:'nouto', KANTO:'kanto' };
 export const CATCH_R=1.0, FETCH_R=150;
 export class Dog {
-  constructor({x=0,z=0,leashed=false,seed=2,speed=4.2,hukkaChance=1}={}){
+  constructor({x=0,z=0,leashed=false,seed=2,speed=4.2,hukkaChance=1,riding=false}={}){
     this.rand=mulberry32(seed);this.x=x;this.z=z;this.state=leashed?D.NARUSSA:D.HAKU;this.t=0;this.ang=0;this.ring=40;
-    this.speed=speed;this.hukkaChance=hukkaChance;this.idx=0;this.barking=false;this.trail=[];
+    this.speed=speed;this.hukkaChance=hukkaChance;this.idx=0;this.barking=false;this.trail=[];this.riding=!!riding;
   }
   get pos(){return{x:this.x,z:this.z};}
   // enter: kohde saa olla rakennuksen sisällä (pelaaja mökissä, saalis ladossa). Muuten kiertää.
@@ -109,8 +109,10 @@ export class Dog {
     this.wp={x,z};this.curve=(this.rand()-.5)*1.6;this.curveF=0.3+this.rand()*0.5;}
   _scent(hares){for(const h of hares){if(!h)continue;const f=nearTrack(h,this,SCENT_R);if(f){this.target=h;this._onTrack(f);return true;}}return false;}
   _onTrack(f){if(f.kind==='yo'){this.state=D.YOJALKI;this.idx=f.idx;}else{this.state=D.AJO;this.idx=f.idx;}this.t=0;}
-  update(dt,{hare,hares,player,players,fetch=[],obstacles}={}){
-    this.t+=dt;this.obstacles=obstacles||null;this.barking=false;this.sniffing=false;const hs=hares||[hare];
+  update(dt,{hare,hares,player,players,fetch=[],obstacles,ride}={}){
+    this.t+=dt;this.obstacles=obstacles||null;this.barking=false;this.sniffing=false;
+    if(this.riding){if(ride){this.x=ride.x;this.z=ride.z;if(ride.dir!=null)this.dir=ride.dir;}return;}
+    const hs=hares||[hare];
     // kaatunut, noutamaton jänis lähellä -> nouto (vapaana olevat tilat)
     if(!this.leashed&&[D.HAKU,D.SEURAA,D.TANNE,D.PALUU,D.HUKKA].includes(this.state)){const f=hs.concat(fetch).find(h=>!h.alive&&!h.carried&&!h.delivered&&!h.held&&!h.counted&&Math.hypot(h.x-this.x,h.z-this.z)<FETCH_R);if(f){this.target=f;this.state=D.NOUTO;this.t=0;}}
     // koira ajaa kerrallaan yhtä jänistä: target asetetaan kun jälki löytyy

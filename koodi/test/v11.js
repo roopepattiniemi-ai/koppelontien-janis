@@ -1,7 +1,7 @@
 // v1.1 testit: rele, synkviestit, haulit/veri, jäljet, haavoittuminen, nouto, näppäimet
 import assert from 'node:assert/strict';import fs from 'node:fs';
 import { Relay } from '../logic/relay.js';
-import { roomSeed, enc, dec, packWorld, applyWorld, Interp, seatFor, newRoomCode } from '../logic/sync.js';
+import { roomSeed, enc, dec, packWorld, applyWorld, Interp, seatFor, startSeat, newRoomCode } from '../logic/sync.js';
 import { pelletPattern, swarmR, swarmHits, judgeHits, woundDmg, groundImpacts, PELLETS, SWARM_KILL } from '../logic/shot.js';
 import { Hare, H } from '../logic/hare.js';
 import { Dog, D } from '../logic/dog.js';
@@ -23,7 +23,9 @@ t('synkviestit: enc/dec, packWorld->applyWorld, interpolointi, istumapaikka',()=
   const m=dec(enc(packWorld({dog,hares:hs})));const hs2=[new Hare({seed:9})],dog2={};applyWorld(m,{dog:dog2,hares:hs2});
   assert.equal(hs2[0].alive,false);assert.equal(hs2[0].carried,true);assert.equal(Math.round(hs2[0].x),10);assert.equal(dog2.state,'ajo');
   const ip=new Interp(0.1);ip.push(0,{x:0,yaw:3.1});ip.push(1,{x:10,yaw:-3.1});const v=ip.at(0.6);assert.ok(Math.abs(v.x-5)<1e-9);assert.ok(Math.abs(Math.abs(v.yaw)-3.14)<0.1);
-  assert.equal(seatFor('kuski'),'pelkaaja');assert.equal(seatFor(null),'kuski');});
+  assert.equal(seatFor('kuski'),'pelkaaja');assert.equal(seatFor(null),'kuski');
+  assert.equal(startSeat(true,'h',false),'kuski');assert.equal(startSeat(true,null,true),null);assert.equal(startSeat(true,'v',true),'pelkaaja');assert.equal(startSeat(true,'h',true),'kuski');assert.equal(startSeat(false,'h',false),null);
+  const rd={x:1,z:2,dir:.5,state:'ajo',barking:false,riding:true};const m2=dec(enc(packWorld({dog:rd,hares:hs})));const d3={};applyWorld(m2,{dog:d3,hares:[new Hare({seed:3})]});assert.equal(d3.riding,true);});
 t('haulit: 20–30 kpl, parvi 0.5 m@20 m ja 1.5 m@40 m, siemen toistuu',()=>{assert.ok(PELLETS>=20&&PELLETS<=30);assert.ok(Math.abs(2*swarmR(20)-0.5)<0.02);assert.ok(Math.abs(2*swarmR(40)-1.5)<0.03);
   assert.deepEqual(pelletPattern(42),pelletPattern(42));assert.notDeepEqual(pelletPattern(42),pelletPattern(43));});
 t('haulit: lähellä kaatuu aina, kaukana haavoittaa/ohi, ohi menneet maahan',()=>{const o={x:0,y:1.5,z:0},hit=d=>{const L=Math.hypot(d,1.3);return{x:d/L,y:-1.3/L,z:0};};
@@ -43,6 +45,7 @@ t('jäljet: yöjälki ruokapaikalta, muodon vaihto jatkaa jälkeä, suorituskyky
   const ms=performance.now()-t0;assert.ok(ms<500,'20 jänistä '+ms.toFixed(0)+' ms');const h=hs[0],L=h.nightTrail.length,home={...h.home};h.relocate();assert.ok(h.nightTrail.length>L);assert.notDeepEqual(h.home,home);});
 t('näppäimet: autossa R radio, Q kanava; C kyykky; E konteksti; Tab ei autossa',()=>{const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
   assert.match(src,/if\(pl\.inCar\)\{if\(e\.code==='KeyR'\)\{radio\.on=/);assert.match(src,/e\.code==='KeyQ'\)\{radio\.ch=/);assert.match(src,/!pl\.inCar&&e\.code==='KeyC'/);
+  assert.match(src,/seat:startSeat\(/);assert.match(src,/pl\.seat==='kuski'/);assert.match(src,/sfx_gps_piippaus',\{gain:\.15\}/);assert.match(src,/radio_'\+c\+'_1'/);
   assert.match(src,/janis:'E – ota jänis'/);assert.match(src,/if\(e\.code==='Tab'\)return;/);assert.match(src,/ikoni_kyykky\.png','kyykky'/);assert.match(src,/ikoni_gps\.png','GPS','gps-ikoni'/);
   const ik=fs.readFileSync(new URL('../IKONILISTA.md',import.meta.url),'utf8');assert.match(ik,/ikoni_kyykky\.png/);});
 t('render: web-palvelu, ws-riippuvuus, sama portti',()=>{const y=fs.readFileSync(new URL('../../render.yaml',import.meta.url),'utf8');assert.match(y,/type: web/);

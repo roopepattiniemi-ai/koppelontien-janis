@@ -29,5 +29,11 @@ export class Car {
   // nousu: riittää että on auton vieressä (koiraa ei oteta kyytiin)
   canEnter(player){const d=Math.hypot(player.x-this.x,player.z-this.z);
     if(d>3)return{ok:false,syy:'Liian kaukana autosta'};return{ok:true};}
-  exitPos(){return{x:this.x-Math.cos(this.heading)*1.8,z:this.z-Math.sin(this.heading)*1.8};} // kuljettajan puoli (mallin +X)
+  // paikallinen xz -> maailma. yaw = π − heading = carObj.rotation.y
+  localToWorld(lx,lz){const th=Math.PI-this.heading,c=Math.cos(th),s=Math.sin(th);
+    return{x:this.x+lx*c+lz*s,z:this.z-lx*s+lz*c};}
+  // koira_paikka [0, 0.58, -1.5]; slot 0 oikea (isäntä), 1 vasen (vieraan terrieri)
+  cargo(slot=0){return this.localToWorld(slot?-0.38:0.38,-1.5);}
+  dogExit(slot=0){return this.localToWorld(slot?-0.75:0.75,-2.8);} // takaluukun taakse, korin ulkopuolelle
+  exitPos(seat='kuski'){const side=seat==='pelkaaja'?1.8:-1.8;return{x:this.x+Math.cos(this.heading)*side,z:this.z+Math.sin(this.heading)*side};}
 }

@@ -40,7 +40,9 @@ export function animHare(n,st){if(!n)return;const t=st.t,s=st.spd;
 export const DOG_K={ajokoira:1,terrieri:0.565};
 export function animDog(n,st){if(!n)return;const t=st.t,s=st.spd,K=st.k??1;
   for(const k of ['jalka_ev','jalka_eo','jalka_tv','jalka_to','paa','korva_v','korva_o','hanta','leuka'])if(n[k])n[k].rotation.set(0,0,0);if(n.runko){n.runko.position.y=0;n.runko.scale.set(1,1,1);}
-  if(st.lying){for(const k of['jalka_ev','jalka_eo'])n[k]&&(n[k].rotation.x=-1.4);for(const k of['jalka_tv','jalka_to'])n[k]&&(n[k].rotation.x=1.3);if(n.runko){n.runko.position.y=-0.28*K;n.runko.scale.y=1+Math.sin(t*2.2)*0.015;}
+  if(st.sit){n.jalka_tv&&(n.jalka_tv.rotation.x=1.15);n.jalka_to&&(n.jalka_to.rotation.x=1.15);n.jalka_ev&&(n.jalka_ev.rotation.x=0.3);n.jalka_eo&&(n.jalka_eo.rotation.x=0.22);
+    if(n.runko)n.runko.position.y=-0.16*K;n.paa&&(n.paa.rotation.x=-0.08);}
+  else if(st.lying){for(const k of['jalka_ev','jalka_eo'])n[k]&&(n[k].rotation.x=-1.4);for(const k of['jalka_tv','jalka_to'])n[k]&&(n[k].rotation.x=1.3);if(n.runko){n.runko.position.y=-0.28*K;n.runko.scale.y=1+Math.sin(t*2.2)*0.015;}
     n.paa&&(n.paa.rotation.y=Math.sin(t*0.45)*0.7,n.paa.rotation.x=0.1*Math.sin(t*0.3));}
   else if(s>0.3){const f=s>3?3.2:1.8,ph=t*f*Math.PI*2,a=Math.min(0.8,0.3+s*0.08);
     n.jalka_ev&&(n.jalka_ev.rotation.x=Math.sin(ph)*a);n.jalka_eo&&(n.jalka_eo.rotation.x=Math.sin(ph+(s>3?0.4:Math.PI))*a);n.jalka_tv&&(n.jalka_tv.rotation.x=Math.sin(ph+Math.PI)*a);n.jalka_to&&(n.jalka_to.rotation.x=Math.sin(ph+(s>3?Math.PI+0.4:0))*a);
