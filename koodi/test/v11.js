@@ -95,7 +95,8 @@ t('lopetus: saunan luona, saalisrivi ja yhteenveto',()=>{const p=saunaPiste(),e=
 });
 import { lisaa, lataa, ennatykset, paivakirjaHtml, paivitaKoira, jahdinTeksti } from '../logic/paivakirja.js';
 import { haukkuTila, haukkuVali, haukkuSavel, haukkuAani } from '../logic/haukku.js';
-import { OTSIKOT, MAINOKSET, lehti, lehtiHtml, osuuPelaajaan, LEHDEN_NIMI } from '../logic/lehti.js';
+import { HAUSKAT, SURUT, MUISTOT, MAINOKSET, lehti, lehtiPoyta, lehtiHtml, osuuPelaajaan, LEHDEN_NIMI, siistiNimi, poytaMaailma, nearPoyta, POYTA_SADE } from '../logic/lehti.js';
+import { CABIN } from '../logic/world.js';
 const mem=()=>{const m=new Map();return{getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v))};};
 t('päiväkirja: kaato, noutaja ja ennätykset',()=>{const s=mem();
   assert.equal(lisaa(s,{laji:'kettu',paiva:'2026-10-23',pisteet:1,jahti:'a'}),null);
@@ -120,23 +121,37 @@ t('haukku: jälki harva, näköajo tiheä, hukka epävarma, terrieri kimeämpi',
   const d={x:1,z:2,dir:0,state:'ajo',barking:true,haukku:'nako',kimea:true};
   const packed=packWorld({dog:d,hares:[new Hare({seed:1})]});const g={};applyWorld(packed,{dog:g,hares:[new Hare({seed:2})]});
   assert.equal(g.haukku,'nako');assert.equal(g.kimea,true);});
-t('lehti: Kollinmäen Sanomat, usea mainos ja vaihtuvat pikku-uutiset',()=>{
-  assert.equal(LEHDEN_NIMI,'Kollinmäen Sanomat');assert.equal(OTSIKOT.length,6);assert.equal(MAINOKSET.length,7);
-  const otsikot=OTSIKOT.map(o=>o[0]);
-  for (const s of ['Kylähullu keksi jänikselle ansan – nälkä yllätti ja jäi itse porkkanaloukkuun','Metsästäjä luuli metsäkaveria ihmisjänikseksi','Kurikan mies ampui kaveriaan – koira nouti hatun','Jänis nauroi ojassa koko illan','Vitara jäi hankeen, radio soi vielä aamullakin','Seura kokoontui: huomioliivit pakollisiksi myös saunassa']) assert.ok(otsikot.includes(s),s);
+t('lehti: pöydän numero ja kuolinilmoitus',()=>{
+  assert.equal(LEHDEN_NIMI,'Kollinmäen Sanomat');assert.equal(MAINOKSET.length,7);
+  assert.ok(HAUSKAT.length>=8);assert.ok(SURUT.length>=2);assert.ok(MUISTOT.length>=6);
+  const hauskat=HAUSKAT.map(o=>o[0]),surut=SURUT.map(o=>o[0]);
+  assert.ok(hauskat.includes('Kylähullu keksi jänikselle ansan – nälkä yllätti ja jäi itse porkkanaloukkuun'));
+  assert.ok(surut.includes('Metsästäjä luuli metsäkaveria ihmisjänikseksi'));
+  assert.ok(surut.includes('Kurikan mies ampui kaveriaan – koira nouti hatun'));
+  assert.ok(MUISTOT.includes('Lähti jänistä, tuli jäniksenä'));
+  assert.ok(MUISTOT.includes('Kaipaamaan jäivät koira ja puolikas jallupullo'));
   for (const s of ['0,5 l Kolaa jauheena – piristevä ja hyvän hajuinen!','Uusi haulikko ennakoi jäniksen hypyn!','Jallovviina 7 tähteä, perhepakkaus, muovipullo 1,5 l','Huomioliivi, joka näkyy myös kaverille – nyt -50 %','Kollinmäen Kyläkauppa: makkaraa, patruunoita ja kahvia samasta hyllystä','Koiranpentu, joka haukkuu vain jäniksiä – ei naapurin akkaa','Tynnyrisaunan vuokraus, löylyt sisältyvät hintaan']) assert.ok(MAINOKSET.some(m=>m.teksti===s),s);
-  const a=lehti(5,61),b=lehti(5,61);assert.deepEqual(a,b);assert.equal(a.pisteet,61);
+  const a=lehti(5,61),b=lehti(5,61,'Kurikan kuski');assert.deepEqual(a,lehti(5,61));assert.equal(a.pisteet,61);
+  assert.equal(a.kuolin.nimi,'Metsäkaveri');assert.ok(MUISTOT.includes(a.kuolin.muisto));assert.equal(b.kuolin.nimi,'Kurikan kuski');
+  assert.ok(surut.includes(a.otsikko));assert.ok(!hauskat.includes(a.otsikko));
   assert.ok(a.mainokset.length>=2&&a.mainokset.length<=3);assert.ok(a.pikku.length>=2&&a.pikku.length<=3);
-  assert.ok(!a.pikku.includes(a.otsikko));assert.ok(a.ingressi.length>8);
-  const ots=new Set(),ads=new Set(),lkm=new Set(),plkm=new Set();
-  for(let i=0;i<80;i++){const l=lehti(i*97+3,i);ots.add(l.otsikko);l.mainokset.forEach(m=>ads.add(m.id));lkm.add(l.mainokset.length);plkm.add(l.pikku.length);
-    assert.ok(!l.pikku.includes(l.otsikko));assert.ok(l.mainokset.length>=2&&l.mainokset.length<=3);}
-  assert.equal(ots.size,OTSIKOT.length);assert.equal(ads.size,MAINOKSET.length);assert.ok(lkm.has(2)&&lkm.has(3));assert.ok(plkm.has(2)&&plkm.has(3));
-  const html=lehtiHtml(a);assert.match(html,/Kollinmäen Sanomat/);assert.match(html,/Pikku-uutisia/);assert.match(html,/61/);
-  assert.equal((html.match(/class="ks-mainos"/g)||[]).length,a.mainokset.length);
-  assert.ok(!/Ilta-Jänis/.test(html));
+  assert.ok(a.pikku.every(p=>hauskat.includes(p)&&p!==a.otsikko));
+  const poyta=lehtiPoyta(5);assert.deepEqual(poyta,lehtiPoyta(5));assert.equal(poyta.kuolin,null);assert.equal(poyta.pisteet,null);assert.equal(poyta.sulje,true);
+  assert.ok(hauskat.includes(poyta.otsikko));assert.ok(!surut.includes(poyta.otsikko));
+  assert.ok(poyta.mainokset.length>=2&&poyta.mainokset.length<=3);
+  const ots=new Set(),ads=new Set(),lkm=new Set(),muistot=new Set(),pots=new Set();
+  for(let i=0;i<90;i++){const l=lehti(i*97+3,i,'A');ots.add(l.otsikko);muistot.add(l.kuolin.muisto);l.mainokset.forEach(m=>ads.add(m.id));lkm.add(l.mainokset.length);
+    const q=lehtiPoyta(i*13+1);pots.add(q.otsikko);assert.equal(q.kuolin,null);assert.ok(!surut.includes(q.otsikko));assert.ok(q.mainokset.length>=2&&q.mainokset.length<=3);}
+  assert.equal(ots.size,SURUT.length);assert.equal(pots.size,HAUSKAT.length);assert.equal(ads.size,MAINOKSET.length);assert.ok(muistot.size>=4);assert.ok(lkm.has(2)&&lkm.has(3));
+  const html=lehtiHtml(b);assert.match(html,/Kollinmäen Sanomat/);assert.match(html,/ks-kuolin/);assert.match(html,/ks-risti/);assert.match(html,/ks-janis/);assert.match(html,/Kurikan kuski/);assert.match(html,/61/);
+  assert.equal((html.match(/class="ks-mainos"/g)||[]).length,b.mainokset.length);
+  const ph=lehtiHtml(poyta);assert.match(ph,/mökin pöydältä/);assert.match(ph,/sulkee lehden/);assert.ok(!/ks-kuolin|Metsäkaveri/.test(ph));
+  const xss=lehtiHtml(lehti(1,0,'<img>'));assert.match(xss,/&lt;img&gt;/);assert.ok(!/<img>/.test(xss));assert.equal(siistiNimi('  '),'Metsäkaveri');assert.equal(siistiNimi('x'.repeat(40)).length,24);
+  const pt=poytaMaailma(CABIN);assert.ok(inBuilding(pt.x,pt.z),'pöytä mökissä');assert.ok(!nearSauna(pt.x,pt.z,saunaPiste()));
+  assert.ok(nearPoyta(pt.x,pt.z,pt));assert.ok(!nearPoyta(pt.x+POYTA_SADE+0.2,pt.z,pt));
+  assert.ok(!/Ilta-Jänis/.test(html+ph));
   const kielletty=/Iltalehti|Ilta-Sanomat|Helsingin Sanomat|Jaloviina|Koskenkorva|Coca-Cola|Coca Cola/;
-  assert.ok(!kielletty.test(html+otsikot.join('\n')+MAINOKSET.map(m=>m.teksti).join('\n')));
+  assert.ok(!kielletty.test(html+ph+hauskat.join('\n')+surut.join('\n')+MUISTOT.join('\n')+MAINOKSET.map(m=>m.teksti).join('\n')));
   const o={x:0,y:1.5,z:0},suora={x:1,y:0,z:0},kohde={x:8,y:1.2,z:0};
   assert.ok(osuuPelaajaan(o,suora,'kivaari',1,kohde));
   assert.ok(!osuuPelaajaan(o,{x:0,y:0,z:1},'kivaari',1,kohde));
@@ -144,7 +159,8 @@ t('lehti: Kollinmäen Sanomat, usea mainos ja vaihtuvat pikku-uutiset',()=>{
   assert.ok(osuuPelaajaan(o,suora,'haulikko',3,kohde));
   const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
   const al=fs.readFileSync(new URL('../public/aloitus.js',import.meta.url),'utf8');
-  assert.match(al,/Saalispäiväkirja/);assert.match(src,/t:'lehti'/);assert.match(src,/musiikki_urut/);assert.match(src,/jahdinTeksti/);
+  assert.match(al,/Saalispäiväkirja/);assert.match(al,/Nimi lehdessä/);assert.match(al,/Kollinmäen Sanomat/);
+  assert.match(src,/t:'lehti'/);assert.match(src,/musiikki_urut/);assert.match(src,/jahdinTeksti/);assert.match(src,/E – lue lehteä/);assert.match(src,/lukuOn/);
   assert.ok(!/SND=\[[^\]]*musiikki_urut/.test(src));
   for(const ext of['ogg','mp3']){const st=fs.statSync(new URL('../../aanet/musiikki_urut.'+ext,import.meta.url));assert.ok(st.size>80000,ext);}
 });

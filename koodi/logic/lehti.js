@@ -5,13 +5,39 @@ import { mulberry32 } from './rng.js';
 
 export const LEHDEN_NIMI = 'Kollinmäen Sanomat';
 
-export const OTSIKOT = [
+// Pöydän lehti: hauskoja uutisia. Lopetuslehden surullinen pääotsikko ei ole tässä.
+export const HAUSKAT = [
   ['Kylähullu keksi jänikselle ansan – nälkä yllätti ja jäi itse porkkanaloukkuun', 'Ansa toimi niin kuin se oli piirretty. Syötti maistui keksijälle paremmin kuin jänikselle.'],
-  ['Metsästäjä luuli metsäkaveria ihmisjänikseksi', 'Silminnäkijän mukaan kaveri loikki, mutta vastasi puhutteluun selvin sanoin.'],
-  ['Kurikan mies ampui kaveriaan – koira nouti hatun', 'Hattu toimitettiin omistajalleen märkänä mutta ehjänä. Kaveri selvisi säikähdyksellä.'],
   ['Jänis nauroi ojassa koko illan', 'Nauru kuului Koppelontielle asti. Jahtiseurue ei antanut lausuntoa.'],
   ['Vitara jäi hankeen, radio soi vielä aamullakin', 'Kuski käveli saunalle. Radio jäi kanavalleen ja hoiti yövuoron yksin.'],
-  ['Seura kokoontui: huomioliivit pakollisiksi myös saunassa', 'Päätös syntyi yksimielisesti sen jälkeen, kun kaveri oli jo hangessa.']
+  ['Seura kokoontui: huomioliivit pakollisiksi myös saunassa', 'Päätös oli yksimielinen. Löylyt eivät himmentäneet oranssia.'],
+  ['Koira toi kotiin kumisaappaan ja odotti kehuja', 'Saapas oli ehjä. Omistaja löytyi seuraavana aamuna.'],
+  ['Kollinmäen kahvipannu voitti jahtikisan', 'Pannu oli ajoissa paikalla. Jänis ei ollut.'],
+  ['Oja oli syvempi kuin kartta väitti', 'Kartta pyysi anteeksi. Saapas ei.'],
+  ['Naapuri lainasi huopikkaat ja sai ne takaisin märkinä', 'Huopikkaat kuivuivat kiukaan vieressä. Ystävyys myös.'],
+  ['GPS neuvoi kiertämään navetan kahdesti', 'Toisella kierroksella kuski tervehti itseään.'],
+  ['Makkara katosi hyllystä ennen patruunoita', 'Kyläkauppa epäilee koiraa. Koira ei kommentoi.']
+];
+
+// Lopetuslehden pääotsikko. Sävy on kömmähdys, ei vahinko.
+export const SURUT = [
+  ['Metsästäjä luuli metsäkaveria ihmisjänikseksi', 'Silminnäkijän mukaan kaveri loikki, mutta vastasi puhutteluun selvin sanoin.'],
+  ['Kurikan mies ampui kaveriaan – koira nouti hatun', 'Hattu toimitettiin omistajalleen märkänä mutta ehjänä. Kaveri selvisi säikähdyksellä.'],
+  ['Haulikko tunnisti oranssin liivin jäniksen korviksi', 'Liivi selvisi, ystävyys selvisi. Saalista ei kirjattu.'],
+  ['Ampuja väittää tähdänneensä hankeen', 'Hanki ei vahvistanut tietoa. Kaveri vahvisti hankeen kaatumisen.']
+];
+
+export const OTSIKOT = HAUSKAT.concat(SURUT);
+
+export const MUISTOT = [
+  'Lähti jänistä, tuli jäniksenä',
+  'Kaipaamaan jäivät koira ja puolikas jallupullo',
+  'Hattu palasi ensin, kaveri heti perässä',
+  'Muistetaan loikkana, ei riitana',
+  'Sauna oli jo lämmin, ja se lohdutti',
+  'Koira nuoli posken ja piti sen sovinnon merkkinä',
+  'Huomioliivi selvisi. Ystävyys myös.',
+  'Ei kaatunut saaliiksi, vaan tarinan vuoksi'
 ];
 
 export const MAINOKSET = [
@@ -31,13 +57,51 @@ function poimi(r, lista, n) {
   return out;
 }
 
-export function lehti(seed, pisteet = 0) {
+export function siistiNimi(s) {
+  const t = String(s ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 24);
+  return t || 'Metsäkaveri';
+}
+
+function numero(seed, lista, pikkuLista) {
   const r = mulberry32(seed >>> 0);
-  const o = OTSIKOT[Math.floor(r() * OTSIKOT.length)];
-  const muut = OTSIKOT.filter(x => x[0] !== o[0]);
+  const o = lista[Math.floor(r() * lista.length)];
+  const muut = pikkuLista.filter(x => x[0] !== o[0]);
   const pikku = poimi(r, muut, 2 + Math.floor(r() * 2)).map(x => x[0]);
   const mainokset = poimi(r, MAINOKSET, 2 + Math.floor(r() * 2));
-  return { nimi: LEHDEN_NIMI, otsikko: o[0], ingressi: o[1], pikku, mainokset, pisteet: pisteet | 0 };
+  return { o, pikku, mainokset, r };
+}
+
+// Lopetus: surullinen pääotsikko, hauskat pikku-uutiset, kuolinilmoitus ja pisteet.
+export function lehti(seed, pisteet = 0, nimi) {
+  const { o, pikku, mainokset, r } = numero(seed, SURUT, HAUSKAT);
+  const muisto = MUISTOT[Math.floor(r() * MUISTOT.length)];
+  return {
+    nimi: LEHDEN_NIMI, otsikko: o[0], ingressi: o[1], pikku, mainokset, pisteet: pisteet | 0,
+    kuolin: { nimi: siistiNimi(nimi), muisto }, kuva: 'kaatui',
+    ala: 'Kollinmäki · Kurikka · ilmestyy kun kaveri kaatuu'
+  };
+}
+
+// Mökin pöytä: sama lehti ilman kuolinilmoitusta ja ilman suruotsikkoa. Sama siemen = sama numero.
+export function lehtiPoyta(seed) {
+  const { o, pikku, mainokset } = numero((seed >>> 0) ^ 0x9e3779b9, HAUSKAT, HAUSKAT);
+  return {
+    nimi: LEHDEN_NIMI, otsikko: o[0], ingressi: o[1], pikku, mainokset, pisteet: null,
+    kuolin: null, kuva: 'poyta', sulje: true,
+    ala: 'Kollinmäki · Kurikka · mökin pöydältä'
+  };
+}
+
+// Pöytä mökin sisällä, ovesta (itä, paikallinen +z) poispäin. x = itä, z = etelä.
+export const POYTA_SADE = 1.6;
+export function poytaMaailma(cabin) {
+  const lx = 0.15, lz = -0.7;
+  const sx = cabin.sx || 1, sz = cabin.sz || 1;
+  const c = Math.cos(cabin.rot || 0), s = Math.sin(cabin.rot || 0);
+  return { x: cabin.x + lx * sx * c + lz * sz * s, z: cabin.z - lx * sx * s + lz * sz * c };
+}
+export function nearPoyta(px, pz, p, r = POYTA_SADE) {
+  return !!p && Math.hypot(px - p.x, pz - p.z) <= r;
 }
 
 // Rintakehä pallona. Kivääri kantaa pidemmälle kuin haulikon parvi.
@@ -56,15 +120,23 @@ const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&
 export function lehtiHtml(l) {
   const mainokset = (l.mainokset || []).map(m => `<aside class="ks-mainos"><b>MAINOS</b><canvas class="ks-kuva" data-id="${esc(m.id)}" width="88" height="78"></canvas><span>${esc(m.teksti)}</span></aside>`).join('');
   const pikku = (l.pikku || []).map(p => `<li>${esc(p)}</li>`).join('');
+  const piste = l.pisteet == null ? '' : `<li>Jahdin pisteet jäivät lukemaan ${l.pisteet | 0}. Toimitus ei suosittele uusintaa.</li>`;
+  const kuva = l.kuva === 'poyta'
+    ? `<div class="ks-kuva-juttu" aria-hidden="true"><div class="ks-ukko ks-pysty"></div><div class="ks-korva"></div><div class="ks-hanki"></div><p>Kuvassa hanki ja jäniksen korvat. Ketään ei kaatunut.</p></div>`
+    : `<div class="ks-kuva-juttu" aria-hidden="true"><div class="ks-ukko ks-pysty"></div><div class="ks-ukko ks-kaatunut"></div><div class="ks-hanki"></div><p>Kuvassa kaveri ja hanki. Haukkua ei näy.</p></div>`;
+  const kuolin = l.kuolin ? `<section class="ks-kuolin"><div class="ks-risti" aria-hidden="true">†</div><canvas class="ks-janis" width="140" height="90"></canvas><h2>${esc(l.kuolin.nimi)}</h2><p>${esc(l.kuolin.muisto)}</p></section>` : '';
+  const sulje = l.sulje ? `<p class="ks-sulje">E tai Esc sulkee lehden</p>` : '';
   return `<article class="ks">
-<header class="ks-head"><div class="ks-nimi">${esc(l.nimi)}</div><div class="ks-ala">Kollinmäki · Kurikka · ilmestyy kun kaveri kaatuu</div></header>
+<header class="ks-head"><div class="ks-nimi">${esc(l.nimi)}</div><div class="ks-ala">${esc(l.ala)}</div></header>
 <h1>${esc(l.otsikko)}</h1>
 <p class="ks-ing">${esc(l.ingressi)}</p>
+${kuolin}
 <div class="ks-cols">
-  <div class="ks-kuva-juttu" aria-hidden="true"><div class="ks-ukko ks-pysty"></div><div class="ks-ukko ks-kaatunut"></div><div class="ks-hanki"></div><p>Kuvassa kaveri ja hanki. Haukkua ei näy.</p></div>
+  ${kuva}
   <div class="ks-mainokset">${mainokset}</div>
 </div>
-<section class="ks-pikk"><h2>Pikku-uutisia</h2><ul>${pikku}<li>Jahdin pisteet jäivät lukemaan ${l.pisteet | 0}. Toimitus ei suosittele uusintaa.</li></ul></section>
+<section class="ks-pikk"><h2>Pikku-uutisia</h2><ul>${pikku}${piste}</ul></section>
+${sulje}
 </article>`;
 }
 
@@ -190,4 +262,30 @@ export function piirraPullo(canvas) {
   g.font = 'bold 9px sans-serif';
   g.textAlign = 'center';
   g.fillText('7', w / 2, 49);
+}
+
+// Valkoinen jänis kuolinilmoituksen kuvaksi. Ei ole minkään merkin logo.
+export function piirraJanis(canvas) {
+  const g = canvas.getContext('2d'); if (!g) return;
+  const w = canvas.width, h = canvas.height, cx = w / 2;
+  pohja(g, w, h);
+  g.fillStyle = '#f7f4ee';
+  g.beginPath();
+  g.ellipse(cx - 16, 28, 7, 22, -0.25, 0, Math.PI * 2);
+  g.ellipse(cx + 16, 28, 7, 22, 0.25, 0, Math.PI * 2);
+  g.fill(); g.stroke();
+  g.beginPath();
+  g.ellipse(cx, 58, 28, 16, 0, 0, Math.PI * 2);
+  g.fill(); g.stroke();
+  g.beginPath();
+  g.arc(cx + 18, 50, 12, 0, Math.PI * 2);
+  g.fill(); g.stroke();
+  g.fillStyle = '#2a241c';
+  g.beginPath();
+  g.arc(cx + 22, 48, 2, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#f7f4ee';
+  g.beginPath();
+  g.arc(cx - 24, 62, 6, 0, Math.PI * 2);
+  g.fill(); g.stroke();
 }
