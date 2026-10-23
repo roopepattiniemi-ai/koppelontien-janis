@@ -120,19 +120,23 @@ t('haukku: jälki harva, näköajo tiheä, hukka epävarma, terrieri kimeämpi',
   const d={x:1,z:2,dir:0,state:'ajo',barking:true,haukku:'nako',kimea:true};
   const packed=packWorld({dog:d,hares:[new Hare({seed:1})]});const g={};applyWorld(packed,{dog:g,hares:[new Hare({seed:2})]});
   assert.equal(g.haukku,'nako');assert.equal(g.kimea,true);});
-t('lehti: kahdeksan otsikkoa, sama siemen, parodiamainos, osuma kaveriin',()=>{
-  assert.ok(OTSIKOT.length>=8);assert.equal(LEHDEN_NIMI,'Ilta-Jänis');
-  const otsikot=OTSIKOT.map(o=>o[0]).join('\n');
-  assert.match(otsikot,/Metsästäjä luuli metsäkaveria ihmisjänikseksi/);
-  assert.match(otsikot,/Se loikki ihan kuin jänis/);
-  assert.match(otsikot,/Kurikan mies ampui kaveriaan/);
-  const a=lehti(5,61),b=lehti(5,61);assert.equal(a.otsikko,b.otsikko);assert.equal(a.ingressi,b.ingressi);assert.deepEqual(a.mainos,b.mainos);assert.equal(a.pisteet,61);
-  const ots=new Set(),ads=new Set();for(let i=0;i<48;i++){const l=lehti(i*97+3,i);ots.add(l.otsikko);ads.add(l.mainos.nimi);}
-  assert.ok(ots.size>=8,'otsikoita '+ots.size);assert.ok(ads.size>=3,'mainoksia '+ads.size);
-  assert.ok(MAINOKSET.some(m=>m.nimi==='Jallovviina'&&/muovipullo 1,5 l/.test(m.rivi)));
-  const html=lehtiHtml(a);assert.match(html,/Ilta-Jänis/);assert.match(html,/61/);assert.match(html,/ij-pullo/);
-  const kielletty=/Iltalehti|Ilta-Sanomat|Helsingin Sanomat|Jaloviina|Koskenkorva/;
-  assert.ok(!kielletty.test(html+otsikot+MAINOKSET.map(m=>m.nimi+' '+m.rivi).join(' ')));
+t('lehti: Kollinmäen Sanomat, usea mainos ja vaihtuvat pikku-uutiset',()=>{
+  assert.equal(LEHDEN_NIMI,'Kollinmäen Sanomat');assert.equal(OTSIKOT.length,6);assert.equal(MAINOKSET.length,7);
+  const otsikot=OTSIKOT.map(o=>o[0]);
+  for (const s of ['Kylähullu keksi jänikselle ansan – nälkä yllätti ja jäi itse porkkanaloukkuun','Metsästäjä luuli metsäkaveria ihmisjänikseksi','Kurikan mies ampui kaveriaan – koira nouti hatun','Jänis nauroi ojassa koko illan','Vitara jäi hankeen, radio soi vielä aamullakin','Seura kokoontui: huomioliivit pakollisiksi myös saunassa']) assert.ok(otsikot.includes(s),s);
+  for (const s of ['0,5 l Kolaa jauheena – piristevä ja hyvän hajuinen!','Uusi haulikko ennakoi jäniksen hypyn!','Jallovviina 7 tähteä, perhepakkaus, muovipullo 1,5 l','Huomioliivi, joka näkyy myös kaverille – nyt -50 %','Kollinmäen Kyläkauppa: makkaraa, patruunoita ja kahvia samasta hyllystä','Koiranpentu, joka haukkuu vain jäniksiä – ei naapurin akkaa','Tynnyrisaunan vuokraus, löylyt sisältyvät hintaan']) assert.ok(MAINOKSET.some(m=>m.teksti===s),s);
+  const a=lehti(5,61),b=lehti(5,61);assert.deepEqual(a,b);assert.equal(a.pisteet,61);
+  assert.ok(a.mainokset.length>=2&&a.mainokset.length<=3);assert.ok(a.pikku.length>=2&&a.pikku.length<=3);
+  assert.ok(!a.pikku.includes(a.otsikko));assert.ok(a.ingressi.length>8);
+  const ots=new Set(),ads=new Set(),lkm=new Set(),plkm=new Set();
+  for(let i=0;i<80;i++){const l=lehti(i*97+3,i);ots.add(l.otsikko);l.mainokset.forEach(m=>ads.add(m.id));lkm.add(l.mainokset.length);plkm.add(l.pikku.length);
+    assert.ok(!l.pikku.includes(l.otsikko));assert.ok(l.mainokset.length>=2&&l.mainokset.length<=3);}
+  assert.equal(ots.size,OTSIKOT.length);assert.equal(ads.size,MAINOKSET.length);assert.ok(lkm.has(2)&&lkm.has(3));assert.ok(plkm.has(2)&&plkm.has(3));
+  const html=lehtiHtml(a);assert.match(html,/Kollinmäen Sanomat/);assert.match(html,/Pikku-uutisia/);assert.match(html,/61/);
+  assert.equal((html.match(/class="ks-mainos"/g)||[]).length,a.mainokset.length);
+  assert.ok(!/Ilta-Jänis/.test(html));
+  const kielletty=/Iltalehti|Ilta-Sanomat|Helsingin Sanomat|Jaloviina|Koskenkorva|Coca-Cola|Coca Cola/;
+  assert.ok(!kielletty.test(html+otsikot.join('\n')+MAINOKSET.map(m=>m.teksti).join('\n')));
   const o={x:0,y:1.5,z:0},suora={x:1,y:0,z:0},kohde={x:8,y:1.2,z:0};
   assert.ok(osuuPelaajaan(o,suora,'kivaari',1,kohde));
   assert.ok(!osuuPelaajaan(o,{x:0,y:0,z:1},'kivaari',1,kohde));
