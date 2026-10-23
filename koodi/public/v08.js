@@ -1,6 +1,8 @@
 // v0.8: kyltit, eläinanimaatiot, 3D-äänet, viewmodel-haulikko, Vitaran sisänäkymä, radion näyttö
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { asetaHanskat, makeHunter } from './hahmo.js';
+export { makeHunter };
 const G='/grafiikka/';
 const nearestT=t=>{t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;t.colorSpace=THREE.SRGBColorSpace;return t;};
 const vc=root=>root.traverse(o=>{if(o.isMesh&&o.geometry.attributes.color){o.material.vertexColors=true;}});
@@ -79,12 +81,12 @@ export function setupViewmodel(){
   const vm={scene,cam,pivot,gunG,n:{},aim:0,kick:0,reload:0,shells:[],flash:null,loaded:false};
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.16,0.16),new THREE.MeshBasicMaterial({color:0xffc060,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));fl.visible=false;vm.flash=fl;
   new GLTFLoader().load(G+'mallit/haulikko.glb',gl=>{vc(gl.scene);gl.scene.traverse(o=>{if(o.isMesh){o.material.flatShading=true;o.frustumCulled=false;}});gunG.add(gl.scene);for(const k of['piiput','suu','helmi','liipaisin'])vm.n[k]=gl.scene.getObjectByName(k);
-    (vm.n.suu||gunG).add(fl);vm.loaded=true;},undefined,e=>{vm.err=String(e.message||e);});
+    asetaHanskat(gl.scene);(vm.n.suu||gunG).add(fl);vm.loaded=true;},undefined,e=>{vm.err=String(e.message||e);});
   vm.shoot=()=>{vm.kick=1;fl.visible=true;fl.rotation.z=Math.random()*3;vm.flashT=0.05;};
   vm.startReload=()=>{vm.reload=1.6;vm.ejected=false;};
-  vm.update=(dt,{moving,t,aim})=>{vm.aim+=((aim?1:0)-vm.aim)*Math.min(1,dt*8);const a=vm.aim,bob=moving?1-a*0.8:0;
-    const hip={x:0.16,y:-0.15,z:-0.06,rx:0.04,ry:0.10,rz:0.04};
-    pivot.position.set(hip.x*(1-a)+Math.cos(t*8)*0.006*bob,hip.y*(1-a)+Math.abs(Math.sin(t*8))*0.008*bob,hip.z*(1-a)+vm.kick*0.07);
+  vm.update=(dt,{moving,t,aim,run,crouch})=>{vm.aim+=((aim?1:0)-vm.aim)*Math.min(1,dt*8);const a=vm.aim,bob=moving?1-a*0.8:0,f=run?12:crouch?6.2:8,amp=run?1.6:crouch?0.55:1;
+    const hip={x:0.16,y:-0.15-(crouch?0.05:0),z:-0.06,rx:0.04+(crouch?0.08:0),ry:0.10,rz:0.04};
+    pivot.position.set(hip.x*(1-a)+Math.cos(t*f)*0.006*bob*amp,hip.y*(1-a)+Math.abs(Math.sin(t*f))*0.008*bob*amp,hip.z*(1-a)+vm.kick*0.07);
     pivot.rotation.set(hip.rx*(1-a)+0.0223*a+vm.kick*0.15,hip.ry*(1-a),hip.rz*(1-a));
     vm.kick=Math.max(0,vm.kick-dt*6);if(vm.flashT!==undefined){vm.flashT-=dt;if(vm.flashT<=0)fl.visible=false;}
     if(vm.reload>0){vm.reload-=dt;const r=vm.reload,e=r>1.2?(1.6-r)/0.4:r>0.4?1:r/0.4;if(vm.n.piiput)vm.n.piiput.rotation.x=-0.6*e;
@@ -127,14 +129,3 @@ export function setupInterior(scene){
     g.fillStyle=on?'#020802':'#050805';g.fillRect(46,16,163,32);if(on){g.fillStyle='#EFFFEF';g.textAlign='center';g.font='bold 15px monospace';g.fillText(name,127,31,158);g.font='bold 10px monospace';g.fillText(freq+' MHz',127,44);}tex.needsUpdate=true;};
   return it;
 }
-// v1.1: toisen pelaajan low-poly metsästäjä huomioliivissä (katsoo -z). userData.sit(istuu, kyykky)
-export function makeHunter(){const g=new THREE.Group(),M=c=>new THREE.MeshLambertMaterial({color:c}),B=(w,h,d,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);return o;};
-  const pants=M(0x3b4a2e),vest=M(0xff7a00),refl=new THREE.MeshBasicMaterial({color:0xe8f0f0}),skin=M(0xe0b090),cap=M(0xff5a00),boot=M(0x222222);
-  const legs=new THREE.Group();legs.add(B(0.16,0.82,0.18,pants,-0.11,0.47,0),B(0.16,0.82,0.18,pants,0.11,0.47,0),B(0.18,0.1,0.28,boot,-0.11,0.05,-0.04),B(0.18,0.1,0.28,boot,0.11,0.05,-0.04));g.add(legs);
-  const up=new THREE.Group();up.position.y=0.88;g.add(up);
-  up.add(B(0.46,0.62,0.28,vest,0,0.31,0),B(0.47,0.05,0.29,refl,0,0.22,0),B(0.47,0.05,0.29,refl,0,0.40,0));
-  up.add(B(0.12,0.56,0.14,vest,-0.30,0.30,0),B(0.12,0.56,0.14,vest,0.30,0.30,-0.05));
-  up.add(B(0.22,0.24,0.22,skin,0,0.76,0),B(0.25,0.08,0.25,cap,0,0.91,0),B(0.2,0.03,0.12,cap,0,0.88,-0.16));
-  const gun=B(0.05,0.05,1.1,M(0x2a2420),0.30,0.05,-0.25);gun.rotation.x=-0.9;up.add(gun);
-  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});g.name='toinen_pelaaja';
-  g.userData.sit=(sit,crouch)=>{legs.visible=!sit;up.position.y=sit?0:crouch?0.45:0.88;legs.scale.y=crouch?0.5:1;};return g;}

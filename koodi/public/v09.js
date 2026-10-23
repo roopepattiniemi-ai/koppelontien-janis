@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { inBounds, BOUND, clampB } from '/logic/bounds.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { asetaHanskat } from './hahmo.js';
 import { Critter } from '/logic/wild.js';
 const G='/grafiikka/';const loader=new GLTFLoader();
 export const missing=[];window.__puuttuvat=missing;
@@ -91,7 +92,7 @@ export function setupGrass(scene,{height,ok,rand=Math.random,count=[2500,2000,12
 export function setupWeapons(vm){const W={weapon:'haulikko',bino:0,binoOn:false,bolt:0,rifleShells:3,zoom:6,sway:0};
   const rifleG=new THREE.Group();rifleG.position.set(0,-0.065,-0.195);rifleG.visible=false;vm.pivot.add(rifleG);
   const rfb=fbGroup(boxM(0.04,0.06,1.1,0x3a2a1a,-0.02,-0.15),boxM(0.035,0.035,0.33,0x111111,0.065,-0.06));rifleG.add(rfb);W.n={};
-  loader.load(G+'mallit/kivaari.glb',gl=>{vc(gl.scene);gl.scene.traverse(o=>{if(o.isMesh)o.frustumCulled=false;});rifleG.clear();rifleG.add(gl.scene);for(const k of['lukko','liipaisin','kiikaritahtain','suu','silma'])W.n[k]=gl.scene.getObjectByName(k);if(W.n.lukko)W.n.lukko.userData.z0=W.n.lukko.position.z;},undefined,()=>missing.push('mallit/kivaari.glb'));
+  loader.load(G+'mallit/kivaari.glb',gl=>{vc(gl.scene);gl.scene.traverse(o=>{if(o.isMesh)o.frustumCulled=false;});rifleG.clear();rifleG.add(gl.scene);for(const k of['lukko','liipaisin','kiikaritahtain','suu','silma'])W.n[k]=gl.scene.getObjectByName(k);if(W.n.lukko)W.n.lukko.userData.z0=W.n.lukko.position.z;asetaHanskat(gl.scene);},undefined,()=>missing.push('mallit/kivaari.glb'));
   const binoG=new THREE.Group();binoG.visible=false;vm.scene.add(binoG);binoG.add(fbGroup(boxM(0.05,0.05,0.17,0x223322,0,-0.08),boxM(0.05,0.05,0.17,0x223322,0,-0.08)));binoG.children[0].children[0].position.x=-0.033;binoG.children[0].children[1].position.x=0.033;
   loader.load(G+'mallit/kiikarit.glb',gl=>{vc(gl.scene);gl.scene.traverse(o=>{if(o.isMesh)o.frustumCulled=false;});binoG.clear();binoG.add(gl.scene);},undefined,()=>missing.push('mallit/kiikarit.glb'));
   // overlayt

@@ -1,6 +1,6 @@
 // v1.1 moninpeli: puhtaat apufunktiot (testattavissa Nodessa). Viestit JSONina releen läpi.
 // Viestit:
-//  {t:'p', x,y,z,yaw,pitch,inCar,seat,crouch,radio:{on,ch}, car?:{x,z,h,y,pitch,roll,speed,steer}}  pelaajan tila (15 Hz), car vain kuskilta
+//  {t:'p', x,y,z,yaw,pitch,inCar,seat,crouch,aim?,ase?:'h'|'k',nimi?, car?:{x,z,h,speed,steer}}  pelaajan tila (15 Hz), car vain kuskilta. aim ja ase ovat valinnaisia hahmon animaatiota varten.
 //  {t:'w', dog:{x,z,dir,state,barking,riding}, hares:[[x,z,heading,state,alive,carried,delivered,held,counted,damage]], cr:[[x,z,heading,state,alive]], birds:[[x,y,z,alive]], bag:{id:n}}  isännän maailma (10 Hz)
 //  {t:'s', o:{x,y,z}, d:{x,y,z}, w:'haulikko'|'kivaari', seed, by}  laukaus: molemmat soittavat 3D-äänen; isäntä ratkaisee osumat samalla siemenellä
 //  {t:'r', on, ch}  radion tila (kuka tahansa autossa oleva)
