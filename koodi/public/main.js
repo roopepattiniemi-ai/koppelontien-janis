@@ -4,7 +4,7 @@ import * as V8 from '/v08.js';
 import * as V9 from '/v09.js';
 import * as TV from '/tienvarsi.js';
 import * as AL from '/aloitus.js';
-import { pickJuonto } from '/logic/radio.js';
+import { pickJuonto, BIISIT } from '/logic/radio.js';
 import { judgeShot, LAJIT } from '/logic/rules.js';
 import { Car, bodyBox } from '/logic/car.js';
 import { CABIN, YARD, START, SIGNS, inBuilding } from '/logic/world.js';
@@ -204,7 +204,7 @@ function radioStop(){if(radio.src){radio.src.onended=null;try{radio.src.stop();}
 async function radioPlay(list){radioStop();const tok=radio.tok=(radio.tok||0)+1;
   for(const n of list){const b=await rbuf(n);if(tok!==radio.tok||!radio.on)return;if(!b)continue;
     await new Promise(res=>{const s=AC.createBufferSource();s.buffer=b;const sg=AC.createGain();sg.gain.value=n.includes('juonto_')?1.15:1;s.connect(sg).connect(radioOut().hp);s.onended=res;radio.src=s;s.start();});if(tok!==radio.tok)return;}
-  if(tok===radio.tok&&radio.on){const c=CH[radio.ch].k;const j=pickJuonto(c,radio.lastJ);if(j)radio.lastJ=j;radioPlay([...(j?[j]:[]),'radio_'+c+'_1']);}}
+  if(tok===radio.tok&&radio.on){const c=CH[radio.ch].k;const j=pickJuonto(c,radio.lastJ);if(j)radio.lastJ=j;radio.song=(radio.song+1)%BIISIT;radioPlay([...(j?[j]:[]),'radio_'+c+'_'+(radio.song+1)]);}}
 function radioTune(jingle){if(!AC)return;const c=CH[radio.ch].k;radio.showT=2.5;radio.song=0;radioPlay(jingle?['sfx_radio_kanava','radio_'+c+'_tunnus','radio_'+c+'_1']:['radio_'+c+'_1']);}
 function radioOff(){radio.tok=(radio.tok||0)+1;radioStop();}
 const keys={};addEventListener('keydown',e=>{keys[e.code]=true;

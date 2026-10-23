@@ -45,7 +45,7 @@ t('jäljet: yöjälki ruokapaikalta, muodon vaihto jatkaa jälkeä, suorituskyky
   const ms=performance.now()-t0;assert.ok(ms<500,'20 jänistä '+ms.toFixed(0)+' ms');const h=hs[0],L=h.nightTrail.length,home={...h.home};h.relocate();assert.ok(h.nightTrail.length>L);assert.notDeepEqual(h.home,home);});
 t('näppäimet: autossa R radio, Q kanava; C kyykky; E konteksti; Tab ei autossa',()=>{const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
   assert.match(src,/if\(pl\.inCar\)\{if\(e\.code==='KeyR'\)\{radio\.on=/);assert.match(src,/e\.code==='KeyQ'\)\{radio\.ch=/);assert.match(src,/!pl\.inCar&&e\.code==='KeyC'/);
-  assert.match(src,/seat:startSeat\(/);assert.match(src,/pl\.seat==='kuski'/);assert.match(src,/sfx_gps_piippaus',\{gain:\.15\}/);assert.match(src,/radio_'\+c\+'_1'/);
+  assert.match(src,/seat:startSeat\(/);assert.match(src,/pl\.seat==='kuski'/);assert.match(src,/sfx_gps_piippaus',\{gain:\.15\}/);assert.match(src,/radio_'\+c\+'_1'/);assert.match(src,/import \{ pickJuonto, BIISIT \}/);assert.match(src,/radio\.song=\(radio\.song\+1\)%BIISIT/);
   assert.match(src,/janis:'E – ota jänis'/);assert.match(src,/if\(e\.code==='Tab'\)return;/);assert.match(src,/ikoni_kyykky\.png','kyykky'/);assert.match(src,/ikoni_gps\.png','GPS','gps-ikoni'/);
   const ik=fs.readFileSync(new URL('../IKONILISTA.md',import.meta.url),'utf8');assert.match(ik,/ikoni_kyykky\.png/);});
 t('render: web-palvelu, ws-riippuvuus, sama portti',()=>{const y=fs.readFileSync(new URL('../../render.yaml',import.meta.url),'utf8');assert.match(y,/type: web/);

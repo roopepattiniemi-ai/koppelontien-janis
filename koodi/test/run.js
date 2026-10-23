@@ -79,7 +79,8 @@ t('ajettu jänis kaartaa vaiheittain laajan lenkin ja palaa pelaajan/lähtöpaik
     const r=Math.hypot(h.x-s0.x,h.z-s0.z);maxR=Math.max(maxR,r);let dh=h.heading-ph;dh=Math.atan2(Math.sin(dh),Math.cos(dh));turn+=Math.abs(dh);ph=h.heading;if(maxR>150)minLate=Math.min(minLate,Math.min(Math.hypot(h.x-P.x,h.z-P.z),r));}
   assert.ok(maxR>150&&maxR<1100,'lenkki '+maxR);assert.ok(minLate<80,'paluu lähelle '+minLate);assert.ok(turn>Math.PI*2,'kaartaa '+turn);});
 t('radiojuonto: ~50 % biisien välissä, ei samaa kahdesti peräkkäin, oikea kanava',async()=>{const {pickJuonto}=await import('../logic/radio.js');let last=null,n=0,prev=null;
-  for(let i=0;i<4000;i++){const j=pickJuonto('tekno',last);if(j){n++;assert.ok(j!==last,j);assert.match(j,/^radio\/juonto_tekno_[1-4]$/);last=j;}}assert.ok(n>1800&&n<2200,n);});
+  const {BIISIT,JUONNOT}=await import('../logic/radio.js');assert.equal(BIISIT,4);assert.equal(JUONNOT,8);
+  for(let i=0;i<4000;i++){const j=pickJuonto('tekno',last);if(j){n++;assert.ok(j!==last,j);assert.match(j,/^radio\/juonto_tekno_[1-8]$/);last=j;}}assert.ok(n>1800&&n<2200,n);});
 t('tienvarsi: pylväät ojan ulkopuolella, rakennukset irti teistä',async()=>{globalThis.window=globalThis.window||{};globalThis.document=globalThis.document||{createElement:()=>({getContext:()=>new Proxy({},{get:()=>()=>{}})})};
   const W=await import('../logic/world.js'),TV=await import('../public/tienvarsi.js'),THREE=await import('three');const i=TV.setupRoadside(new THREE.Scene(),{ROADS:W.ROADS,height:W.height,distToRoad:W.distToRoad,SIZE:W.SIZE});
   assert.ok(i.valot.length>10&&i.sahko.length>10,[i.valot.length,i.sahko.length]);for(const p of[...i.valot,...i.sahko]){assert.ok(W.distToRoad(p.x,p.z)>0.6+1.8,'ojassa');assert.equal(W.ditch(p.x,p.z),0);}
