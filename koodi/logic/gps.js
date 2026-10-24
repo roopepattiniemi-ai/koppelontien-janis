@@ -18,3 +18,31 @@ export function gpsPino(merkit) {
     return { ...m, siirto: m.laji === 'kaveri' ? 14 : -10 };
   });
 }
+
+// Piippaus vain tilan vaihtuessa. Sama kori ei soi uudestaan.
+const KORIT = {
+  haku: { teksti: 'Koira hakee', aanet: ['sfx_gps_piippaus'] },
+  jaljestaa: { teksti: 'Koira jäljestää', aanet: ['sfx_gps_piippaus'] },
+  ajo: { teksti: 'Koira ajaa!', aanet: ['sfx_gps_piippaus', 'sfx_gps_piippaus'] },
+  katko: { teksti: 'Katko', aanet: ['sfx_gps_hukka'] },
+  seisoo: { teksti: 'Koira seisoo', aanet: ['sfx_gps_haukkuindikaattori'] },
+  paluu: { teksti: 'Koira palaa', aanet: ['sfx_gps_piippaus'] },
+};
+
+export function gpsKori(state) {
+  if (state === 'haku') return 'haku';
+  if (state === 'yöjälki' || state === 'täällä') return 'jaljestaa';
+  if (state === 'ajo') return 'ajo';
+  if (state === 'hukka') return 'katko';
+  if (state === 'ylösotto' || state === 'tänne') return 'seisoo';
+  if (state === 'paluu') return 'paluu';
+  return null;
+}
+
+export function gpsTapahtuma(edellinen, state) {
+  const kori = gpsKori(state);
+  if (kori === edellinen) return null;
+  if (!kori) return { kori: null, teksti: null, aanet: [] };
+  const k = KORIT[kori];
+  return { kori, teksti: k.teksti, aanet: k.aanet.slice() };
+}

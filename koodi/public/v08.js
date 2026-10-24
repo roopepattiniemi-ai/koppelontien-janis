@@ -51,7 +51,9 @@ export function animDog(n,st){if(!n)return;const t=st.t,s=st.spd,K=st.k??1;
     if(n.runko)n.runko.position.y=Math.abs(Math.sin(ph))*0.03*K;n.paa&&(n.paa.rotation.x=st.sniff?0.5:0.05*Math.sin(ph*2));
     const fl=Math.sin(ph*2)*0.25*Math.min(1,s/3);n.korva_v&&(n.korva_v.rotation.z=0.1+fl);n.korva_o&&(n.korva_o.rotation.z=-0.1-fl);}
   else{n.paa&&(n.paa.rotation.y=Math.sin(t*0.6)*0.3);n.runko&&(n.runko.scale.y=1+Math.sin(t*2.5)*0.01);}
-  n.hanta&&(n.hanta.rotation.y=Math.sin(t*(st.barking?14:5))*(st.barking?0.6:0.3),n.hanta.rotation.x=st.barking?-0.5:-0.2);
+  const wag=!!(st.wag||st.barking);
+  n.hanta&&(n.hanta.rotation.y=Math.sin(t*(wag?12:5))*(wag?0.55:0.3),n.hanta.rotation.x=st.barking?-0.5:-0.15);
+  if(st.sniff&&n.paa)n.paa.rotation.x=st.wag?0.72:Math.max(n.paa.rotation.x||0,0.5);
   if(n.leuka)n.leuka.rotation.x=st.jaw*0.55;if(st.jaw>0&&n.paa)n.paa.rotation.x-=st.jaw*0.25;}
 
 // ---------- 6) 3D-ääni ----------

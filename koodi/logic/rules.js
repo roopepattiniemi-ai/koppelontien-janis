@@ -1,7 +1,7 @@
-// Saalissäännöt: haulikolla jänis ja teeri, kiväärillä valkohäntäpeura. Muut rauhoitettuja tässä pelissä.
+// Saalissäännöt: haulikolla jänis, teeri ja harvinainen kettu, kiväärillä valkohäntäpeura. Muut rauhoitettuja.
 export const LAJIT={janis:'jänis',peura:'valkohäntäpeura',kettu:'kettu',orava:'orava',teeri:'teeri',korppi:'korppi',tiainen:'tiainen'};
-const LAILLINEN={janis:'haulikko',teeri:'haulikko',peura:'kivaari'};
-const RAUHOITETTU=new Set(['kettu','orava','korppi','tiainen']);
+const LAILLINEN={janis:'haulikko',teeri:'haulikko',peura:'kivaari',kettu:'haulikko'};
+const RAUHOITETTU=new Set(['orava','korppi','tiainen']);
 // palauttaa {saalis:bool, huomautus:string|null}
 export function judgeShot(laji,ase){
   const n=LAJIT[laji]||laji;

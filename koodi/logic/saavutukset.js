@@ -44,7 +44,11 @@ export const SAAVUTUKSET = [
   { id: 'haukku', nimi: 'Haukku kantoi', kuvaus: 'Koira lähti ajoon. Haukku kuului pidemmälle kuin selitys.',
     ikoni: ik('<path d="M8 20c2-8 6-10 8-10s6 2 8 10" fill="#a86b3c"/><path d="M22 12c4 1 6 4 6 4" stroke="#d4a24c" fill="none"/>') },
   { id: 'gps', nimi: 'Kartta auki', kuvaus: 'GPS aukesi. Metsä siirtyi ruudulle ja takaisin.',
-    ikoni: ik('<rect x="7" y="6" width="18" height="20" rx="2" fill="#1d3b2a"/><circle cx="16" cy="15" r="4" fill="#9cff9c"/><path d="M16 15l3 6" stroke="#ff8c1a"/>') }
+    ikoni: ik('<rect x="7" y="6" width="18" height="20" rx="2" fill="#1d3b2a"/><circle cx="16" cy="15" r="4" fill="#9cff9c"/><path d="M16 15l3 6" stroke="#ff8c1a"/>') },
+  { id: 'repolainen', nimi: 'Repolainen', kuvaus: 'Kettu kaatui. Se ehti kiertää passin, mutta ei hauliparvea.',
+    ikoni: ik('<ellipse cx="16" cy="18" rx="8" ry="5" fill="#c0581c"/><polygon points="22,16 28,12 26,18" fill="#c0581c"/><circle cx="12" cy="17" r="1" fill="#1a120c"/>') },
+  { id: 'bigfoot', nimi: 'Bigfoot on totta', kuvaus: 'Riistakamera näki ison karvaisen. Kylä uskoo, jos kuva säilyy.',
+    ikoni: ik('<circle cx="16" cy="10" r="4" fill="#6b4a32"/><rect x="12" y="14" width="8" height="10" rx="2" fill="#5a3e2b"/><path d="M10 16l-4 6M22 16l4 6" stroke="#5a3e2b"/>') }
 ];
 
 const ROOLIT = ['isanta', 'mummo', 'naapuri', 'aija'];
@@ -117,6 +121,7 @@ export function kirjaa(tila, ev = {}) {
   if (tyyppi === 'kaato') {
     if (samaJahti(tila, ev.jahti)) muuttui = true;
     lajiMukaan(ev.laji);
+    if (ev.laji === 'kettu') avaa('repolainen');
     if (ev.laji === 'janis') {
       tila.janikset = (tila.janikset | 0) + 1;
       muuttui = true;
@@ -149,6 +154,7 @@ export function kirjaa(tila, ev = {}) {
   else if (tyyppi === 'kyla') avaa('kauhu');
   else if (tyyppi === 'haukku') avaa('haukku');
   else if (tyyppi === 'gps') avaa('gps');
+  else if (tyyppi === 'bigfoot') avaa('bigfoot');
   return { tila, uudet, muuttui };
 }
 

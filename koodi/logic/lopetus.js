@@ -2,7 +2,7 @@
 // (jänis 10, teeri 8, peura 25). Saalispussin kirjausta tämä ei muuta.
 import { SAUNA_POLY } from './world.js';
 
-export const PISTE = { janis: 10, teeri: 8, peura: 25 };
+export const PISTE = { janis: 10, teeri: 8, peura: 25, kettu: 15 };
 export const SAUNA_SADE = 5.5;
 // Sama oven suunta kuin main.js: tynnyrin akseli osoittaa local +X:stä maailmaan.
 const PHI = Math.atan2(0.962, 0.272);
@@ -29,7 +29,7 @@ export function lopetusPyynto(role, peer) {
   return peer && role === 'v' ? 'pyynto' : 'itse';
 }
 
-function tyhja() { return { janis: 0, teeri: 0, peura: 0, pisteet: 0, laukaukset: 0, osumat: 0 }; }
+function tyhja() { return { janis: 0, teeri: 0, peura: 0, kettu: 0, pisteet: 0, laukaukset: 0, osumat: 0 }; }
 
 // elaimet: {kind, alive, owner}. Vain kaatuneet jänikset, teeret ja peurat.
 // Omistaja puuttuu tai on muu kuin pelaaja -> isäntä. Yksinpelissä kaikki isännälle.
@@ -54,7 +54,7 @@ export function yhteenveto({ elaimet = [], laukaukset = {}, noudot = 0, moninpel
   return { pelaajat, noudot: noudot | 0, rivi, moninpeli: !!moninpeli };
 }
 
-const LEV = { janis: 0.8, teeri: 0.65, peura: 1.55 };
+const LEV = { janis: 0.8, teeri: 0.65, peura: 1.55, kettu: 0.9 };
 
 // Saaliit oven edustalla, metsästäjät ja koirat niiden takana (lähempänä saunaa).
 export function riviPaikat(etu, rivi, metsastajia, koiria) {
@@ -89,7 +89,7 @@ export function yhteenvetoTeksti(y) {
   for (const id of (y.moninpeli ? ['h', 'v'] : ['h'])) {
     const p = y.pelaajat[id];
     lines.push(y.moninpeli ? (id === 'h' ? 'Isäntä' : 'Vieras') : 'Sinä');
-    lines.push(`jänikset ${p.janis} · teeret ${p.teeri} · peurat ${p.peura}`);
+    lines.push(`jänikset ${p.janis} · teeret ${p.teeri} · peurat ${p.peura} · ketut ${p.kettu}`);
     lines.push(`pisteet ${p.pisteet}`);
     lines.push(`laukaukset ${p.laukaukset} · osumat ${p.osumat}`);
     lines.push('');

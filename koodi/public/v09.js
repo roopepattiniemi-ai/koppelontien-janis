@@ -31,12 +31,12 @@ function animBird(n,{t,fly,kind,seed=0}){if(!n)return;const fv=n.siipi_v,fo=n.si
   else{for(const w of[fv,fo])if(w)w.rotation.set(0,0,0);for(const k of['jalka_v','jalka_o'])if(n[k])n[k].rotation.x=0.3;if(n.paa)n.paa.rotation.x=0.15*Math.max(0,Math.sin(t*1.3+seed));}}
 // ---------- riista + linnut ----------
 export const FLUSH={koira:15,ihminen:25};
-export const COUNTS={kettu:2,peura:6,orava:8,teeriParvet:2,teeriParvessa:6,korppi:6,tiainen:12};
+export const COUNTS={kettu:2,peura:6,orava:8,teeriParvet:4,teeriParvessa:12,korppi:12,tiainen:24};
 export function setupWildlife(scene,{height,isForest,trees,rand=Math.random,play3d=()=>{},aiInterval=()=>0}){
   const W={critters:[],birds:[],targets:[]};
   const spot=(ok,cx=0,cz=0,R=500)=>{for(let i=0;i<400;i++){const x=cx+(rand()*2-1)*R,z=cz+(rand()*2-1)*R;if(inBounds(x,z,20)&&ok(x,z))return{x,z};}return{x:cx,z:cz};};
   const add=(kind,n)=>{for(let i=0;i<n;i++){const p=spot((x,z)=>isForest(x,z)&&Math.hypot(x,z)>60),c=new Critter(kind,{...p,seed:(rand()*1e6)|0});c.obj=loadModel('mallit/elaimet/'+kind+'.glb',FB[kind]());scene.add(c.obj);c.tn=0;W.critters.push(c);
-    W.targets.push({kind,c,get alive(){return c.alive;},pos:()=>({x:c.x,y:height(c.x,c.z)+(kind==='peura'?0.9:kind==='kettu'?0.3:0.08),z:c.z}),r:kind==='peura'?0.45:kind==='kettu'?0.22:0.08,shoot:()=>c.shoot()});}};
+    if(kind!=='kettu')W.targets.push({kind,c,get alive(){return c.alive;},pos:()=>({x:c.x,y:height(c.x,c.z)+(kind==='peura'?0.9:0.08),z:c.z}),r:kind==='peura'?0.45:0.08,shoot:()=>c.shoot()});}};
   add('kettu',COUNTS.kettu);add('peura',COUNTS.peura);add('orava',COUNTS.orava);
   // linnut: teeriparvi koivussa, korpit kiertelevät, tiaiset (pienet varamuodot)
   const koivut=trees.filter(t=>t.model?.includes('koivu')||t.kind==='koivu');

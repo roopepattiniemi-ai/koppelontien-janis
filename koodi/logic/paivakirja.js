@@ -1,6 +1,6 @@
 // Saalispäiväkirja. Jokainen kaato: laji, päivä, ampumamatka, osumat, pisteet, ampuja, noutaja.
 export const AVAIN = 'jahti_paivakirja';
-const LAJI = { janis: 'jänis', teeri: 'teeri', peura: 'peura' };
+const LAJI = { janis: 'jänis', teeri: 'teeri', peura: 'peura', kettu: 'kettu' };
 const KUKA = { h: 'isäntä', v: 'vieras', koira: 'koira' };
 
 export function tanaan(d = new Date()) {

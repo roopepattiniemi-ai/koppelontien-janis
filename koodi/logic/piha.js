@@ -35,11 +35,12 @@ export function tarkistaPiha(o) {
   return out;
 }
 
+// Sama kierto kuin Three.js rotation.y, keskipisteen ympäri. Mesh ja törmäys pysyvät yhdessä.
 export function muunnaPoly(P, off) {
   const c = keskus(P), co = Math.cos(off.rot || 0), si = Math.sin(off.rot || 0);
   return P.map(([x, z]) => {
     const dx = x - c.x, dz = z - c.z;
-    return [c.x + dx * co - dz * si + off.x, c.z + dx * si + dz * co + off.z];
+    return [c.x + dx * co + dz * si + off.x, c.z - dx * si + dz * co + off.z];
   });
 }
 
