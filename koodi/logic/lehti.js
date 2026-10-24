@@ -41,10 +41,10 @@ export const MUISTOT = [
 ];
 
 export const MAINOKSET = [
-  { id: 'kola', teksti: '0,5 l Kolaa jauheena – piristevä ja hyvän hajuinen!' },
+  { id: 'kola', teksti: '0,5 l Kolaa jauheena – piristävä ja hyvänhajuinen!' },
   { id: 'haulikko', teksti: 'Uusi haulikko ennakoi jäniksen hypyn!' },
   { id: 'jallovviina', teksti: 'Jallovviina 7 tähteä, perhepakkaus, muovipullo 1,5 l' },
-  { id: 'liivi', teksti: 'Huomioliivi, joka näkyy myös kaverille – nyt -50 %' },
+  { id: 'liivi', teksti: 'Huomioliivi, joka näkyy myös kaverille – nyt −50 %' },
   { id: 'kauppa', teksti: 'Kollinmäen Kyläkauppa: makkaraa, patruunoita ja kahvia samasta hyllystä' },
   { id: 'pentu', teksti: 'Koiranpentu, joka haukkuu vain jäniksiä – ei naapurin akkaa' },
   { id: 'sauna', teksti: 'Tynnyrisaunan vuokraus, löylyt sisältyvät hintaan' }
@@ -73,22 +73,40 @@ function numero(seed, lista, pikkuLista) {
 
 // Lopetus: surullinen pääotsikko, hauskat pikku-uutiset, kuolinilmoitus ja pisteet.
 // pakko.otsikko korvaa pääotsikon (kyläläisen oma juttu). Surulistaa ei muuteta.
+export const LEHDEN_PAIVA = 'lauantai 24.10.2026';
+export const LEHDEN_HINTA = '0 mk';
+function meta(seed) { return { numero: 100 + ((seed >>> 0) % 900), paiva: LEHDEN_PAIVA, hinta: LEHDEN_HINTA }; }
+
+// Kuvitus vain kun otsikko kertoo juuri tästä kuvasta. Muuten palstassa ei ole väärää kuvaa.
+export function juttuKuva(otsikko) {
+  const s = String(otsikko || '');
+  if (s.includes('ihmisjänikseksi')) return { src: '/grafiikka/hud/lehti/ihmisjanis.webp', teksti: 'Kaveri loikki. Toimitus tarkisti, että korvat olivat lakki.' };
+  if (s.includes('porkkanaloukku')) return { src: '/grafiikka/hud/lehti/porkkanaloukku.webp', teksti: 'Syötti maistui. Ansa ei valittanut.' };
+  if (s.includes('Vitara jäi hankeen')) return { src: '/grafiikka/hud/lehti/vitara_hangessa.webp', teksti: 'Vitara jäi hankeen. Radio jäi vuoroon.' };
+  if (/Mummo|puput|ruokavier|jänikset juhlivat/.test(s)) return { src: '/grafiikka/hud/lehti/mummo_ja_janikset.webp', teksti: 'Mummo ja jänikset. Porkkana oli sopimus.' };
+  return null;
+}
+
 export function lehti(seed, pisteet = 0, nimi, pakko) {
   const { o, pikku, mainokset, r } = numero(seed, SURUT, HAUSKAT);
   const muisto = MUISTOT[Math.floor(r() * MUISTOT.length)];
+  const otsikko = pakko?.otsikko || o[0];
   return {
-    nimi: LEHDEN_NIMI, otsikko: pakko?.otsikko || o[0], ingressi: pakko?.ingressi || o[1], pikku, mainokset, pisteet: pisteet | 0,
-    kuolin: { nimi: siistiNimi(nimi), muisto }, kuva: 'kaatui',
+    nimi: LEHDEN_NIMI, otsikko, ingressi: pakko?.ingressi || o[1], pikku, mainokset, pisteet: pisteet | 0,
+    kuolin: { nimi: siistiNimi(nimi), muisto }, kuva: 'kaatui', kuvaJuttu: juttuKuva(otsikko),
+    ...meta(seed >>> 0),
     ala: 'Kollinmäki · Kurikka · ilmestyy kun kaveri kaatuu'
   };
 }
 
 // Mökin pöytä: sama lehti ilman kuolinilmoitusta ja ilman suruotsikkoa. Sama siemen = sama numero.
 export function lehtiPoyta(seed) {
-  const { o, pikku, mainokset } = numero((seed >>> 0) ^ 0x9e3779b9, HAUSKAT, HAUSKAT);
+  const s = (seed >>> 0) ^ 0x9e3779b9;
+  const { o, pikku, mainokset } = numero(s, HAUSKAT, HAUSKAT);
   return {
     nimi: LEHDEN_NIMI, otsikko: o[0], ingressi: o[1], pikku, mainokset, pisteet: null,
-    kuolin: null, kuva: 'poyta', sulje: true,
+    kuolin: null, kuva: 'poyta', kuvaJuttu: juttuKuva(o[0]), sulje: true,
+    ...meta(s),
     ala: 'Kollinmäki · Kurikka · mökin pöydältä'
   };
 }
@@ -119,24 +137,24 @@ export function osuuPelaajaan(o, dir, ase, seed, kohde, radius = 0.45) {
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 export function lehtiHtml(l) {
-  const mainokset = (l.mainokset || []).map(m => `<aside class="ks-mainos"><b>MAINOS</b><canvas class="ks-kuva" data-id="${esc(m.id)}" width="88" height="78"></canvas><span>${esc(m.teksti)}</span></aside>`).join('');
+  const kuva = l.kuvaJuttu || juttuKuva(l.otsikko);
+  const fig = kuva ? `<figure class="ks-kuva-juttu"><img alt="" src="${esc(kuva.src)}"><figcaption>${esc(kuva.teksti)}</figcaption></figure>` : '';
+  const mainokset = (l.mainokset || []).map(m => {
+    const kuvaM = m.id === 'jallovviina'
+      ? `<img class="ks-mainoskuva" alt="" src="/grafiikka/hud/lehti/mainos_jallovviina.webp">`
+      : `<canvas class="ks-kuva" data-id="${esc(m.id)}" width="88" height="78"></canvas>`;
+    return `<aside class="ks-mainos"><b>MAINOS</b>${kuvaM}<span>${esc(m.teksti)}</span></aside>`;
+  }).join('');
   const pikku = (l.pikku || []).map(p => `<li>${esc(p)}</li>`).join('');
   const piste = l.pisteet == null ? '' : `<li>Jahdin pisteet jäivät lukemaan ${l.pisteet | 0}. Toimitus ei suosittele uusintaa.</li>`;
-  const kuva = l.kuva === 'poyta'
-    ? `<div class="ks-kuva-juttu" aria-hidden="true"><div class="ks-ukko ks-pysty"></div><div class="ks-korva"></div><div class="ks-hanki"></div><p>Kuvassa hanki ja jäniksen korvat. Ketään ei kaatunut.</p></div>`
-    : `<div class="ks-kuva-juttu" aria-hidden="true"><div class="ks-ukko ks-pysty"></div><div class="ks-ukko ks-kaatunut"></div><div class="ks-hanki"></div><p>Kuvassa kaveri ja hanki. Haukkua ei näy.</p></div>`;
   const kuolin = l.kuolin ? `<section class="ks-kuolin"><div class="ks-risti" aria-hidden="true">†</div><canvas class="ks-janis" width="140" height="90"></canvas><h2>${esc(l.kuolin.nimi)}</h2><p>${esc(l.kuolin.muisto)}</p></section>` : '';
   const sulje = l.sulje ? `<p class="ks-sulje">E tai Esc sulkee lehden</p>` : '';
   return `<article class="ks">
-<header class="ks-head"><div class="ks-nimi">${esc(l.nimi)}</div><div class="ks-ala">${esc(l.ala)}</div></header>
-<h1>${esc(l.otsikko)}</h1>
-<p class="ks-ing">${esc(l.ingressi)}</p>
-${kuolin}
-<div class="ks-cols">
-  ${kuva}
-  <div class="ks-mainokset">${mainokset}</div>
+<header class="ks-head"><div class="ks-mast"><span>${esc(l.paiva || '')}</span><span>Nro ${l.numero | 0}</span><span>${esc(l.hinta || '')}</span></div><div class="ks-nimi">${esc(l.nimi)}</div><div class="ks-ala">${esc(l.ala)}</div></header>
+<div class="ks-runko">
+<div class="ks-palstat">${fig}<h1>${esc(l.otsikko)}</h1><p class="ks-ing">${esc(l.ingressi)}</p>${kuolin}<section class="ks-pikk"><h2>Pikku-uutisia</h2><ul>${pikku}${piste}</ul></section></div>
+<div class="ks-mainokset">${mainokset}</div>
 </div>
-<section class="ks-pikk"><h2>Pikku-uutisia</h2><ul>${pikku}${piste}</ul></section>
 ${sulje}
 </article>`;
 }

@@ -48,8 +48,10 @@ t('koira: noutaa ammutun jäniksen maasta',()=>{const h=new Hare({seed:6,x:30,z:
 t('jäljet: yöjälki ruokapaikalta, muodon vaihto jatkaa jälkeä, suorituskyky',()=>{const feed=(x,z)=>x>0;const t0=performance.now();const hs=[];for(let k=0;k<20;k++)hs.push(new Hare({seed:k+1,feed}));
   const ms=performance.now()-t0;assert.ok(ms<500,'20 jänistä '+ms.toFixed(0)+' ms');const h=hs[0],L=h.nightTrail.length,home={...h.home};h.relocate();assert.ok(h.nightTrail.length>L);assert.notDeepEqual(h.home,home);});
 t('näppäimet: autossa R radio, Q kanava; C kyykky; E konteksti; Tab ei autossa',()=>{const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
-  assert.match(src,/if\(pl\.inCar\)\{if\(e\.code==='KeyR'\)\{radio\.on=/);assert.match(src,/e\.code==='KeyQ'\)\{radio\.ch=/);assert.match(src,/!pl\.inCar&&e\.code==='KeyC'/);
-  assert.match(src,/seat:startSeat\(/);assert.match(src,/pl\.seat==='kuski'/);assert.match(src,/sfx_gps_piippaus',\{gain:\.15\}/);assert.match(src,/radio_'\+c\+'_1'/);assert.match(src,/import \{ pickJuonto, BIISIT \}/);assert.match(src,/radio\.song=\(radio\.song\+1\)%BIISIT/);
+  assert.match(src,/if\(pl\.inCar\)\{if\(e\.code==='KeyR'\)\{radioNappi\('on'\)/);assert.match(src,/e\.code==='KeyQ'\)\{radioNappi\('ch'\)/);assert.match(src,/!pl\.inCar&&e\.code==='KeyC'/);
+  assert.match(src,/seat:startSeat\(/);assert.match(src,/pl\.seat==='kuski'/);assert.match(src,/sfx_gps_piippaus',\{gain:\.15\}/);
+  const radioSrc=fs.readFileSync(new URL('../logic/radio.js',import.meta.url),'utf8');
+  assert.match(radioSrc,/radio_'\+c\+'_1'/);assert.match(radioSrc,/s\.song=\(s\.song\+1\)%BIISIT/);assert.match(radioSrc,/pickJuonto/);
   assert.match(src,/janis:'E – ota jänis'/);assert.match(src,/if\(e\.code==='Tab'\)return;/);assert.match(src,/ikoni_kyykky\.png','kyykky'/);assert.match(src,/ikoni_gps\.png','GPS','gps-ikoni'/);
   const ik=fs.readFileSync(new URL('../IKONILISTA.md',import.meta.url),'utf8');assert.match(ik,/ikoni_kyykky\.png/);});
 t('render: web-palvelu, ws-riippuvuus, sama portti',()=>{const y=fs.readFileSync(new URL('../../render.yaml',import.meta.url),'utf8');assert.match(y,/type: web/);
@@ -134,7 +136,7 @@ t('lehti: pöydän numero ja kuolinilmoitus',()=>{
   assert.ok(surut.includes('Kurikan mies ampui kaveriaan – koira nouti hatun'));
   assert.ok(MUISTOT.includes('Lähti jänistä, tuli jäniksenä'));
   assert.ok(MUISTOT.includes('Kaipaamaan jäivät koira ja puolikas jallupullo'));
-  for (const s of ['0,5 l Kolaa jauheena – piristevä ja hyvän hajuinen!','Uusi haulikko ennakoi jäniksen hypyn!','Jallovviina 7 tähteä, perhepakkaus, muovipullo 1,5 l','Huomioliivi, joka näkyy myös kaverille – nyt -50 %','Kollinmäen Kyläkauppa: makkaraa, patruunoita ja kahvia samasta hyllystä','Koiranpentu, joka haukkuu vain jäniksiä – ei naapurin akkaa','Tynnyrisaunan vuokraus, löylyt sisältyvät hintaan']) assert.ok(MAINOKSET.some(m=>m.teksti===s),s);
+  for (const s of ['0,5 l Kolaa jauheena – piristävä ja hyvänhajuinen!','Uusi haulikko ennakoi jäniksen hypyn!','Jallovviina 7 tähteä, perhepakkaus, muovipullo 1,5 l','Huomioliivi, joka näkyy myös kaverille – nyt −50 %','Kollinmäen Kyläkauppa: makkaraa, patruunoita ja kahvia samasta hyllystä','Koiranpentu, joka haukkuu vain jäniksiä – ei naapurin akkaa','Tynnyrisaunan vuokraus, löylyt sisältyvät hintaan']) assert.ok(MAINOKSET.some(m=>m.teksti===s),s);
   const a=lehti(5,61),b=lehti(5,61,'Kurikan kuski');assert.deepEqual(a,lehti(5,61));assert.equal(a.pisteet,61);
   assert.equal(a.kuolin.nimi,'Metsäkaveri');assert.ok(MUISTOT.includes(a.kuolin.muisto));assert.equal(b.kuolin.nimi,'Kurikan kuski');
   assert.ok(surut.includes(a.otsikko));assert.ok(!hauskat.includes(a.otsikko));
@@ -493,6 +495,95 @@ t('ajo: lenkki palaa ylösajoon ja kiertää hiljaa seisovan passin', () => {
   const m = packWorld({ dog: { x: 1, z: 2, dir: 0, state: 'ajo', barking: true }, hares: [h] });
   assert.equal(m.hares[0].length, 10);
   assert.equal(m.lenkki, undefined);
+});
+import { uusiRadio, radioKytke, radioEtene, radioKuva, radioSovita, radioKomento } from '../logic/radio.js';
+import { gpsMerkit, gpsPino } from '../logic/gps.js';
+import { nouseKyytiin, hyppaaUlos } from '../logic/kyyti.js';
+import { kylaAani, tunnelma } from '../logic/kylaAani.js';
+import { sovellaPiha, pihaOletus, pihaPyynto, pihaSalasana, tarkistaPiha } from '../logic/piha.js';
+t('radio: sama klippi ja kohta, myöhäinen liittyjä kelautuu', () => {
+  const h = uusiRadio(1), v = uusiRadio(2);
+  radioKytke(h);
+  for (let i = 0; i < 40; i++) radioEtene(h, 0.5, 1);
+  assert.equal(radioSovita(v, radioKuva(h)), 'hae');
+  assert.equal(v.on, h.on); assert.equal(v.clip, h.clip); assert.equal(v.ch, h.ch);
+  assert.ok(Math.abs(v.pos - h.pos) < 0.05);
+  const ennen = h.gen;
+  radioKomento(h, 'ch');
+  assert.ok(radioKuva(h).gen > ennen);
+  radioSovita(v, radioKuva(h));
+  assert.equal(v.ch, h.ch); assert.equal(v.clip, h.clip);
+  const myoh = uusiRadio(9);
+  assert.equal(radioSovita(myoh, radioKuva(h)), 'hae');
+  assert.equal(myoh.clip, h.clip);
+  assert.ok(Math.abs(myoh.pos - h.pos) < 0.05);
+  const vanha = radioKuva(h); vanha.gen = h.gen - 1;
+  assert.equal(radioSovita(v, vanha), 'vanha');
+});
+t('gps: auto, kaveri ja molemmat koirat', () => {
+  const auto = { x: 10, z: 4 }, oma = { x: 10, z: 4 }, koira = { x: 12, z: 4, riding: true }, kaveri = { x: 10, z: 4 }, terrieri = { x: 8, z: 4 };
+  const yksin = gpsMerkit({ oma, koira, auto, moninpeli: false });
+  assert.deepEqual(yksin.map(m => m.id), ['auto', 'koira', 'oma']);
+  const mono = gpsMerkit({ oma, koira, auto, kaveri, terrieri, moninpeli: true });
+  assert.deepEqual(mono.map(m => m.id), ['auto', 'koira', 'oma', 'kaveri', 'terrieri']);
+  const pino = gpsPino(mono);
+  assert.equal(pino.find(m => m.id === 'kaveri').siirto, 14);
+  assert.equal(pino.find(m => m.id === 'auto').siirto, 0);
+  assert.ok(pino.filter(m => m.laji === 'koira' || m.laji === 'terrieri').length === 2);
+});
+t('kyyti: hihnassa oleva pysyy narussa, vapaa ei nouse', () => {
+  const k = { state: 'narussa', leashed: true, riding: false };
+  assert.equal(nouseKyytiin(k), true);
+  assert.equal(k.riding, true); assert.equal(k.state, 'narussa'); assert.equal(k.kyytiNaru, true);
+  assert.equal(hyppaaUlos(k), 'naru');
+  assert.equal(k.riding, false); assert.equal(k.state, 'narussa');
+  const vapaa = { state: 'ajo', riding: false };
+  assert.equal(nouseKyytiin(vapaa), false); assert.equal(vapaa.riding, false);
+  const haku = { state: 'haku', riding: false };
+  assert.equal(nouseKyytiin(haku), false);
+  const seur = { state: 'seuraa', riding: false };
+  assert.equal(nouseKyytiin(seur, { seuraaMyos: true }), true);
+  const alku = { state: 'haku', riding: true };
+  assert.equal(hyppaaUlos(alku), 'haku'); assert.equal(alku.riding, false);
+});
+t('piha: siirto muuttaa törmäyksen ja salasana suojaa tallennuksen', () => {
+  const ennen = saunaPiste();
+  assert.ok(inBuilding(ennen.x, ennen.z));
+  assert.equal(dogInside(ennen.x, ennen.z), true);
+  try {
+    const siirto = { mokki: { x: 0, z: 0, rot: 0 }, sauna: { x: 30, z: 0, rot: 0.4 }, navetta: { x: 0, z: 0, rot: 0 } };
+    assert.equal(sovellaPiha(siirto), true);
+    const jalkeen = saunaPiste();
+    assert.ok(Math.abs(jalkeen.x - ennen.x - 30) < 0.02);
+    assert.ok(inBuilding(jalkeen.x, jalkeen.z));
+    assert.equal(dogInside(jalkeen.x, jalkeen.z), true);
+    assert.equal(inBuilding(ennen.x, ennen.z), false);
+    assert.equal(pihaPyynto({ salasana: 'vaara', piha: siirto }, pihaSalasana({})).status, 403);
+    assert.equal(pihaPyynto({ salasana: 'koppelo', piha: { mokki: { x: 1 } } }, 'koppelo').status, 400);
+    const ok = pihaPyynto({ salasana: 'koppelo', piha: pihaOletus() }, pihaSalasana({}));
+    assert.equal(ok.ok, true); assert.ok(tarkistaPiha(ok.piha));
+    const src = fs.readFileSync(new URL('../server.js', import.meta.url), 'utf8');
+    assert.match(src, /\/api\/piha/); assert.match(src, /0\.0\.0\.0/); assert.match(src, /PIHA_SALASANA/);
+    const html = lehtiHtml(lehti(3, 0, 'A', { otsikko: 'Metsästäjä luuli metsäkaveria ihmisjänikseksi', ingressi: 'Kaveri loikki.' }));
+    assert.match(html, /ihmisjanis\.webp/); assert.match(html, /ks-mast/); assert.match(html, /lauantai 24\.10\.2026/); assert.match(html, /0 mk/);
+    const pohjaLehti = lehtiPoyta(1); pohjaLehti.kuvaJuttu = null; pohjaLehti.otsikko = 'Vitara jäi hankeen, radio soi vielä aamullakin';
+    pohjaLehti.mainokset = [{ id: 'jallovviina', teksti: 'Jallovviina 7 tähteä, perhepakkaus, muovipullo 1,5 l' }];
+    const mainos = lehtiHtml(pohjaLehti);
+    assert.match(mainos, /vitara_hangessa\.webp/); assert.match(mainos, /mainos_jallovviina\.webp/); assert.match(mainos, /figcaption/);
+  } finally {
+    sovellaPiha(pihaOletus());
+  }
+  assert.ok(inBuilding(ennen.x, ennen.z));
+});
+t('kylä-ääni: oma ääni ja satunnainen tunnelma', () => {
+  assert.equal(kylaAani('isanta'), 'matala'); assert.equal(kylaAani('mummo'), 'kimea');
+  assert.notEqual(kylaAani('naapuri'), kylaAani('aija'));
+  assert.equal(tunnelma('isanta', () => 0.9), null);
+  assert.ok(['hikka', 'pullo'].includes(tunnelma('isanta', () => 0)));
+  assert.ok(['keppi', 'tuhahdus'].includes(tunnelma('mummo', () => 0.1)));
+  assert.equal(tunnelma('naapuri', () => 0), null);
+  const src = fs.readFileSync(new URL('../public/main.js', import.meta.url), 'utf8');
+  assert.match(src, /Tallenna pysyvästi/); assert.match(src, /e\.code==='F8'/);
 });
 console.log(`${n} v1.1-testiä ok`);
 

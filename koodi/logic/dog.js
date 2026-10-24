@@ -14,10 +14,12 @@ function segHit(ax,az,bx,bz,cx,cz,dx,dz){
   if((o1>0)!==(o2>0)&&(o3>0)!==(o4>0))return true;
   if(o1===0&&onSeg(ax,az,bx,bz,cx,cz))return true;if(o2===0&&onSeg(ax,az,bx,bz,dx,dz))return true;
   if(o3===0&&onSeg(cx,cz,dx,dz,ax,az))return true;if(o4===0&&onSeg(cx,cz,dx,dz,bx,bz))return true;return false;}
-const SOLIDS=[...BUILDINGS,...YARD_POLYS].map(P=>{let cx=0,cz=0,minx=1e9,maxx=-1e9,minz=1e9,maxz=-1e9;const e=[];
+function rakennaEsteet(){return [...BUILDINGS,...YARD_POLYS].map(P=>{let cx=0,cz=0,minx=1e9,maxx=-1e9,minz=1e9,maxz=-1e9;const e=[];
   for(const[a,b]of P){cx+=a;cz+=b;minx=Math.min(minx,a);maxx=Math.max(maxx,a);minz=Math.min(minz,b);maxz=Math.max(maxz,b);}
   for(let i=0;i<P.length;i++){const[a,b]=P[i],[c,d]=P[(i+1)%P.length];if(a!==c||b!==d)e.push(a,b,c,d);}
-  return {P,e,cx:cx/P.length,cz:cz/P.length,minx,maxx,minz,maxz};});
+  return {P,e,cx:cx/P.length,cz:cz/P.length,minx,maxx,minz,maxz};});}
+const SOLIDS=rakennaEsteet();
+export function paivitaEsteet(){const u=rakennaEsteet();SOLIDS.length=0;for(const s of u)SOLIDS.push(s);}
 const FARMS=farmFootprints().map(f=>({...f,c:Math.cos(f.yaw),s:Math.sin(f.yaw)}));
 function into(o,x,z){const dx=x-o.x,dz=z-o.z,c=o.c??Math.cos(o.yaw||0),s=o.s??Math.sin(o.yaw||0);return [dx*c-dz*s,dx*s+dz*c];}
 function inFarm(f,x,z){const [lx,lz]=into(f,x,z);return Math.abs(lx)<=f.hx&&Math.abs(lz)<=f.hz;}

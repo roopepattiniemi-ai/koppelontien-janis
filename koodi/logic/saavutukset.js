@@ -9,7 +9,7 @@ export const SAAVUTUKSET = [
     ikoni: ik('<ellipse cx="16" cy="20" rx="8" ry="6" fill="#c4a574"/><ellipse cx="11" cy="10" rx="2" ry="6" fill="#e7d3a8"/><ellipse cx="21" cy="10" rx="2" ry="6" fill="#e7d3a8"/><circle cx="13" cy="19" r="1" fill="#2a1c12"/><circle cx="19" cy="19" r="1" fill="#2a1c12"/>') },
   { id: 'kolme', nimi: 'Kolme jänistä', kuvaus: 'Yksi jahti, kolme jälkeä. Kylä laskee jo patoja.',
     ikoni: ik('<circle cx="8" cy="16" r="5" fill="#d2b48c"/><circle cx="16" cy="16" r="5" fill="#c4a574"/><circle cx="24" cy="16" r="5" fill="#a68456"/>') },
-  { id: 'peura', nimi: 'Yhdellä laukauksella', kuvaus: 'Peura ja yksi pamaus. Metsä hiljeni vasta jälkeen.',
+  { id: 'peura', nimi: 'Yhdellä laukauksella', kuvaus: 'Peura ja yksi pamaus. Metsä hiljeni vasta sen jälkeen.',
     ikoni: ik('<path d="M10 22c2-8 4-10 6-10s4 2 6 10" fill="#8d6b4a"/><path d="M12 12c-2-6 0-8 2-8M20 12c2-6 0-8-2-8" stroke="#6b4a2c" fill="none" stroke-width="1.6"/>') },
   { id: 'lento', nimi: 'Lennosta', kuvaus: 'Teeri lähti ja jäi. Siivet ehtivät yhden iskun.',
     ikoni: ik('<path d="M4 18c6-2 8-8 12-8s6 6 12 8c-6 1-8 2-12 2S10 19 4 18z" fill="#3d4a62"/>') },
