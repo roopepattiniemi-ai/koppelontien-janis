@@ -102,7 +102,7 @@ export class Dog {
   command(cmd,player,hare){
     const d=Math.hypot(player.x-this.x,player.z-this.z);
     if(cmd==='kiinni'){ if(d>3)return{ok:false,syy:'Koira liian kaukana'}; this.state=D.NARUSSA;this.t=0;return{ok:true}; }
-    if(cmd==='irti'){ if(this.state!==D.NARUSSA)return{ok:false,syy:'Koira ei ole narussa'}; this._haku(); return{ok:true}; }
+    if(cmd==='irti'){ if(this.state!==D.NARUSSA)return{ok:false,syy:'Koira ei ole narussa'}; this.kyytiNaru=false; this._haku(); return{ok:true}; }
     if(this.state===D.NARUSSA)return{ok:false,syy:'Koira on narussa'};
     if(d>HEAR_CMD)return{ok:false,syy:'Koira ei kuule'};
     if(this.state===D.AJO&&this.rand()<IGNORE_AJO)return{ok:false,syy:'Koira ei tottele – ajo päällä'};
