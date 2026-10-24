@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';import fs from 'node:fs';
 import { Relay } from '../logic/relay.js';
 import { roomSeed, enc, dec, packWorld, applyWorld, Interp, seatFor, startSeat, newRoomCode } from '../logic/sync.js';
 import { pelletPattern, swarmR, swarmHits, judgeHits, woundDmg, groundImpacts, PELLETS, SWARM_KILL } from '../logic/shot.js';
-import { Hare, H } from '../logic/hare.js';
+import { Hare, H, passiKohde } from '../logic/hare.js';
 import { Dog, D, dogInside, askelEstetty } from '../logic/dog.js';
 import { spreadHares } from '../logic/world.js';
 import { mulberry32 } from '../logic/rng.js';
@@ -405,6 +405,94 @@ t('saavutukset: kaksikymmentä, oma kirja, lukko ja auki', () => {
   assert.match(al, /id="al-paiva-saav"/);
   const pw = packWorld({ dog: { x: 0, z: 0, dir: 0, state: 'haku', barking: false }, hares: [] });
   assert.equal(pw.saavutukset, undefined);
+});
+t('ajo: lenkki palaa ylösajoon ja kiertää hiljaa seisovan passin', () => {
+  const y = { x: 0, z: 0 };
+  assert.equal(passiKohde([{ x: 8, z: 2, moving: true, run: true, id: 'juoksu' }, { x: 36, z: 14, moving: false, crouch: true, id: 'passi' }], y).id, 'passi');
+  assert.equal(passiKohde([{ x: 12, z: 0, moving: true, id: 'juoksu' }], y), null);
+  assert.equal(passiKohde([{ x: 6, z: 0, moving: false, inCar: true, id: 'auto' }, { x: 40, z: 0, moving: false, id: 'mies' }], y).id, 'mies');
+  for (const seed of [3, 5, 7, 11]) {
+    const h = new Hare({ x: -180, z: 120, seed });
+    const P = { x: h.x + 28, z: h.z - 16, moving: false, crouch: seed === 7, id: 'p' };
+    const dog = { x: h.x + 6, z: h.z };
+    let maxR = 0, minBack = 1e9, minP = 1e9, passD = null, turn = 0, ph = h.heading;
+    for (let i = 0; i < 8000 && !(h.loops >= 1 && h.state === H.PALUU); i++) {
+      h.update(0.1, { dog, player: P, hunters: [P] });
+      const r = Math.hypot(h.x - h.ylos.x, h.z - h.ylos.z);
+      maxR = Math.max(maxR, r);
+      if (maxR > 150) minBack = Math.min(minBack, r);
+      minP = Math.min(minP, Math.hypot(h.x - P.x, h.z - P.z));
+      if (h.lenkki) { const q = h.lenkki.find(p => p.laji === 'passi'); if (q) passD = Math.hypot(q.x - P.x, q.z - P.z); }
+      let dh = h.heading - ph; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); turn += Math.abs(dh); ph = h.heading;
+      if (h.trail.length > 8) { const q = h.trail[Math.max(0, h.trail.length - 20)]; dog.x = q.x; dog.z = q.z; }
+    }
+    assert.ok(maxR > 150 && maxR < 450, 'lenkki ' + seed + ' ' + maxR.toFixed(0));
+    assert.ok(minBack < 40, 'paluu ' + seed + ' ' + minBack.toFixed(1));
+    assert.ok(passD > 15 && passD < 40, 'passi ' + seed + ' ' + passD);
+    assert.ok(minP > 14 && minP < 45, 'ohitus ' + seed + ' ' + minP.toFixed(1));
+    assert.ok(turn > Math.PI, 'kaari ' + seed);
+    assert.ok(h.reitit.has('yo'), 'yöjälki ' + seed);
+    assert.ok(h.trail.some(p => p.jump), 'koukku ' + seed);
+  }
+  const reuna = new Hare({ x: 14, z: 20, seed: 2 });
+  const seis = { x: reuna.x + 24, z: reuna.z + 6, moving: false };
+  for (let i = 0; i < 80 && reuna.state !== H.KIERTO; i++) reuna.update(0.1, { dog: { x: reuna.x + 5, z: reuna.z }, player: seis, hunters: [seis] });
+  assert.ok(reuna.reitit.has('yo'));
+  assert.ok(reuna.reitit.has('metsatie') || reuna.reitit.has('oja') || reuna.reitit.has('pelto'), [...reuna.reitit].join(','));
+  const oja = new Hare({ x: -160, z: -90, seed: 1 });
+  for (let i = 0; i < 80 && oja.state !== H.KIERTO; i++) oja.update(0.1, { dog: { x: oja.x + 5, z: oja.z }, player: { x: oja.x + 30, z: oja.z, moving: false }, hunters: [{ x: oja.x + 30, z: oja.z, moving: false }] });
+  assert.ok(oja.reitit.has('oja'), [...oja.reitit].join(','));
+  const juoksu = new Hare({ x: -180, z: 120, seed: 5 });
+  const M = { x: juoksu.x + 30, z: juoksu.z + 10, moving: true, run: true };
+  const d2 = { x: juoksu.x + 6, z: juoksu.z };
+  let kaukana = false, minJalkeen = 1e9;
+  for (let i = 0; i < 4000; i++) {
+    juoksu.update(0.1, { dog: d2, player: M, playerMoving: true, hunters: [M] });
+    const dp = Math.hypot(juoksu.x - M.x, juoksu.z - M.z);
+    if (dp > 55) kaukana = true;
+    if (kaukana) minJalkeen = Math.min(minJalkeen, dp);
+    if (juoksu.trail.length > 8) { const q = juoksu.trail.at(-8); if (q) { d2.x = q.x; d2.z = q.z; } }
+  }
+  assert.ok(juoksu.veered && kaukana && minJalkeen > 40, minJalkeen);
+  const vauhti = new Hare({ seed: 4 });
+  vauhti.flush({ x: vauhti.x + 3, z: vauhti.z });
+  for (let i = 0; i < 90 && vauhti.state !== H.KIERTO; i++) vauhti.update(0.05, { dog: { x: vauhti.x - 8, z: vauhti.z }, player: { x: 9000, z: 9000 } });
+  vauhti.jarruT = 0;
+  vauhti.update(0.05, { dog: { x: vauhti.x - 20, z: vauhti.z }, player: { x: 9000, z: 9000 } });
+  assert.ok(vauhti.speed >= 7, 'kiihdytys ' + vauhti.speed);
+  vauhti.jarruT = 0;
+  vauhti.update(0.05, { dog: { x: vauhti.x + 220, z: vauhti.z }, player: { x: 9000, z: 9000 } });
+  assert.ok(vauhti.speed <= 3.2, 'hidastus ' + vauhti.speed);
+  const ajo = new Hare({ seed: 6 });
+  const ajokoira = new Dog({ x: ajo.x + 8, z: ajo.z, seed: 3 });
+  ajokoira.state = D.AJO; ajokoira.target = ajo; ajokoira.idx = 0;
+  const pass = { x: ajo.home.x + 26, z: ajo.home.z - 12, moving: false };
+  const valit = [];
+  for (let i = 0; i < 4000; i++) {
+    ajokoira.update(0.05, { hare: ajo, hares: [ajo], player: pass });
+    ajo.update(0.05, { dog: ajokoira.pos, player: pass, hunters: [pass] });
+    if (ajokoira.state === D.AJO && ajo.state === H.KIERTO && !(ajo.jarruT > 0) && i > 100)
+      valit.push(Math.hypot(ajokoira.x - ajo.x, ajokoira.z - ajo.z));
+  }
+  valit.sort((a, b) => a - b);
+  const keski = valit[valit.length >> 1];
+  assert.ok(valit.length > 40, 'näytteitä ' + valit.length);
+  assert.ok(keski > 50 && keski < 160, 'etumatka ' + keski);
+  const h = new Hare({ seed: 9 });
+  const g = new Dog({ x: h.home.x + 20, z: h.home.z, seed: 2 });
+  let hiljaa = false;
+  for (let i = 0; i < 16000 && !hiljaa; i++) {
+    g.update(0.05, { hare: h, hares: [h], player: { x: h.home.x + 50, z: h.home.z } });
+    h.update(0.05, { dog: g.pos, player: { x: h.home.x + 35, z: h.home.z }, hunters: [{ x: h.home.x + 35, z: h.home.z, moving: false }] });
+    if (g.state === D.HUKKA && !g.barking && h.trail.some(p => p.jump)) hiljaa = true;
+  }
+  assert.ok(hiljaa, g.state);
+  const src = fs.readFileSync(new URL('../public/main.js', import.meta.url), 'utf8');
+  assert.match(src, /hunters:ajajat/);
+  assert.match(src, /if\(GUEST\)break/);
+  const m = packWorld({ dog: { x: 1, z: 2, dir: 0, state: 'ajo', barking: true }, hares: [h] });
+  assert.equal(m.hares[0].length, 10);
+  assert.equal(m.lenkki, undefined);
 });
 console.log(`${n} v1.1-testiä ok`);
 

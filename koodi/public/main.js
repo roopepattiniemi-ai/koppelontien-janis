@@ -403,13 +403,13 @@ function netMsg(m){
   else if(m.t==='lopeta'&&ME==='h')kaynnistaLopetus();
   else if(m.t==='loppu'&&m.yhteenveto)aloitaKohtaus(m.yhteenveto);
   else if(m.t==='lehti'&&m.seed!=null)aloitaLehti(m.seed,m.pisteet|0,m.kaatui,m.nimi,m.kyla!=null||m.otsikko?{otsikko:m.otsikko,ingressi:m.ingressi,kyla:m.kyla}:null);}
-let netT=0,worldT=0;
+let netT=0,worldT=0,vierasVauhti=0;
 function netTick(dt){if(!NET||!NET.peer)return;netT-=dt;worldT-=dt;
   if(netT<=0){netT=1/15;const m={t:'p',role:ME,x:pl.x,y:cam.position.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,inCar:pl.inCar,seat:pl.seat||null,crouch:!!pl.crouch,aim:pl.raise>=1?1:0,ase:WP.weapon==='kivaari'?'k':'h',nimi:omaNimi()};if(pl.inCar&&pl.seat==='kuski')m.car={x:car.x,z:car.z,h:car.heading,speed:car.speed,steer:car.steer||0};NET.send(m);}
   if(ME==='h'&&worldT<=0){worldT=0.1;NET.send(packWorld({dog,hares,critters:WL.critters,birds:WL.birds}));}
   RP=NET.remote.at(performance.now()/1000);const L=NET.last;
   if(L?.car&&pl.seat!=='kuski'){car.x=L.car.x;car.z=L.car.z;car.heading=L.car.h;car.speed=L.car.speed;car.steer=L.car.steer;car.pose();}
-  if(avatar&&RP){avatar.visible=true;const px=avatar.userData._px??RP.x,pz=avatar.userData._pz??RP.z;const spd=Math.min(8,Math.hypot(RP.x-px,RP.z-pz)/Math.max(dt,1/120));avatar.userData._px=RP.x;avatar.userData._pz=RP.z;
+  if(avatar&&RP){avatar.visible=true;const px=avatar.userData._px??RP.x,pz=avatar.userData._pz??RP.z;const spd=Math.min(8,Math.hypot(RP.x-px,RP.z-pz)/Math.max(dt,1/120));avatar.userData._px=RP.x;avatar.userData._pz=RP.z;vierasVauhti=L?.inCar?0:spd;
     if(L.inCar){interior.g.updateMatrixWorld();const sp=new THREE.Vector3(L.seat==='kuski'?0.40:-0.40,0.55,-0.55);interior.g.localToWorld(sp);avatar.position.copy(sp);avatar.rotation.set(0,-car.heading,0);}
     else{avatar.position.set(RP.x,height(RP.x,RP.z),RP.z);avatar.rotation.set(0,RP.yaw,0);}
     avatar.userData.tick?.(dt,{sit:!!L.inCar,crouch:!!L.crouch,aim:!!L.aim,ase:L.ase,spd:L.inCar?0:spd});}
@@ -532,7 +532,9 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   if(dog.riding){const r=rideAt(0);dog.x=r.x;dog.z=r.z;dog.dir=r.dir;}
   if(!GUEST)dog.update(dt,{hares,fetch:WL.birds.filter(b=>b.kind==='teeri'),player:P,players:{[ME]:P,...(NET?.last&&!GUEST?{v:{x:NET.last.x,z:NET.last.z}}:{})},obstacles:[bodyBox(car)],ride:dog.riding?rideAt(0):null});
   if(NET?.peer){const gp=ME==='v'?P:(NET.last?{x:NET.last.x,z:NET.last.z}:P);terrier.update(dt,{player:gp,hares:[],obstacles:[bodyBox(car)],ride:terrier.riding?rideAt(1):null});}
-  hare=dog.target||hare;for(const h of hares){if(GUEST)break;h._acc=(h._acc||0)+dt;const d=Math.min(Math.hypot(h.x-P.x,h.z-P.z),Math.hypot(h.x-dog.x,h.z-dog.z));if(h!==dog.target&&h._acc<aiInterval(d))continue;h.update(Math.min(h._acc,0.25),{dog:dog.pos,player:P,playerMoving:pl.moving||pl.revealT>0});h._acc=0;}
+  hare=dog.target||hare;const ajajat=[];if(!pl.inCar)ajajat.push({x:pl.x,z:pl.z,moving:!!(pl.moving||pl.revealT>0),crouch:!!pl.crouch,run:!!(keys.ShiftLeft&&pl.moving),id:ME});
+  if(NET?.last&&!GUEST&&!NET.last.inCar)ajajat.push({x:NET.last.x,z:NET.last.z,moving:vierasVauhti>0.45,crouch:!!NET.last.crouch,run:vierasVauhti>3.2,id:NET.last.role||'v'});
+  for(const h of hares){if(GUEST)break;h._acc=(h._acc||0)+dt;const d=Math.min(Math.hypot(h.x-P.x,h.z-P.z),Math.hypot(h.x-dog.x,h.z-dog.z));if(h!==dog.target&&h._acc<aiInterval(d))continue;h.update(Math.min(h._acc,0.25),{dog:dog.pos,player:P,playerMoving:!!(pl.moving||pl.revealT>0),hunters:ajajat});h._acc=0;}
   WL.update(dt,{t:clock.elapsedTime,player:P,dog:dog.pos,addTrack});
   if(hare.state===H.PAKO&&!hareFlushed){hareFlushed=true;play3d('sfx_janis_pakoloikka',{x:hare.x,y:height(hare.x,hare.z)+0.3,z:hare.z,gain:1,ref:5,max:400});}
   if(hare.veered&&pl.moving){hare.veered=false;}
