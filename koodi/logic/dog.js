@@ -38,6 +38,8 @@ function pathBlocked(x0,z0,x1,z1,skip,extras){const start=solidAt(x0,z0),minx=Ma
     if(inPoly(x1,z1,b.P))return true;const e=b.e;for(let k=0;k<e.length;k+=4)if(segHit(x0,z0,x1,z1,e[k],e[k+1],e[k+2],e[k+3]))return true;}
   for(let i=0;i<FARMS.length;i++){const id=100+i;if(id===skip||id===start)continue;const f=FARMS[i];if(!overlaps(minx,maxx,minz,maxz,{minx:f.x-f.hx-f.hz,maxx:f.x+f.hx+f.hz,minz:f.z-f.hx-f.hz,maxz:f.z+f.hx+f.hz}))continue;if(boxBlocks(f,x0,z0,x1,z1))return true;}
   if(extras)for(const o of extras)if(boxBlocks(o,x0,z0,x1,z1))return true;return false;}
+// Sama askeltarkistus kuin koiran _go: suora jana osuu rakennukseen tai pihan laatikkoon.
+export function askelEstetty(x0,z0,x1,z1){return pathBlocked(x0,z0,x1,z1,null,null);}
 // lähin jäniksen jälki (yöjälki tai pakojälki) annetun pisteen säteellä, tai makuualue (6 m)
 export function nearTrack(hare,p,r){
   if(hare.state==='makuu'&&Math.hypot(hare.x-p.x,hare.z-p.z)<6)return{kind:'yo',idx:hare.nightTrail.length-1};

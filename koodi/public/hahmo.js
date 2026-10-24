@@ -338,15 +338,18 @@ export function makeKylalainen(laji = 'naapuri') {
     put(h.vartalo, box(0.22, 0.28, 0.04), mat(0xd8d0c4), 0, 0.16, 0.16, 'esiliina');
   }
 
-  const st = { t: 0, kotiX: 0, kotiZ: 0, yaw: 0, laji };
+  const st = { t: 0, ph: 0, yaw: 0, laji };
   const g = h.g;
   g.userData.laji = laji;
   g.userData.puhuu = 0;
+  g.userData.vauhti = 0;
   g.userData.kaatunut = false;
   g.userData.asetaKoti = (x, z, yaw) => {
-    st.kotiX = x; st.kotiZ = z; st.yaw = yaw;
+    st.yaw = yaw;
     st.t = Math.abs(Math.sin(x * 12.9898 + z * 78.233)) * 6.28318;
     g.position.set(x, g.position.y, z);
+    g.rotation.y = yaw;
+    g.rotation.z = 0;
     g.userData.tick(0);
   };
   g.userData.tick = dt => {
@@ -354,56 +357,53 @@ export function makeKylalainen(laji = 'naapuri') {
     st.t += dt;
     g.userData.puhuu = Math.max(0, (g.userData.puhuu || 0) - dt);
     const t = st.t;
+    const spd = g.userData.vauhti || 0;
+    const moving = spd > 0.12;
+    if (moving) st.ph += dt * (3.4 + spd * 2);
+    const s = Math.sin(st.ph);
+    const swing = moving ? Math.min(1, spd / 0.45) : 0;
+    h.jv.reisi.rotation.x = s * 0.55 * swing;
+    h.jo.reisi.rotation.x = -s * 0.55 * swing;
+    h.jv.saari.rotation.x = Math.max(0, -s) * 0.85 * swing;
+    h.jo.saari.rotation.x = Math.max(0, s) * 0.85 * swing;
+    h.lantio.position.y = 1 + Math.abs(s) * 0.025 * swing;
     h.vartalo.position.y = 0.02 + Math.sin(t * 1.6) * 0.008;
     h.paa.rotation.x = Math.sin(t * 0.7) * 0.04;
-    h.paa.rotation.y = Math.sin(t * 0.45) * (laji === 'naapuri' ? 0.42 : 0.1);
+    h.paa.rotation.y = moving ? 0 : Math.sin(t * 0.45) * (laji === 'naapuri' ? 0.42 : 0.1);
     if (laji === 'isanta') {
       const sway = Math.sin(t * 1.25);
-      g.position.x = st.kotiX + sway * 0.55;
-      g.position.z = st.kotiZ + Math.cos(t * 0.65) * 0.22;
-      g.rotation.z = sway * 0.1;
-      g.rotation.y = st.yaw + sway * 0.18;
+      g.rotation.z = sway * (moving ? 0.05 : 0.08);
       h.oik.olka.rotation.x = 1.15 + Math.sin(t * 1.1) * 0.12;
       h.oik.olka.rotation.z = -0.4;
       h.oik.kn.rotation.x = 1.25;
-      h.vas.olka.rotation.x = 0.25 + Math.sin(t * 0.8) * 0.15;
+      h.vas.olka.rotation.x = 0.25 + (moving ? -s * 0.35 * swing : Math.sin(t * 0.8) * 0.15);
       h.vas.olka.rotation.z = 0.28;
-      h.lantio.position.y = 1 + Math.abs(sway) * 0.02;
+      h.vartalo.rotation.x = 0.04;
     } else if (laji === 'mummo') {
-      g.position.x = st.kotiX;
-      g.position.z = st.kotiZ;
       g.rotation.z = 0;
-      g.rotation.y = st.yaw;
       const shake = g.userData.puhuu > 0 ? Math.sin(t * 16) * 0.4 : Math.sin(t * 1.3) * 0.06;
       h.oik.olka.rotation.x = 0.5;
       h.oik.olka.rotation.z = -0.85 + shake;
       h.oik.kn.rotation.x = 0.35;
-      h.vas.olka.rotation.x = 0.12;
+      h.vas.olka.rotation.x = 0.12 + (moving ? s * 0.3 * swing : 0);
       h.vas.olka.rotation.z = 0.22;
       if (h.keppi) h.keppi.rotation.z = shake;
-      h.lantio.position.y = 1;
+      h.vartalo.rotation.x = 0.06;
     } else if (laji === 'aija') {
-      g.position.x = st.kotiX;
-      g.position.z = st.kotiZ;
       g.rotation.z = 0;
-      g.rotation.y = st.yaw + Math.sin(t * 0.5) * 0.05;
-      h.lantio.position.y = 1;
-      h.vartalo.rotation.x = 0.38 + Math.sin(t * 2.2) * 0.04;
-      h.oik.olka.rotation.x = 1.2;
+      const lean = moving ? 0.08 : 0.38;
+      h.vartalo.rotation.x = lean + (moving ? 0 : Math.sin(t * 2.2) * 0.04);
+      h.oik.olka.rotation.x = moving ? 0.35 - s * 0.3 * swing : 1.2;
       h.oik.olka.rotation.z = -0.25;
-      h.oik.kn.rotation.x = 0.85 + Math.sin(t * 3.1) * 0.18;
-      h.vas.olka.rotation.x = 0.85;
-      h.vas.kn.rotation.x = 0.55;
+      h.oik.kn.rotation.x = moving ? 0.2 : 0.85 + Math.sin(t * 3.1) * 0.18;
+      h.vas.olka.rotation.x = moving ? 0.3 + s * 0.3 * swing : 0.85;
+      h.vas.kn.rotation.x = moving ? 0.15 : 0.55;
     } else {
-      g.position.x = st.kotiX + Math.sin(t * 0.45) * 0.06;
-      g.position.z = st.kotiZ;
       g.rotation.z = 0;
-      g.rotation.y = st.yaw + Math.sin(t * 0.35) * 0.12;
-      h.lantio.position.y = 1;
-      h.vas.olka.rotation.z = 0.2 + (g.userData.puhuu > 0 ? Math.sin(t * 8) * 0.25 : 0);
-      h.vas.olka.rotation.x = 0.35;
-      h.oik.olka.rotation.x = 0.2;
       h.vartalo.rotation.x = 0.04;
+      h.vas.olka.rotation.z = 0.2 + (g.userData.puhuu > 0 ? Math.sin(t * 8) * 0.25 : 0);
+      h.vas.olka.rotation.x = 0.35 + (moving ? s * 0.35 * swing : 0);
+      h.oik.olka.rotation.x = 0.2 - (moving ? s * 0.3 * swing : 0);
     }
   };
   g.userData.asetaKoti(0, 0, 0);

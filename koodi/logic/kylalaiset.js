@@ -1,8 +1,12 @@
 // Kyläläiset muiden talojen pihoilla. Sama siemen (huone) antaa molemmille samat paikat.
 // Jutut ovat paikallisia. Koppelontie 30:n piha ei ole mukana.
+// Liike pysyy talon pihasäteellä eikä seuraa pelaajaa. Reitti kiertää rakennukset samalla tarkistuksella kuin koira.
 import { mulberry32 } from './rng.js';
+import { askelEstetty, dogInside } from './dog.js';
 
 export const JUTTELE_SADE = 2.4;
+// Pihapiiri on kiekko talon keskipisteen ympärillä.
+export const PIHA_SADE = 16;
 export const HUUTO_SADE = 8;
 export const HUUTO_TAUKO = 20;
 
@@ -279,7 +283,7 @@ export function sijoitaKylalaiset(buildings, seed, yard = { x: 0, z: 0, r: 0 }, 
     for (let s = 0; s < lajit.length; s++) {
       const p = etsi(t, s, n, rand, sopii, out);
       if (!p) continue;
-      out.push({ id: out.length, laji: lajit[s], x: p.x, z: p.z, yaw: p.yaw, talo: t.i });
+      out.push({ id: out.length, laji: lajit[s], x: p.x, z: p.z, yaw: p.yaw, talo: t.i, cx: t.x, cz: t.z, piha: PIHA_SADE });
     }
   }
   return out;
@@ -299,6 +303,129 @@ export function huudonTila(t) {
   if (t?.koira) return 'koira';
   if (t?.ase) return 'ase';
   return null;
+}
+
+function kelpaaPiste(x, z, npc, env) {
+  if (Math.hypot(x - npc.cx, z - npc.cz) > npc.piha - 0.25) return false;
+  if (dogInside(x, z)) return false;
+  if (env.tie(x, z) <= 1.15) return false;
+  if (env.metsa(x, z)) return false;
+  return true;
+}
+
+function janaKelpaa(a, b, npc, env) {
+  if (askelEstetty(a.x, a.z, b.x, b.z)) return false;
+  const d = Math.hypot(b.x - a.x, b.z - a.z);
+  const n = Math.max(1, Math.ceil(d / 0.45));
+  for (let i = 0; i <= n; i++) {
+    const x = a.x + (b.x - a.x) * i / n, z = a.z + (b.z - a.z) * i / n;
+    if (!kelpaaPiste(x, z, npc, env)) return false;
+  }
+  return true;
+}
+
+// Jos suora leikkaa talon nurkan, kokeile pistettä kauempana keskipisteestä. Sama este kuin koiralla.
+function kulku(a, b, npc, env) {
+  if (janaKelpaa(a, b, npc, env)) return [b];
+  const mx = (a.x + b.x) / 2 - npc.cx, mz = (a.z + b.z) / 2 - npc.cz;
+  const L = Math.hypot(mx, mz) || 1;
+  for (const lisa of [3.5, 6.5, 9]) {
+    const r = Math.min(npc.piha - 0.4, L + lisa);
+    const m = { x: npc.cx + (mx / L) * r, z: npc.cz + (mz / L) * r };
+    if (Math.hypot(m.x - a.x, m.z - a.z) < 1.2) continue;
+    if (janaKelpaa(a, m, npc, env) && janaKelpaa(m, b, npc, env)) return [m, b];
+  }
+  return null;
+}
+
+function ulkoPiste(P, cx, cz, ang, npc, env) {
+  const dx = Math.sin(ang), dz = Math.cos(ang);
+  let seinä = inPoly(cx, cz, P) ? 0 : null;
+  for (let s = 0.4; s <= npc.piha; s += 0.4) {
+    const x = cx + dx * s, z = cz + dz * s;
+    if (inPoly(x, z, P) || dogInside(x, z)) { seinä = s; continue; }
+    if (seinä == null) continue;
+    const e = s - seinä;
+    if (e < 2.2 || e > 8) continue;
+    if (kelpaaPiste(x, z, npc, env)) return { x, z };
+  }
+  return null;
+}
+
+function aikajana(pts, nopeus, rand, yaw0) {
+  if (pts.length < 2) {
+    const p = pts[0];
+    return { pisteet: pts, osat: [{ x0: p.x, z0: p.z, x1: p.x, z1: p.z, dt: 8, spd: 0, yaw: yaw0 }], kesto: 8 };
+  }
+  const jarj = [];
+  for (let i = 0; i < pts.length; i++) jarj.push(i);
+  for (let i = pts.length - 2; i >= 0; i--) jarj.push(i);
+  const osat = [];
+  for (let i = 0; i < jarj.length - 1; i++) {
+    const a = pts[jarj[i]], b = pts[jarj[i + 1]];
+    const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
+    if (d < 0.05) continue;
+    const yaw = Math.atan2(-dx, -dz);
+    osat.push({ x0: a.x, z0: a.z, x1: b.x, z1: b.z, dt: d / nopeus, spd: nopeus, yaw });
+    osat.push({ x0: b.x, z0: b.z, x1: b.x, z1: b.z, dt: 4 + rand() * 6, spd: 0, yaw });
+  }
+  const kesto = osat.reduce((s, o) => s + o.dt, 0) || 1;
+  return { pisteet: pts, osat, kesto };
+}
+
+// Rauhallinen lenkki oman talon pihalla. Pelaajan paikka ei vaikuta. Sama npc antaa saman reitin.
+export function teePihaReitti(npc, poly, env) {
+  const rand = mulberry32((Math.imul(npc.id + 1, 0x9e3779b1) ^ Math.imul((npc.talo | 0) + 1, 0x85ebca6b)) >>> 0);
+  const alku = { x: npc.x, z: npc.z };
+  const ehdokkaat = [];
+  const phase = rand() * Math.PI * 2;
+  const lisaa = p => {
+    if (!p || !kelpaaPiste(p.x, p.z, npc, env)) return;
+    if (Math.hypot(p.x - alku.x, p.z - alku.z) < 2) return;
+    if (ehdokkaat.some(q => Math.hypot(q.x - p.x, q.z - p.z) < 2)) return;
+    ehdokkaat.push(p);
+  };
+  for (let i = 0; i < 12; i++) lisaa(ulkoPiste(poly, npc.cx, npc.cz, phase + i * (Math.PI * 2 / 12), npc, env));
+  for (let k = 0; k < 14; k++) {
+    const ang = rand() * Math.PI * 2, rad = 4 + rand() * (npc.piha - 6);
+    lisaa({ x: npc.cx + Math.cos(ang) * rad, z: npc.cz + Math.sin(ang) * rad });
+  }
+  const ketju = [alku];
+  const kaytetty = new Set();
+  for (let guard = 0; guard < ehdokkaat.length; guard++) {
+    let paras = null, bi = -1, bd = 1e9;
+    const viime = ketju[ketju.length - 1];
+    for (let i = 0; i < ehdokkaat.length; i++) {
+      if (kaytetty.has(i)) continue;
+      const p = ehdokkaat[i];
+      const d = Math.hypot(p.x - viime.x, p.z - viime.z);
+      if (d < 1.8 || d > 14) continue;
+      const askel = kulku(viime, p, npc, env);
+      if (!askel) continue;
+      let kustannus = 0, ed = viime;
+      for (const q of askel) { kustannus += Math.hypot(q.x - ed.x, q.z - ed.z); ed = q; }
+      if (kustannus < bd) { bd = kustannus; paras = askel; bi = i; }
+    }
+    if (!paras) break;
+    kaytetty.add(bi);
+    ketju.push(...paras);
+  }
+  const nopeus = npc.laji === 'mummo' ? 0.36 : npc.laji === 'isanta' ? 0.46 : npc.laji === 'aija' ? 0.4 : 0.52;
+  return aikajana(ketju, nopeus, rand, npc.yaw || 0);
+}
+
+// Paikka kellonajan mukaan. Sama aika molemmilla asiakkailla, ei pelaajan perässä.
+export function pihaKohta(reitti, t) {
+  const osat = reitti.osat;
+  let u = ((t % reitti.kesto) + reitti.kesto) % reitti.kesto;
+  for (let i = 0; i < osat.length; i++) {
+    const s = osat[i];
+    if (u > s.dt && i < osat.length - 1) { u -= s.dt; continue; }
+    const k = s.dt > 1e-6 ? Math.max(0, Math.min(1, u / s.dt)) : 0;
+    return { x: s.x0 + (s.x1 - s.x0) * k, z: s.z0 + (s.z1 - s.z0) * k, yaw: s.yaw, spd: s.spd };
+  }
+  const s = osat[0];
+  return { x: s.x0, z: s.z0, yaw: s.yaw, spd: 0 };
 }
 
 export function seuraavaHuuto(npc, tila) {

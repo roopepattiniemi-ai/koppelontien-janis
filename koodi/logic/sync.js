@@ -6,7 +6,7 @@
 //  {t:'r', on, ch}  radion tila (kuka tahansa autossa oleva)
 //  {t:'cmd', c, x,z}  vieraan koirakomento isännälle;  {t:'pick', i}/{t:'drop', i} saaliin otto/lasku (isäntä kirjaa)
 //  {t:'lopeta'}  vieras pyytää jahdin loppua;  {t:'loppu', yhteenveto}  isäntä käynnistää loppukohtauksen molemmille
-//  {t:'lehti', seed, pisteet, kaatui:'h'|'v'|'k', nimi, otsikko?, ingressi?, kyla?}  isäntä: osuma pelaajaan tai kyläläiseen, sama lehti molemmille. Kyläläiset syntyvät huonesiemenestä, eivät maailmapaketista. Jutut ja ohikulkuhuudot eivät synkkaa. dog.tone = haukun tila, dog.kimea = terrieri. Pelaajan tilassa nimi on kuolinilmoitusta varten.
+//  {t:'lehti', seed, pisteet, kaatui:'h'|'v'|'k', nimi, otsikko?, ingressi?, kyla?}  isäntä: osuma pelaajaan tai kyläläiseen, sama lehti molemmille. Kyläläiset syntyvät huonesiemenestä, eivät maailmapaketista. Pihalenkki lasketaan samasta siemenestä ja kellosta, joten paikkaa ei lähetetä. Jutut ja ohikulkuhuudot eivät synkkaa. dog.tone = haukun tila, dog.kimea = terrieri. Pelaajan tilassa nimi on kuolinilmoitusta varten.
 export function roomSeed(code){let h=2166136261;for(const ch of String(code))h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0;}
 export function newRoomCode(rand=Math.random){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=A[(rand()*A.length)|0];return s;}
 export const enc=m=>JSON.stringify(m);
