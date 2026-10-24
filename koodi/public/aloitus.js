@@ -18,15 +18,23 @@ const css=`#aloitus{position:fixed;inset:0;z-index:50;overflow:hidden;background
 #al-kred{position:absolute;bottom:8px;left:4vw;right:4vw;text-align:center;font-size:11px;opacity:.85;text-shadow:0 1px 2px #000}
 #al-ohjeet{position:absolute;inset:8vh 8vw;background:#0f2236ee;border:2px solid #fff;border-radius:8px;padding:18px 24px;overflow:auto;display:none;z-index:2}
 #al-ohjeet table{border-collapse:collapse;font-size:16px;margin:auto}#al-ohjeet td{padding:4px 14px;border-bottom:1px solid #fff3}#al-ohjeet td:first-child{font-weight:700;text-align:right;white-space:nowrap;color:#ffd9a0}
-#al-paiva{position:absolute;inset:8vh 6vw;background:#0f2236ee;border:2px solid #fff;border-radius:8px;padding:18px 24px;overflow:auto;display:none;z-index:2;text-align:left}
-#al-paiva h2,#al-paiva h3{margin:12px 0 6px}#al-paiva table{border-collapse:collapse}#al-paiva td{padding:4px 12px;border-bottom:1px solid #fff3}#al-paiva li{margin:2px 0}`;
+#al-paiva,#al-saav{position:absolute;inset:8vh 6vw;background:#0f2236ee;border:2px solid #fff;border-radius:8px;padding:18px 24px;overflow:auto;display:none;z-index:2;text-align:left}
+#al-paiva h2,#al-paiva h3,#al-saav h2{margin:12px 0 6px}#al-paiva table{border-collapse:collapse}#al-paiva td{padding:4px 12px;border-bottom:1px solid #fff3}#al-paiva li{margin:2px 0}
+.saav-ruudukko{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:8px}
+.saav{border:1px solid #fff4;border-radius:8px;padding:8px 10px;background:#1e3550}
+.saav.auki{background:#3a2a14;border-color:#e2c27a;color:#ffe9c2}
+.saav.lukko{background:#2a2e34;color:#8d939a}
+.saav-ikoni{height:40px;font:700 28px/40px Georgia,serif}
+.saav p{margin:4px 0 0;font:14px/1.3 Georgia,serif}
+.saav-maara{opacity:.85}`;
 import { lataa, paivakirjaHtml } from '../logic/paivakirja.js';
+import { lataa as lataaSaav, saavutuksetHtml } from '../logic/saavutukset.js';
 export const aanetPaalla=()=>localStorage.getItem('jahti_aanet')!=='0';
 export function setupAloitus({onStart,onAanet}){const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   const d=document.createElement('div');d.id='aloitus';d.innerHTML=`<picture><source id="al-mob" media="(max-aspect-ratio: 1/1)"><img class="bg" id="al-bg" alt="" style="display:none"></picture>
 <div id="al-tlogo">Koppelontien jänis</div><img id="al-logo" alt="Koppelontien jänis" style="display:none">
-<div id="al-napit"><label id="al-nimi">Nimi lehdessä<input id="al-nimi-kentta" maxlength="24" placeholder="Metsäkaveri" autocomplete="nickname"></label><button id="al-aloita">Aloita jahti</button><button id="al-kutsu">Kutsu kaveri</button><button id="al-paivakirja">Saalispäiväkirja</button><button id="al-ohje">Ohjeet</button><button id="al-aani"></button></div>
-<div id="al-paiva"></div>
+<div id="al-napit"><label id="al-nimi">Nimi lehdessä<input id="al-nimi-kentta" maxlength="24" placeholder="Metsäkaveri" autocomplete="nickname"></label><button id="al-aloita">Aloita jahti</button><button id="al-kutsu">Kutsu kaveri</button><button id="al-paivakirja">Saalispäiväkirja</button><button id="al-saavutukset">Saavutukset</button><button id="al-ohje">Ohjeet</button><button id="al-aani"></button></div>
+<div id="al-paiva"></div><div id="al-saav"></div>
 <div id="al-ohjeet"><h2 style="text-align:center;margin-top:0">Ohjeet</h2><table>${OHJEET.map(([k,t])=>`<tr><td>${k}</td><td>${t}</td></tr>`).join('')}</table><p style="text-align:center"><button id="al-sulje" style="font:700 18px sans-serif;padding:8px 24px">Sulje</button></p></div>
 <div id="al-kred">${KREDIITIT}</div>`;document.body.appendChild(d);const $=s=>d.querySelector(s);
   // kuvat: kokeile, uusi yritys kunnes löytyy
@@ -48,7 +56,10 @@ export function setupAloitus({onStart,onAanet}){const st=document.createElement(
   $('#al-aani').onclick=()=>{localStorage.setItem('jahti_aanet',aanetPaalla()?'0':'1');aaniTxt();if(aanetPaalla())tryPlay();else mus.pause();onAanet&&onAanet(aanetPaalla());};
   $('#al-ohje').onclick=()=>{$('#al-ohjeet').style.display='block';};$('#al-sulje').onclick=()=>{$('#al-ohjeet').style.display='none';};
   const paiva=$('#al-paiva');
-  $('#al-paivakirja').onclick=()=>{paiva.innerHTML=paivakirjaHtml(lataa(localStorage))+'<p style="text-align:center"><button id="al-paiva-sulje" style="font:700 18px sans-serif;padding:8px 24px">Sulje</button></p>';paiva.style.display='block';paiva.querySelector('#al-paiva-sulje').onclick=()=>{paiva.style.display='none';};};
+  const saavEl=$('#al-saav');
+  const naytaSaavutukset=()=>{saavEl.innerHTML=saavutuksetHtml(lataaSaav(localStorage))+'<p style="text-align:center"><button id="al-saav-sulje" style="font:700 18px sans-serif;padding:8px 24px">Sulje</button></p>';saavEl.style.display='block';paiva.style.display='none';saavEl.querySelector('#al-saav-sulje').onclick=()=>{saavEl.style.display='none';};};
+  $('#al-saavutukset').onclick=naytaSaavutukset;
+  $('#al-paivakirja').onclick=()=>{paiva.innerHTML=paivakirjaHtml(lataa(localStorage))+'<p style="text-align:center"><button id="al-paiva-saav" style="font:700 18px sans-serif;padding:8px 24px;margin-right:8px">Saavutukset</button><button id="al-paiva-sulje" style="font:700 18px sans-serif;padding:8px 24px">Sulje</button></p>';paiva.style.display='block';saavEl.style.display='none';paiva.querySelector('#al-paiva-sulje').onclick=()=>{paiva.style.display='none';};paiva.querySelector('#al-paiva-saav').onclick=naytaSaavutukset;};
   const nimi=$('#al-nimi-kentta');try{nimi.value=localStorage.getItem('jahti_nimi')||'';}catch{}
   nimi.addEventListener('input',()=>{try{localStorage.setItem('jahti_nimi',nimi.value.slice(0,24));}catch{}});
   nimi.addEventListener('keydown',e=>e.stopPropagation());
