@@ -1,6 +1,8 @@
 // v0.8: kyltit, eläinanimaatiot, 3D-äänet, viewmodel-haulikko, Vitaran sisänäkymä, radion näyttö
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { asetaHanskat, makeHunter } from './hahmo.js';
+export { makeHunter };
 const G='/grafiikka/';
 const nearestT=t=>{t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;t.colorSpace=THREE.SRGBColorSpace;return t;};
 const vc=root=>root.traverse(o=>{if(o.isMesh&&o.geometry.attributes.color){o.material.vertexColors=true;}});
@@ -40,7 +42,9 @@ export function animHare(n,st){if(!n)return;const t=st.t,s=st.spd;
 export const DOG_K={ajokoira:1,terrieri:0.565};
 export function animDog(n,st){if(!n)return;const t=st.t,s=st.spd,K=st.k??1;
   for(const k of ['jalka_ev','jalka_eo','jalka_tv','jalka_to','paa','korva_v','korva_o','hanta','leuka'])if(n[k])n[k].rotation.set(0,0,0);if(n.runko){n.runko.position.y=0;n.runko.scale.set(1,1,1);}
-  if(st.lying){for(const k of['jalka_ev','jalka_eo'])n[k]&&(n[k].rotation.x=-1.4);for(const k of['jalka_tv','jalka_to'])n[k]&&(n[k].rotation.x=1.3);if(n.runko){n.runko.position.y=-0.28*K;n.runko.scale.y=1+Math.sin(t*2.2)*0.015;}
+  if(st.sit){n.jalka_tv&&(n.jalka_tv.rotation.x=1.15);n.jalka_to&&(n.jalka_to.rotation.x=1.15);n.jalka_ev&&(n.jalka_ev.rotation.x=0.3);n.jalka_eo&&(n.jalka_eo.rotation.x=0.22);
+    if(n.runko)n.runko.position.y=-0.16*K;n.paa&&(n.paa.rotation.x=-0.08);}
+  else if(st.lying){for(const k of['jalka_ev','jalka_eo'])n[k]&&(n[k].rotation.x=-1.4);for(const k of['jalka_tv','jalka_to'])n[k]&&(n[k].rotation.x=1.3);if(n.runko){n.runko.position.y=-0.28*K;n.runko.scale.y=1+Math.sin(t*2.2)*0.015;}
     n.paa&&(n.paa.rotation.y=Math.sin(t*0.45)*0.7,n.paa.rotation.x=0.1*Math.sin(t*0.3));}
   else if(s>0.3){const f=s>3?3.2:1.8,ph=t*f*Math.PI*2,a=Math.min(0.8,0.3+s*0.08);
     n.jalka_ev&&(n.jalka_ev.rotation.x=Math.sin(ph)*a);n.jalka_eo&&(n.jalka_eo.rotation.x=Math.sin(ph+(s>3?0.4:Math.PI))*a);n.jalka_tv&&(n.jalka_tv.rotation.x=Math.sin(ph+Math.PI)*a);n.jalka_to&&(n.jalka_to.rotation.x=Math.sin(ph+(s>3?Math.PI+0.4:0))*a);
@@ -60,8 +64,8 @@ export function makeAudio3D(AC){
     const p=AC.createPanner();p.panningModel='HRTF';p.distanceModel=model;p.refDistance=ref;p.maxDistance=max;p.rolloffFactor=roll;
     const send=AC.createGain();send.gain.value=0;g.connect(lp).connect(p).connect(out);p.connect(send).connect(conv);return{g,lp,p,send};}
   function setPos(h,x,y,z){const t=AC.currentTime;h.p.positionX.setValueAtTime(x,t);h.p.positionY.setValueAtTime(y,t);h.p.positionZ.setValueAtTime(z,t);h.pos={x,y,z};}
-  function play(buf,{x=0,y=1,z=0,gain=1,loop=false,ref=10,max=3000,roll=1,far=true}={}){if(!buf)return null;const h=chain({ref,max,roll});h.far=far;h.g.gain.value=gain;setPos(h,x,y,z);
-    const s=AC.createBufferSource();s.buffer=buf;s.loop=loop;s.connect(h.g);s.start();h.s=s;live.add(h);s.onended=()=>live.delete(h);h.setPos=(a,b,c)=>setPos(h,a,b,c);return h;}
+  function play(buf,{x=0,y=1,z=0,gain=1,loop=false,ref=10,max=3000,roll=1,far=true,rate=1}={}){if(!buf)return null;const h=chain({ref,max,roll});h.far=far;h.g.gain.value=gain;setPos(h,x,y,z);
+    const s=AC.createBufferSource();s.buffer=buf;s.loop=loop;if(rate!==1)s.playbackRate.value=rate;s.connect(h.g);s.start();h.s=s;live.add(h);s.onended=()=>live.delete(h);h.setPos=(a,b,c)=>setPos(h,a,b,c);return h;}
   function updateListener(cam){const l=AC.listener,t=AC.currentTime,p=cam.getWorldPosition(new THREE.Vector3()),f=new THREE.Vector3(0,0,-1).applyQuaternion(cam.quaternion),u=new THREE.Vector3(0,1,0).applyQuaternion(cam.quaternion);
     if(l.positionX){l.positionX.setValueAtTime(p.x,t);l.positionY.setValueAtTime(p.y,t);l.positionZ.setValueAtTime(p.z,t);l.forwardX.setValueAtTime(f.x,t);l.forwardY.setValueAtTime(f.y,t);l.forwardZ.setValueAtTime(f.z,t);l.upX.setValueAtTime(u.x,t);l.upY.setValueAtTime(u.y,t);l.upZ.setValueAtTime(u.z,t);}
     else{l.setPosition(p.x,p.y,p.z);l.setOrientation(f.x,f.y,f.z,u.x,u.y,u.z);}
@@ -77,12 +81,12 @@ export function setupViewmodel(){
   const vm={scene,cam,pivot,gunG,n:{},aim:0,kick:0,reload:0,shells:[],flash:null,loaded:false};
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.16,0.16),new THREE.MeshBasicMaterial({color:0xffc060,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));fl.visible=false;vm.flash=fl;
   new GLTFLoader().load(G+'mallit/haulikko.glb',gl=>{vc(gl.scene);gl.scene.traverse(o=>{if(o.isMesh){o.material.flatShading=true;o.frustumCulled=false;}});gunG.add(gl.scene);for(const k of['piiput','suu','helmi','liipaisin'])vm.n[k]=gl.scene.getObjectByName(k);
-    (vm.n.suu||gunG).add(fl);vm.loaded=true;},undefined,e=>{vm.err=String(e.message||e);});
+    asetaHanskat(gl.scene);(vm.n.suu||gunG).add(fl);vm.loaded=true;},undefined,e=>{vm.err=String(e.message||e);});
   vm.shoot=()=>{vm.kick=1;fl.visible=true;fl.rotation.z=Math.random()*3;vm.flashT=0.05;};
   vm.startReload=()=>{vm.reload=1.6;vm.ejected=false;};
-  vm.update=(dt,{moving,t,aim})=>{vm.aim+=((aim?1:0)-vm.aim)*Math.min(1,dt*8);const a=vm.aim,bob=moving?1-a*0.8:0;
-    const hip={x:0.16,y:-0.15,z:-0.06,rx:0.04,ry:0.10,rz:0.04};
-    pivot.position.set(hip.x*(1-a)+Math.cos(t*8)*0.006*bob,hip.y*(1-a)+Math.abs(Math.sin(t*8))*0.008*bob,hip.z*(1-a)+vm.kick*0.07);
+  vm.update=(dt,{moving,t,aim,run,crouch})=>{vm.aim+=((aim?1:0)-vm.aim)*Math.min(1,dt*8);const a=vm.aim,bob=moving?1-a*0.8:0,f=run?12:crouch?6.2:8,amp=run?1.6:crouch?0.55:1;
+    const hip={x:0.16,y:-0.15-(crouch?0.05:0),z:-0.06,rx:0.04+(crouch?0.08:0),ry:0.10,rz:0.04};
+    pivot.position.set(hip.x*(1-a)+Math.cos(t*f)*0.006*bob*amp,hip.y*(1-a)+Math.abs(Math.sin(t*f))*0.008*bob*amp,hip.z*(1-a)+vm.kick*0.07);
     pivot.rotation.set(hip.rx*(1-a)+0.0223*a+vm.kick*0.15,hip.ry*(1-a),hip.rz*(1-a));
     vm.kick=Math.max(0,vm.kick-dt*6);if(vm.flashT!==undefined){vm.flashT-=dt;if(vm.flashT<=0)fl.visible=false;}
     if(vm.reload>0){vm.reload-=dt;const r=vm.reload,e=r>1.2?(1.6-r)/0.4:r>0.4?1:r/0.4;if(vm.n.piiput)vm.n.piiput.rotation.x=-0.6*e;
@@ -125,14 +129,3 @@ export function setupInterior(scene){
     g.fillStyle=on?'#020802':'#050805';g.fillRect(46,16,163,32);if(on){g.fillStyle='#EFFFEF';g.textAlign='center';g.font='bold 15px monospace';g.fillText(name,127,31,158);g.font='bold 10px monospace';g.fillText(freq+' MHz',127,44);}tex.needsUpdate=true;};
   return it;
 }
-// v1.1: toisen pelaajan low-poly metsästäjä huomioliivissä (katsoo -z). userData.sit(istuu, kyykky)
-export function makeHunter(){const g=new THREE.Group(),M=c=>new THREE.MeshLambertMaterial({color:c}),B=(w,h,d,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);return o;};
-  const pants=M(0x3b4a2e),vest=M(0xff7a00),refl=new THREE.MeshBasicMaterial({color:0xe8f0f0}),skin=M(0xe0b090),cap=M(0xff5a00),boot=M(0x222222);
-  const legs=new THREE.Group();legs.add(B(0.16,0.82,0.18,pants,-0.11,0.47,0),B(0.16,0.82,0.18,pants,0.11,0.47,0),B(0.18,0.1,0.28,boot,-0.11,0.05,-0.04),B(0.18,0.1,0.28,boot,0.11,0.05,-0.04));g.add(legs);
-  const up=new THREE.Group();up.position.y=0.88;g.add(up);
-  up.add(B(0.46,0.62,0.28,vest,0,0.31,0),B(0.47,0.05,0.29,refl,0,0.22,0),B(0.47,0.05,0.29,refl,0,0.40,0));
-  up.add(B(0.12,0.56,0.14,vest,-0.30,0.30,0),B(0.12,0.56,0.14,vest,0.30,0.30,-0.05));
-  up.add(B(0.22,0.24,0.22,skin,0,0.76,0),B(0.25,0.08,0.25,cap,0,0.91,0),B(0.2,0.03,0.12,cap,0,0.88,-0.16));
-  const gun=B(0.05,0.05,1.1,M(0x2a2420),0.30,0.05,-0.25);gun.rotation.x=-0.9;up.add(gun);
-  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});g.name='toinen_pelaaja';
-  g.userData.sit=(sit,crouch)=>{legs.visible=!sit;up.position.y=sit?0:crouch?0.45:0.88;legs.scale.y=crouch?0.5:1;};return g;}

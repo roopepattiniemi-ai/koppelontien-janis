@@ -4,6 +4,10 @@ import { height, distToRoad, inYard, inBuilding, SIZE, inBounds } from './world.
 export const MAASTO=0.7;
 export const onRoad=(x,z)=>distToRoad(x,z)<0.6||inYard(x,z);
 export const carFree=(x,z)=>!inBuilding(x,z)&&inBounds(x,z);
+// vitara.glb-runko paikallisessa xz:ssä (pyörät mukana) + pieni vara, ettei koira leikkaa koria.
+// yaw vastaa carObj.rotation.y = π − heading.
+export const BODY={minx:-1.1,maxx:1.1,minz:-2.2,maxz:2.0};
+export const bodyBox=c=>({x:c.x,z:c.z,yaw:Math.PI-c.heading,...BODY});
 export class Car {
   constructor({x=0,z=0,heading=0}={}){this.x=x;this.z=z;this.heading=heading;this.speed=0;this.occupied=false;this.blocked=()=>false;this.pose();}
   // heading 0 = pohjoiseen (-z)
@@ -25,5 +29,11 @@ export class Car {
   // nousu: riittää että on auton vieressä (koiraa ei oteta kyytiin)
   canEnter(player){const d=Math.hypot(player.x-this.x,player.z-this.z);
     if(d>3)return{ok:false,syy:'Liian kaukana autosta'};return{ok:true};}
-  exitPos(){return{x:this.x-Math.cos(this.heading)*1.8,z:this.z-Math.sin(this.heading)*1.8};} // kuljettajan puoli (mallin +X)
+  // paikallinen xz -> maailma. yaw = π − heading = carObj.rotation.y
+  localToWorld(lx,lz){const th=Math.PI-this.heading,c=Math.cos(th),s=Math.sin(th);
+    return{x:this.x+lx*c+lz*s,z:this.z-lx*s+lz*c};}
+  // koira_paikka [0, 0.58, -1.5]; slot 0 oikea (isäntä), 1 vasen (vieraan terrieri)
+  cargo(slot=0){return this.localToWorld(slot?-0.38:0.38,-1.5);}
+  dogExit(slot=0){return this.localToWorld(slot?-0.75:0.75,-2.8);} // takaluukun taakse, korin ulkopuolelle
+  exitPos(seat='kuski'){const side=seat==='pelkaaja'?1.8:-1.8;return{x:this.x+Math.cos(this.heading)*side,z:this.z+Math.sin(this.heading)*side};}
 }

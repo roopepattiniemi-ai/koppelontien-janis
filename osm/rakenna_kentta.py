@@ -32,7 +32,9 @@ kop=[r_ for r_ in roads if r_['n']=='Koppelontie'][0]['pts']
 water.append({'w':1.5,'pts':[(x,z+7) for x,z in kop],'oja':'koppelontie'})
 # satelliittikuvasta arvioidut pellot, joita OSM:ssä ei ole (L/LO kynnetyt), tarkkuus ~±30 m
 fields+= [[(-450,-400),(-240,-400),(-240,-200),(-450,-200)],[(-200,190),(30,190),(30,340),(-200,340)],[(-600,-40),(-390,-40),(-390,110),(-600,110)]]
-CABIN={'x':0,'z':0,'rot':math.pi/2}   # kuisti (+Z) itään pihalle
+# Mökki = MML-polygonin keskipiste. Pitkä sivu 4,63° pohjoisesta itään; kuisti (+Z) siitä itään pihalle.
+# sx/sz: mokki.glb-runko 6,0×5,0 m vastaa seinäpolygonin 9,67×5,82 m.
+CABIN={'x':0.16,'z':0.63,'rot':math.pi/2-math.atan2(0.78,9.64),'sx':round(9.67/6,3),'sz':round(5.82/5,3)}
 YARD={'x':14,'z':2,'r':13}
 # aloitus: Vitaran ratissa Yli-Vallintiellä ~70 m ennen Löyhingintien risteystä (317.5,-32.6), ajosuunta risteystä kohti (koilliseen)
 JYV=(317.5,-32.6); JKOP=(302.7,-87.3)

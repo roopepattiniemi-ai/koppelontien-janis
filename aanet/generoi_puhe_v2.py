@@ -80,7 +80,7 @@ def juonto(name, kanava, text, humala=False, tausta=True):
     vf = f"{TMP}/{tn}_vf.wav"; wr(vf, mix); veq = f"{TMP}/{tn}_veq.wav"
     sh("ffmpeg","-y","-loglevel","error","-i",vf,"-af",RADIO_EQ,veq); voice = rd(veq); voice /= np.abs(voice).max()
     if tausta:
-        m = rd(f"/tmp/radio_v2/{BIISI[kanava]}_m.wav"); st = int(rng.uniform(5, 30)*SR); bg = m[st:st+n]; bg = np.pad(bg, (0, n - len(bg)))
+        m = rd(f"/tmp/radio_v2/{BIISI[kanava]}_m.wav"); st = int(rng.uniform(1.5, 10)*SR); bg = m[st:st+n]; bg = np.pad(bg, (0, max(0, n - len(bg))))
         fade = np.ones(n); a = int(.3*SR); fade[:a] = np.linspace(0, 1, a); fade[-int(.8*SR):] = np.linspace(1, 0, int(.8*SR))
         voice = voice + bg/(np.abs(bg).max()+1e-9)*.14*fade
     src = f"{TMP}/{tn}_mix.wav"; wr(src, voice); enc(src, os.path.join(D, name), "anull")
@@ -103,8 +103,33 @@ JUONNOT = {
   ("Jouuu! Tässä Mökö ja Jänskä takapenkiltä! Nyt etitään autoa kuusikosta. Terkkuja Koppelontien bileisiin, soittakaa jumputusta!", True),
   ("Muistakaa: haulikko ja tanssilattia vaativat molemmat hyvää ajoitusta. Liian aikaisin, ja jänis nauraa. Täällä Koppelontien Tekno, nyt mennään!", False)]}
 
+# Uudet välijuonnot 5–8. Vanhoja 1–4 ei generoida uudestaan.
+UUSI_JUONNOT = {
+ "parkano": [
+  ("Koppelontiellä on lunta polveen ja keli on peilijää. Ajakaa hiljaa, ja jos näette jäniksen, se on jo nähnyt teidät.", False),
+  ("Täällä on Masa pellon reunasta! Vitara on ojassa mutta radio soi. Pertsalle terveiset, ensi kerralla tähtää vähän vasemmalle!", True),
+  ("Ajokoira löysi yön jäljen ja kiersi navetan kolmesti. Isäntä ehti juoda kahvit. Näin sen pitää mennä. Seuraavaksi lisää kitaraa.", False),
+  ("Pakkasta puree poskia ja termari pitää lupauksensa. Parkano Rock, pysykää kanavalla.", False)],
+ "country": [
+  ("No kyllä tuota, Kurikassa paistaa kuu ja tie on valkoinen. Ei oo hoppua, annetaan koiran tehdä työnsä.", False),
+  ("Se oli tuota semmonen passi, että istuttiin kannon nokassa tunnin ja jänis tuli ihan viereen. Ei ammuttu. Kahvi oli vielä kuumaa.", False),
+  ("Hilkka tässä taas! Toivo hukkasi lapaset saunan taakse. Soittakaa valssi, niin löytyvät aamulla.", True),
+  ("Jalasjärven Kantri toivottaa hyvää jahtia. Pitäkää hanskat kädessä ja mieli lämpimänä.", False)],
+ "tekno": [
+  ("Koppelontien Tekno! Basso pohjaan ja nenä lumeen! Jänis ei odota, älä sinäkään!", False),
+  ("Koira tekee ympyrää, me tehdään droppi. Kun haukku nousee, nousee tempo. Nyt!", False),
+  ("Jänskä tässä takakontista! Mökö nukkuu ja radio ei. Terkkuja kaikille jotka etsivät autoa väärästä metsästä!", True),
+  ("Muistakaa tumput ja turvaväli. Koppelontien Tekno, biisi pyörii ja jänis myös.", False)]}
+
 if __name__ == "__main__":
     import sys
+    if "--uudet-juonnot" in sys.argv:
+        for k, lst in UUSI_JUONNOT.items():
+            for i, (txt, hum) in enumerate(lst, 5):
+                print(f"juonto {k} {i}")
+                juonto(f"radio/juonto_{k}_{i}", k, txt, humala=hum)
+        print("uudet juonnot ok")
+        raise SystemExit(0)
     if "--vain-juonnot" not in sys.argv:
       for key in HUUDOT:
         for n in (1, 2): huuto(key, n)

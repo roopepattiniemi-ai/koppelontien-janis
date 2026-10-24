@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { Hare, H } from '../logic/hare.js';
-import { Dog, D, nearTrack } from '../logic/dog.js';
+import { Dog, D, nearTrack, dogInside } from '../logic/dog.js';
 import { audibility } from '../logic/hearing.js';
-import { Car } from '../logic/car.js';
-import { YARD, drivable, inBuilding } from '../logic/world.js';
+import { Car, bodyBox } from '../logic/car.js';
+import { YARD, START, drivable, inBuilding, BUILDINGS, farmFootprints, YARD_POLYS } from '../logic/world.js';
 import { shotgun } from '../logic/shot.js';
 import { judgeShot } from '../logic/rules.js';
 import { Critter } from '../logic/wild.js';
@@ -79,11 +79,14 @@ t('ajettu jänis kaartaa vaiheittain laajan lenkin ja palaa pelaajan/lähtöpaik
     const r=Math.hypot(h.x-s0.x,h.z-s0.z);maxR=Math.max(maxR,r);let dh=h.heading-ph;dh=Math.atan2(Math.sin(dh),Math.cos(dh));turn+=Math.abs(dh);ph=h.heading;if(maxR>150)minLate=Math.min(minLate,Math.min(Math.hypot(h.x-P.x,h.z-P.z),r));}
   assert.ok(maxR>150&&maxR<1100,'lenkki '+maxR);assert.ok(minLate<80,'paluu lähelle '+minLate);assert.ok(turn>Math.PI*2,'kaartaa '+turn);});
 t('radiojuonto: ~50 % biisien välissä, ei samaa kahdesti peräkkäin, oikea kanava',async()=>{const {pickJuonto}=await import('../logic/radio.js');let last=null,n=0,prev=null;
-  for(let i=0;i<4000;i++){const j=pickJuonto('tekno',last);if(j){n++;assert.ok(j!==last,j);assert.match(j,/^radio\/juonto_tekno_[1-4]$/);last=j;}}assert.ok(n>1800&&n<2200,n);});
+  const {BIISIT,JUONNOT}=await import('../logic/radio.js');assert.equal(BIISIT,4);assert.equal(JUONNOT,8);
+  for(let i=0;i<4000;i++){const j=pickJuonto('tekno',last);if(j){n++;assert.ok(j!==last,j);assert.match(j,/^radio\/juonto_tekno_[1-8]$/);last=j;}}assert.ok(n>1800&&n<2200,n);});
 t('tienvarsi: pylväät ojan ulkopuolella, rakennukset irti teistä',async()=>{globalThis.window=globalThis.window||{};globalThis.document=globalThis.document||{createElement:()=>({getContext:()=>new Proxy({},{get:()=>()=>{}})})};
   const W=await import('../logic/world.js'),TV=await import('../public/tienvarsi.js'),THREE=await import('three');const i=TV.setupRoadside(new THREE.Scene(),{ROADS:W.ROADS,height:W.height,distToRoad:W.distToRoad,SIZE:W.SIZE});
   assert.ok(i.valot.length>10&&i.sahko.length>10,[i.valot.length,i.sahko.length]);for(const p of[...i.valot,...i.sahko]){assert.ok(W.distToRoad(p.x,p.z)>0.6+1.8,'ojassa');assert.equal(W.ditch(p.x,p.z),0);}
-  for(const p of[...Object.values(i.tilat),i.aitta])assert.ok(W.distToRoad(p.x,p.z)>5);assert.ok(window.__tienvarsi.johtosegmentteja>100);});
+  assert.deepEqual(i.tilat,{});assert.equal(i.aitta,undefined);
+  for(const P of W.YARD_POLYS){let cx=0,cz=0;for(const[x,z]of P){cx+=x;cz+=z;}cx/=P.length;cz/=P.length;assert.ok(W.distToRoad(cx,cz)>5,cx.toFixed(1)+','+cz.toFixed(1));assert.ok(W.inBuilding(cx,cz));}
+  assert.ok(W.inBuilding(0,0));assert.ok(!W.inBuilding(W.YARD.x,W.YARD.z));assert.ok(window.__tienvarsi.johtosegmentteja>100);});
 t('puut: ei puita 3 m lähempänä rakennuksia, kylttejä tai pylväitä',async()=>{const W=await import('../logic/world.js'),TV=await import('../public/tienvarsi.js'),THREE=await import('three');
   const info=TV.setupRoadside(new THREE.Scene(),{ROADS:W.ROADS,height:W.height,distToRoad:W.distToRoad,SIZE:W.SIZE});const all=W.trees(),T=TV.suodataPuut(all,info,{SIGNS:W.SIGNS,inBuilding:W.inBuilding});
   assert.ok(T.length<all.length&&T.length>all.length*0.8,[all.length,T.length]);const E=TV.esteet(info,W.SIGNS);
@@ -99,4 +102,44 @@ t('aloitusruudun ohjeet kattavat kaikki main.js:n näppäimet, ei passia',async(
   const hs=sp.map((p,k)=>new Hare({...p,seed:k+1}));const h=hs[3],g=new Dog({x:h.home.x+30,z:h.home.z,seed:3});g.command('etsi',{x:h.home.x+30,z:h.home.z},h);let ajo=false;
   for(let i=0;i<6000&&!ajo;i++){g.update(.05,{hares:hs,player:{x:h.home.x+30,z:h.home.z}});for(const x of hs)x.update(.05,{dog:g.pos,player:{x:h.home.x+30,z:h.home.z}});if(g.state===D.AJO)ajo=true;}assert.ok(ajo,'koira ajoon');
   const src=fs.readFileSync(new URL('../public/v09.js',import.meta.url),'utf8');const C=JSON.parse(src.match(/COUNTS=(\{[^}]*\})/)[1].replace(/(\w+):/g,'"$1":'));assert.deepEqual(C,{kettu:2,peura:6,orava:8,teeriParvet:2,teeriParvessa:6,korppi:6,tiainen:12});assert.ok(!/kind:'tiainen'/.test(src)&&!/SphereGeometry\(0\.05/.test(src),'tiaispallot poistettu');assert.match(src,/play3d\('amb_tiainen_'/);assert.match(src,/__tiainenSoitot\+\+/);});}
+t('koira kiertää rakennukset eikä ole sisällä pitkässä simulaatiossa',()=>{
+  const inside=(x,z)=>dogInside(x,z);
+  const out=(ix,iz,ang)=>{let x=ix,z=iz,c=Math.cos(ang),s=Math.sin(ang);for(let k=0;k<90&&inside(x,z);k++){x+=c*0.7;z+=s*0.7;}if(inside(x,z))return null;const p={x:x+c*10,z:z+s*10};return inside(p.x,p.z)?null:p;};
+  const ipOf=P=>{let minx=1e9,maxx=-1e9,minz=1e9,maxz=-1e9;for(const[a,b]of P){minx=Math.min(minx,a);maxx=Math.max(maxx,a);minz=Math.min(minz,b);maxz=Math.max(maxz,b);}for(let x=minx;x<=maxx;x+=0.8)for(let z=minz;z<=maxz;z+=0.8)if(inside(x,z))return{x,z};return null;};
+  let steps=0,cross=0;
+  const run=(A,B)=>{let hit=false;for(let t=0.08;t<1;t+=0.08)if(inside(A.x+(B.x-A.x)*t,A.z+(B.z-A.z)*t))hit=true;if(!hit)return;
+    const g=new Dog({x:A.x,z:A.z,seed:2});let i=0;while(Math.hypot(g.x-B.x,g.z-B.z)>2&&i++<7000){g._go(B.x,B.z,0.05,4.5);steps++;assert.ok(!inside(g.x,g.z),'sisällä '+g.x.toFixed(1)+','+g.z.toFixed(1));}
+    assert.ok(i<7000,'jumissa');cross++;};
+  for(const P of [...BUILDINGS,...YARD_POLYS]){const ip=ipOf(P);if(!ip)continue;for(const ang of[0,Math.PI/2,-Math.PI/3]){const A=out(ip.x,ip.z,ang),B=out(ip.x,ip.z,ang+Math.PI);if(A&&B)run(A,B);}}
+  for(const f of farmFootprints())for(const ang of[0,Math.PI/2]){const A=out(f.x,f.z,ang),B=out(f.x,f.z,ang+Math.PI);if(A&&B)run(A,B);}
+  run(out(0,0,0.4),out(0,0,0.4+Math.PI));
+  const box=bodyBox(new Car({x:120,z:-40,heading:0.6})),gv=new Dog({x:120,z:-70,seed:1});gv.obstacles=[box];
+  let iv=0;while(Math.hypot(gv.x-120,gv.z+10)>2&&iv++<3000){gv._go(120,-10,0.05,4.5);steps++;assert.ok(!inside(gv.x,gv.z));
+    const dx=gv.x-box.x,dz=gv.z-box.z,c=Math.cos(box.yaw),s=Math.sin(box.yaw),lx=dx*c-dz*s,lz=dx*s+dz*c;assert.ok(!(lx>=box.minx&&lx<=box.maxx&&lz>=box.minz&&lz<=box.maxz),'vitara');}
+  assert.ok(iv<3000,'vitara jumissa');
+  const P0={x:80,z:-520};assert.ok(!inside(P0.x,P0.z));const far=new Hare({x:5000,z:5000,seed:4});const gh=new Dog({x:P0.x+2,z:P0.z,seed:5});gh.command('irti',P0);gh._haku();
+  for(let i=0;i<6000;i++){gh.update(.05,{hares:[far],player:P0});steps++;assert.ok(!inside(gh.x,gh.z),'haku');}
+  const ip=ipOf(BUILDINGS[1]),A=out(ip.x,ip.z,0.2),B=out(ip.x,ip.z,0.2+Math.PI);assert.ok(A&&B&&inside(ip.x,ip.z));
+  const hare=new Hare({x:B.x,z:B.z,seed:8});hare.trail=[{x:A.x,z:A.z},{x:ip.x,z:ip.z},{x:B.x,z:B.z}];hare.alive=true;hare.speed=6;hare.state='pako';
+  const da=new Dog({x:A.x,z:A.z,seed:3});da.state=D.AJO;da.target=hare;da.idx=0;
+  for(let i=0;i<5000&&Math.hypot(da.x-B.x,da.z-B.z)>3;i++){da.update(.05,{hare,hares:[hare],player:P0});steps++;assert.ok(!inside(da.x,da.z),'ajo');}
+  assert.ok(Math.hypot(da.x-B.x,da.z-B.z)<3,'ajo perille');
+  hare.shoot('h');hare.x=B.x;hare.z=B.z;hare.carried=false;hare.delivered=false;hare.held=false;hare.counted=false;
+  const dn=new Dog({x:A.x,z:A.z,seed:6});dn.state=D.NOUTO;dn.target=hare;
+  for(let i=0;i<5000&&!hare.carried;i++){dn.update(.05,{hare,hares:[hare],player:{x:A.x,z:A.z+40}});steps++;assert.ok(!inside(dn.x,dn.z),'nouto');}
+  assert.ok(hare.carried,'nouto');assert.ok(steps>8000&&cross>=8,[steps,cross]);});
+t('kyyti: koira pysyy autossa ja hyppy vie korin ulkopuolelle',()=>{
+  const c=new Car({x:120,z:-40,heading:0.6}),box=bodyBox(c);
+  const loc=(wx,wz)=>{const dx=wx-box.x,dz=wz-box.z,co=Math.cos(box.yaw),si=Math.sin(box.yaw);return [dx*co-dz*si,dx*si+dz*co];};
+  const inn=p=>{const [lx,lz]=loc(p.x,p.z);return lx>=box.minx&&lx<=box.maxx&&lz>=box.minz&&lz<=box.maxz;};
+  assert.ok(inn(c.cargo(0))&&inn(c.cargo(1)),'tavaratila');assert.ok(!inn(c.dogExit(0))&&!inn(c.dogExit(1)),'hyppy ulos');
+  const g=new Dog({x:0,z:0,seed:1,riding:true});
+  for(let i=0;i<200;i++)g.update(.05,{player:{x:400,z:0},hares:[],ride:{x:12,z:-4,dir:1}});
+  assert.equal(g.x,12);assert.equal(g.z,-4);assert.equal(g.state,D.HAKU);
+  g.riding=false;const p=c.dogExit(0);g.x=p.x;g.z=p.z;g._haku();
+  for(let i=0;i<30;i++)g.update(.05,{player:{x:400,z:0},hares:[]});
+  assert.ok(Math.hypot(g.x-p.x,g.z-p.z)>1);
+  const c2=new Car({x:START.x,z:START.z,heading:START.heading});
+  for(let i=0;i<30;i++)c2.update(.05,{throttle:1});
+  assert.ok(Math.hypot(c2.x-START.x,c2.z-START.z)>5,'lähtöpaikalta pääsee ajamaan');});
 console.log(`${n} testiä ok`);
