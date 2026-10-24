@@ -18,7 +18,7 @@ export function passiKohde(hunters, ylos, max = 280) {
   return best;
 }
 export class Hare {
-  constructor({x=0,z=0,seed=1,feed=null}={}){this.feed=feed;
+  constructor({x=0,z=0,seed=1,feed=null,laji='janis'}={}){this.feed=feed;this.laji=laji==='kettu'?'kettu':'janis';
     this.rand=mulberry32(seed); this.x=x; this.z=z; this.home={x,z}; this.state=H.MAKUU; this.t=0;
     this.trail=[]; this.nightTrail=this.makeNightTrail(); this.heading=0; this.loopAngle=0; this.loops=0;
     this.relocT=180+this.rand()*300;this.wounded=false;this.loopR=200+this.rand()*150; this.dirSign=this.rand()<.5?1:-1; this.speed=0; this.alive=true;
@@ -59,9 +59,11 @@ export class Hare {
   _lenkki(lista, dog){
     const y=this.ylos||this.home, r=this.rand;this.reitit=this.reitit||new Set();
     const kartta=maastoPisteet(y);
+    const kettu=this.laji==='kettu';
     let far=null, fd=0, fi=0;
-    this.nightTrail.forEach((p,i)=>{const d=Math.hypot(p.x-y.x,p.z-y.z);if(d<=400&&d>fd){fd=d;far=p;fi=i;}});
-    if(!far||fd<150){const a=this.heading||r()*6.28,L=160+r()*220;far=rajaa(y.x+Math.cos(a)*L,y.z+Math.sin(a)*L);fd=Math.hypot(far.x-y.x,far.z-y.z);fi=0;}
+    const farMax=kettu?560:400, farMin=kettu?220:150;
+    this.nightTrail.forEach((p,i)=>{const d=Math.hypot(p.x-y.x,p.z-y.z);if(d<=farMax&&d>fd){fd=d;far=p;fi=i;}});
+    if(!far||fd<farMin){const a=this.heading||r()*6.28,L=(kettu?250:160)+r()*(kettu?280:220);far=rajaa(y.x+Math.cos(a)*L,y.z+Math.sin(a)*L);fd=Math.hypot(far.x-y.x,far.z-y.z);fi=0;}
     const ang=Math.atan2(far.z-y.z,far.x-y.x);
     const dox=this.x-(dog?.x??this.x+1),doz=this.z-(dog?.z??this.z);
     const side=dox*Math.sin(ang)-doz*Math.cos(ang)>=0?1:-1;
@@ -73,21 +75,22 @@ export class Hare {
     const lisaa=(x,z,laji,jump=false)=>{const q=rajaa(x,z);const e=pts.at(-1);if(e&&Math.hypot(e.x-q.x,e.z-q.z)<8)return;pts.push({x:q.x,z:q.z,laji,jump});if(laji)this.reitit.add(laji);};
     const n=8;
     for(let i=1;i<=n;i++){const t=i/n,u=1-t,x=u*u*this.x+2*u*t*kx+t*t*far.x,z=u*u*this.z+2*u*t*kz+t*t*far.z;
-      const s=kiinnita(x,z,kartta);lisaa(s?s.x:x,s?s.z:z,s?s.laji:(maasto&&i===n>>1?maasto.laji:null),i===4);}
+      const s=kiinnita(x,z,kartta);lisaa(s?s.x:x,s?s.z:z,s?s.laji:(maasto&&i===n>>1?maasto.laji:null),kettu?i%3===0:i===4);}
     if(maasto)this.reitit.add(maasto.laji);
     // paluu yöjälkeä pitkin ylösajoa kohti
     for(let i=fi;i<this.nightTrail.length;i+=4){const p=this.nightTrail[i];if(Math.hypot(p.x-y.x,p.z-y.z)>420)continue;lisaa(p.x,p.z,'yo',i===fi+8);}
-    this._ohitus(lista, pts);irtiPassista(pts, lista, y);
+    this._ohitus(lista, pts);irtiPassista(pts, lista, y, this.laji);
     this.lenkki=pts.length?pts:[{x:y.x,z:y.z,laji:'yo'}];
     this.li=0;this.puoli=false;this.passId=passiId(passiKohde(lista,y));
   }
   _ohitus(lista, pts){
     const y=this.ylos||this.home, p=passiKohde(lista,y);
-    if(p){const o=ohiPiste(p,y,this.rand);pts.push({x:o.x,z:o.z,laji:'passi'});this.reitit.add('passi');}
+    if(p){const o=ohiPiste(p,y,this.rand,this.laji);pts.push({x:o.x,z:o.z,laji:'passi'});this.reitit.add('passi');}
     const q=rajaa(y.x+(this.rand()-.5)*12,y.z+(this.rand()-.5)*12);
     pts.push({x:q.x,z:q.z,laji:'yo'});this.reitit.add('yo');
   }
-  update(dt,{dog,player,playerMoving=false,hunters}={}){
+  update(dt,{dog,player,playerMoving=false,hunters,kello}={}){
+    this.kello=kello!=null?kello:(this.kello||0)+dt;
     const flushR=4;
     if(!this.alive)return;
     // haavoittunut: tauot (tiheämpiä ja pidempiä kun vahinko suuri), verijälki this.blood
@@ -109,7 +112,13 @@ export class Hare {
         if(!this.lenkki)this._lenkki(lista,dog);
         const dd=d(dog);
         // terve jänis pitää koiran 50–150 m takana; haavoittunut hidastuu kuten ennen
-        if(this.wounded)this.speed=dd<80?7:dd<200?4.5:2.5;
+        if(this.laji==='kettu'){
+          if(this.wounded)this.speed=dd<90?8.2:dd<220?5.2:3.2;
+          else if(this.jarruT>0){this.jarruT-=dt;this.speed=2.4;}
+          else if(dd<60)this.speed=8.4;
+          else if(dd>180)this.speed=3.6;
+          else this.speed=5.4;
+        }else if(this.wounded)this.speed=dd<80?7:dd<200?4.5:2.5;
         else if(this.jarruT>0){this.jarruT-=dt;this.speed=2.1;}
         else if(dd<50)this.speed=7.6;
         else if(dd>150)this.speed=3;
@@ -117,8 +126,9 @@ export class Hare {
         const wp=this.lenkki[Math.min(this.li,this.lenkki.length-1)];
         let tx=wp.x,tz=wp.z;
         for(const h of lista){if(h.inCar)continue;const dx=this.x-h.x,dz=this.z-h.z,dist=Math.hypot(dx,dz);if(dist<0.4)continue;
-          if(h.moving||h.run){if(dist<58){tx=this.x+dx/dist*10;tz=this.z+dz/dist*10;this.veered=true;}}
-          else if(dist<17){tx=this.x+dx/dist*8;tz=this.z+dz/dist*8;}}
+          const juoksuRaja=this.laji==='kettu'?72:58, seisRaja=this.laji==='kettu'?28:17;
+          if(h.moving||h.run){if(dist<juoksuRaja){tx=this.x+dx/dist*10;tz=this.z+dz/dist*10;this.veered=true;}}
+          else if(dist<seisRaja){tx=this.x+dx/dist*8;tz=this.z+dz/dist*8;}}
         this._move(dt,Math.atan2(tz-this.z,tx-this.x));
         if(Math.hypot(wp.x-this.x,wp.z-this.z)<4||(this.askel=(this.askel||0)+dt)>5){this.askel=0;
           if(wp.jump&&!wp._tehty){wp._tehty=true;this._hook=true;const viim=this.trail.at(-1);if(viim)viim.jump=true;if(!this.wounded)this.jarruT=1.35;this.koukut=(this.koukut||0)+1;}
@@ -131,21 +141,23 @@ export class Hare {
       case H.PALUU:{ // lyhyt paluu omia jälkiä ja sivuloikka, josta koira hukkaa
         this.speed=this.wounded?2.2:3.4;
         const i=this.trail.length-1-(this.back||0);
-        if((this.back||0)<8&&i>1){const p=this.trail[i];this._move(dt,Math.atan2(p.z-this.z,p.x-this.x));if(Math.hypot(p.x-this.x,p.z-this.z)<2.2)this.back++;}
-        else{this._hook=true;this._move(dt,this.heading+1.5*(this.dirSign||1));const viim=this.trail.at(-1);if(viim)viim.jump=true;
-          this.state=this.loops>=2&&this.rand()<.55?H.MAKUU:H.KIERTO;this.t=0;if(this.state===H.MAKUU)this.speed=0;}
+        const backN=this.laji==='kettu'?14:8;
+        if((this.back||0)<backN&&i>1){const p=this.trail[i];this._move(dt,Math.atan2(p.z-this.z,p.x-this.x));if(Math.hypot(p.x-this.x,p.z-this.z)<2.2)this.back++;}
+        else{this._hook=true;this._move(dt,this.heading+(this.laji==='kettu'?2.1:1.5)*(this.dirSign||1));const viim=this.trail.at(-1);if(viim)viim.jump=true;
+          const nukkumaan=this.laji==='kettu'?this.loops>=3&&this.rand()<.35:this.loops>=2&&this.rand()<.55;
+          this.state=nukkumaan?H.MAKUU:H.KIERTO;this.t=0;if(this.state===H.MAKUU)this.speed=0;}
         break;}
     }
   }
   _move(dt,a){a=turnBack(this.x,this.z,a);this.heading=a;if(this.wounded)this.speed*=1-0.75*this.damage;this.x=clampB(this.x+Math.cos(a)*this.speed*dt);this.z=clampB(this.z+Math.sin(a)*this.speed*dt);
-    const l=this.trail.at(-1);if(!l||Math.hypot(l.x-this.x,l.z-this.z)>1.5){this._pt(this.trail,this.x,this.z,!!this._hook);this._hook=false;}}
+    const l=this.trail.at(-1);if(!l||Math.hypot(l.x-this.x,l.z-this.z)>1.5){this._pt(this.trail,this.x,this.z,!!this._hook);const vi=this.trail.at(-1);if(vi&&vi.synty==null)vi.synty=this.kello||0;this._hook=false;}}
 }
 
 function passiId(p){return p?((p.id??'')+':'+Math.round(p.x)+','+Math.round(p.z)):'';}
 // Ohitus 18–34 m passista, ylösajon puolelta, jotta paikallaan olija näkee jäniksen läheltä.
-function ohiPiste(h,y,rand){let dx=y.x-h.x,dz=y.z-h.z,L=Math.hypot(dx,dz);
+function ohiPiste(h,y,rand,laji){let dx=y.x-h.x,dz=y.z-h.z,L=Math.hypot(dx,dz);
   if(L<8){const a=rand()*6.28;dx=Math.cos(a);dz=Math.sin(a);L=1;}
-  const dist=18+rand()*16;return rajaa(h.x+dx/L*dist,h.z+dz/L*dist);}
+  const dist=laji==='kettu'?36+rand()*34:18+rand()*16;return rajaa(h.x+dx/L*dist,h.z+dz/L*dist);}
 function maastoPisteet(y){const out=[];
   for(const r of ROADS){const p=r.pts;for(let i=0;i<p.length-1;i+=3){const [x,z]=p[i];if(Math.abs(x-y.x)>380||Math.abs(z-y.z)>380)continue;
     const [x2,z2]=p[i+1],dx=x2-x,dz=z2-z,L=Math.hypot(dx,dz)||1;out.push({x,z,px:-dz/L,pz:dx/L,c:r.c,w:r.w});}}
@@ -159,5 +171,6 @@ function lahinMaasto(x,z,kartta){let best=null,bd=110;for(const f of kartta){con
   if(!best)return null;const s=sivulle(best);return {...rajaa(s.x,s.z),laji:s.laji};}
 function kiinnita(x,z,kartta){let best=null,bd=24;for(const f of kartta){const d=Math.hypot(f.x-x,f.z-z);if(d<bd){bd=d;best=f;}}
   if(!best)return null;const s=sivulle(best);const q=rajaa(s.x,s.z);if(Math.hypot(q.x-x,q.z-z)>32)return null;return {...q,laji:s.laji};}
-function irtiPassista(pts, lista, y){const p=passiKohde(lista,y);if(!p)return;for(const q of pts){const dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);
-  if(d>0.2&&d<15){q.x=p.x+dx/d*20;q.z=p.z+dz/d*20;}}}
+function irtiPassista(pts, lista, y, laji){const p=passiKohde(lista,y);if(!p)return;const min=laji==='kettu'?30:15, ulos=laji==='kettu'?42:20;
+  for(const q of pts){const dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);
+  if(d>0.2&&d<min){q.x=p.x+dx/d*ulos;q.z=p.z+dz/d*ulos;}}}

@@ -66,3 +66,28 @@ export function radioSovita(s, m){
   if(!s.on) return 'pois';
   return sama?'sama':'hae';
 }
+// Autossa radio kuuluu. Ovi auki vaimentaa vähän, pihalla enemmän. Aina yli nollan kun soitetaan.
+export function radioVoimakkuus(autossa, oviAuki){
+  if(autossa) return 0.85;
+  if(oviAuki) return 0.4;
+  return 0.22;
+}
+export function radioSuodin(autossa, oviAuki){
+  if(autossa) return {hp:70, lp:17000};
+  if(oviAuki) return {hp:180, lp:6000};
+  return {hp:280, lp:1500};
+}
+// Offset klipin lopussa ei käynnistä soittoa: se päättyisi heti ja jäisi hiljaiseksi.
+export function radioAlkuOffset(offset, kesto){
+  const dur=Math.max(0, Number(kesto)||0);
+  const off=Math.max(0, Number(offset)||0);
+  if(dur<=0.05||off>=dur-0.05) return {off:0, ohi:true};
+  return {off, ohi:false};
+}
+// kesken = lataus. loppui = lähde päättyi, soitto etenee. src puuttuu ilman loppua = yritä uudelleen.
+export function radioJatka({kesken,loppui,src}={}){
+  if(kesken) return 'odota';
+  if(loppui) return 'seuraava';
+  if(!src) return 'soita';
+  return 'jatka';
+}

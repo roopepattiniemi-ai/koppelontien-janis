@@ -20,7 +20,7 @@ export const NIMET = {
 export const REPLIIKIT = {
   isanta: [
     'Mää ammuin kerran jäniksen niin kaukaa et se ehti kuolla vanhuuteen',
-    'Ota kuppi. Tää on jallovviinaa, seittemän tähtee, perhepakkkaus.',
+    'Ota kuppi. Tää on jalloviinaa, seittemän tähtee, perhepakkaus.',
     'Hattu lensi niin kauas et koira toi tilalle naapurin saappaan.',
     'Talo horjuu. Tai sit mää horjun. Sama asia, kahvi on jäässä.',
     'Vitara käynnistyy jos sille laulaa. Mää laulan, se ei käynnisty.',

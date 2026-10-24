@@ -191,6 +191,8 @@ function pose(h, dt, inp) {
   const sitT = st.wantSit ? 1 : 0;
   st.sit = damp(st.sit, sitT, dt, sitT > st.sit ? 3.2 : 6);
   st.crouch = damp(st.crouch, !st.wantSit && st.wantCrouch ? 1 : 0, dt, 8);
+  const luoT = Math.max(0, Math.min(1, inp.luovutus || 0));
+  st.luovutus = damp(st.luovutus || 0, luoT, dt, 9);
   st.aim = damp(st.aim, !st.wantSit && st.wantAim ? 1 : 0, dt, 7);
   st.t += dt;
   const spd = Math.max(0, inp.spd || 0);
@@ -199,7 +201,9 @@ function pose(h, dt, inp) {
   if (moving) st.ph += dt * (run ? 8.4 : st.crouch > 0.5 ? 5.2 : 6.3);
   const swing = moving ? Math.min(1, spd / (run ? 3.2 : 1.5)) * (st.crouch > 0.5 ? 0.55 : 1) : 0;
   const s = Math.sin(st.ph);
-  const cr = st.crouch, si = st.sit, ai = st.aim;
+  const si = st.sit, ai = st.aim;
+  const lu = (st.luovutus || 0) * (1 - si);
+  const cr = Math.min(1, st.crouch + lu * 0.8);
 
   st.enter = si > 0.02 && si < 0.72 ? Math.sin((si / 0.72) * Math.PI) : 0;
   h.lantio.position.y = 1 + (0.5 - 1) * cr * (1 - si) + (0.12 - 1) * si + Math.abs(s) * 0.02 * swing * (1 - si);
@@ -217,7 +221,8 @@ function pose(h, dt, inp) {
   const kävelyKäsi = (1 - ai) * (1 - si);
   h.vas.olka.rotation.x = 0.12 + s * 0.45 * swing * kävelyKäsi + 0.95 * ai + 0.85 * si + 0.45 * cr;
   h.oik.olka.rotation.x = 0.2 - s * 0.35 * swing * kävelyKäsi + 0.72 * ai + 0.7 * si + 0.25 * cr;
-  h.vas.olka.rotation.z = 0.18 + 0.25 * ai;
+  h.vas.olka.rotation.z = 0.18 + 0.25 * ai + 0.42 * lu;
+  h.vas.olka.rotation.x -= 0.35 * lu;
   h.oik.olka.rotation.z = -0.22 - 0.12 * ai + 0.35 * (1 - ai) * (1 - si);
   h.vas.kn.rotation.x = 0.25 + Math.max(0, s) * 0.35 * swing * kävelyKäsi + 0.55 * ai + 0.85 * si;
   h.oik.kn.rotation.x = 0.4 + Math.max(0, -s) * 0.25 * swing * kävelyKäsi + 0.85 * ai + 0.95 * si;
@@ -235,7 +240,7 @@ function pose(h, dt, inp) {
 
 export function makeHunter(variant = 0) {
   const h = rakenna();
-  const st = { sit: 0, crouch: 0, aim: 0, wantSit: false, wantCrouch: false, wantAim: false, ph: 0, t: 0, enter: 0, variant: 0, ase: 'h' };
+  const st = { sit: 0, crouch: 0, aim: 0, luovutus: 0, wantSit: false, wantCrouch: false, wantAim: false, ph: 0, t: 0, enter: 0, variant: 0, ase: 'h' };
   h.st = st;
   const g = h.g;
   g.userData.sit = (on, crouch) => { st.wantSit = !!on; st.wantCrouch = !!crouch && !on; };

@@ -16,7 +16,8 @@ export const HAUSKAT = [
   ['Oja oli syvempi kuin kartta väitti', 'Kartta pyysi anteeksi. Saapas ei.'],
   ['Naapuri lainasi huopikkaat ja sai ne takaisin märkinä', 'Huopikkaat kuivuivat kiukaan vieressä. Ystävyys myös.'],
   ['GPS neuvoi kiertämään navetan kahdesti', 'Toisella kierroksella kuski tervehti itseään.'],
-  ['Makkara katosi hyllystä ennen patruunoita', 'Kyläkauppa epäilee koiraa. Koira ei kommentoi.']
+  ['Makkara katosi hyllystä ennen patruunoita', 'Kyläkauppa epäilee koiraa. Koira ei kommentoi.'],
+  ['Repolainen kiersi passin ja nauroi ojasta', 'Kettu teki kolme koukkua. Metsästäjä ehti yhden kahvin. Kollinmäki laskee ketun saaliiksi, jos haulikko ehtii.']
 ];
 
 // Lopetuslehden pääotsikko. Sävy on kömmähdys, ei vahinko.
@@ -130,20 +131,50 @@ export function lehtiPoyta(seed) {
     kuolin: null, kuva: 'poyta', kuvaJuttu: juttuKuva(o[0]), sulje: true,
     tarra: tarraNimi(s), lainaus: lainaus(s),
     ...meta(s),
-    ala: 'Kollinmäki · Kurikka · mökin pöydältä'
+    ala: 'Kollinmäki · Kurikka · pihapöydältä'
   };
 }
 
-// Pöytä mökin sisällä, ovesta (itä, paikallinen +z) poispäin. x = itä, z = etelä.
-export const POYTA_SADE = 1.6;
+// Pihapöytä mökin oven vieressä, ei sisällä. Paikallinen +z on oven suunta (itään).
+// Seinän ulkoreuna on noin z = 2,9. Pöytä on seinän sivussa, jotta ovi jää vapaaksi.
+export const POYTA_SADE = 1.8;
 export function poytaMaailma(cabin) {
-  const lx = 0.15, lz = -0.7;
-  const sx = cabin.sx || 1, sz = cabin.sz || 1;
+  const lx = 2.35, lz = 4.15;
   const c = Math.cos(cabin.rot || 0), s = Math.sin(cabin.rot || 0);
-  return { x: cabin.x + lx * sx * c + lz * sz * s, z: cabin.z - lx * sx * s + lz * sz * c };
+  return { x: cabin.x + lx * c + lz * s, z: cabin.z - lx * s + lz * c };
 }
 export function nearPoyta(px, pz, p, r = POYTA_SADE) {
   return !!p && Math.hypot(px - p.x, pz - p.z) <= r;
+}
+// Koiran ja auton laatikkoeste. extra kasvattaa autoa varten. yaw = mökin kierto.
+export function poytaLaatikko(cabin, extra = 0) {
+  const p = poytaMaailma(cabin);
+  const lisa = Number(extra) || 0;
+  return { x: p.x, z: p.z, yaw: cabin.rot || 0, hx: 0.95 + lisa, hz: 0.9 + lisa };
+}
+function janaLaatikko(x0, z0, x1, z1, minx, minz, maxx, maxz) {
+  const dx = x1 - x0, dz = z1 - z0;
+  let t0 = 0, t1 = 1;
+  const p = [-dx, dx, -dz, dz], q = [x0 - minx, maxx - x0, z0 - minz, maxz - z0];
+  for (let i = 0; i < 4; i++) {
+    if (Math.abs(p[i]) < 1e-12) { if (q[i] < 0) return false; }
+    else {
+      const t = q[i] / p[i];
+      if (p[i] < 0) { if (t > t1) return false; if (t > t0) t0 = t; }
+      else { if (t < t0) return false; if (t < t1) t1 = t; }
+    }
+  }
+  return t0 <= t1;
+}
+// true, jos askel ulkoa osuu pöytään tai penkkeihin. Laatikon sisältä pääsee ulos.
+export function poytaEstaa(x0, z0, x1, z1, o) {
+  if (!o) return false;
+  const c = Math.cos(o.yaw || 0), s = Math.sin(o.yaw || 0);
+  const paik = (x, z) => { const dx = x - o.x, dz = z - o.z; return [dx * c - dz * s, dx * s + dz * c]; };
+  const [lx0, lz0] = paik(x0, z0);
+  if (Math.abs(lx0) <= o.hx && Math.abs(lz0) <= o.hz) return false;
+  const [lx1, lz1] = paik(x1, z1);
+  return janaLaatikko(lx0, lz0, lx1, lz1, -o.hx, -o.hz, o.hx, o.hz);
 }
 
 // Rintakehä pallona. Kivääri kantaa pidemmälle kuin haulikon parvi.

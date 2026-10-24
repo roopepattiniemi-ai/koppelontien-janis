@@ -1,0 +1,798 @@
+[
+ {
+  "tiedosto": "pelaaja1_1.mp3",
+  "hahmo": "pelaaja1",
+  "teksti": "Enkä hyppää!",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja1_2.mp3",
+  "hahmo": "pelaaja1",
+  "teksti": "Hyppää ite.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja1_3.mp3",
+  "hahmo": "pelaaja1",
+  "teksti": "Kokeile itse hypätä, läski.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja1_4.mp3",
+  "hahmo": "pelaaja1",
+  "teksti": "Jalka kipee, ei pysty hyppää.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja1_5.mp3",
+  "hahmo": "pelaaja1",
+  "teksti": "Huonot kengät.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja1_6.mp3",
+  "hahmo": "pelaaja1",
+  "teksti": "Tämä ei oo mikään Mario-peli.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja2_1.mp3",
+  "hahmo": "pelaaja2",
+  "teksti": "Enkä hyppää!",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja2_2.mp3",
+  "hahmo": "pelaaja2",
+  "teksti": "Hyppää ite.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja2_3.mp3",
+  "hahmo": "pelaaja2",
+  "teksti": "Kokeile itse hypätä, läski.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja2_4.mp3",
+  "hahmo": "pelaaja2",
+  "teksti": "Jalka kipee, ei pysty hyppää.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja2_5.mp3",
+  "hahmo": "pelaaja2",
+  "teksti": "Huonot kengät.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "pelaaja2_6.mp3",
+  "hahmo": "pelaaja2",
+  "teksti": "Tämä ei oo mikään Mario-peli.",
+  "kategoria": "hyppy"
+ },
+ {
+  "tiedosto": "isanta_1.mp3",
+  "hahmo": "isanta",
+  "teksti": "Mää ammuin kerran jäniksen niin kaukaa et se ehti kuolla vanhuuteen",
+  "kategoria": "repliikki",
+  "puhuttu": "Mää ammuin kerran jäniksen niin kaukaa et se ehti kuolla vanhuuteen Hik!"
+ },
+ {
+  "tiedosto": "isanta_2.mp3",
+  "hahmo": "isanta",
+  "teksti": "Ota kuppi. Tää on jalloviinaa, seittemän tähtee, perhepakkaus.",
+  "kategoria": "repliikki",
+  "puhuttu": "Ota kuppi. Hik! Tää on jalloviinaa, seittemän tähtee, perhepakkaus. Hik!"
+ },
+ {
+  "tiedosto": "isanta_3.mp3",
+  "hahmo": "isanta",
+  "teksti": "Hattu lensi niin kauas et koira toi tilalle naapurin saappaan.",
+  "kategoria": "repliikki",
+  "puhuttu": "Hattu lensi niin kauas et koira toi tilalle naapurin saappaan. Hik!"
+ },
+ {
+  "tiedosto": "isanta_4.mp3",
+  "hahmo": "isanta",
+  "teksti": "Talo horjuu. Tai sit mää horjun. Sama asia, kahvi on jäässä.",
+  "kategoria": "repliikki",
+  "puhuttu": "Talo horjuu. Hik! Tai sit mää horjun. Hik! Sama asia, Hik! kahvi on jäässä."
+ },
+ {
+  "tiedosto": "isanta_5.mp3",
+  "hahmo": "isanta",
+  "teksti": "Vitara käynnistyy jos sille laulaa. Mää laulan, se ei käynnisty.",
+  "kategoria": "repliikki",
+  "puhuttu": "Vitara käynnistyy jos sille laulaa. Hik! Mää laulan, Hik! se ei käynnisty. Hik!"
+ },
+ {
+  "tiedosto": "isanta_6.mp3",
+  "hahmo": "isanta",
+  "teksti": "Älä sano vaimolle et pullo on kahvia. Se maistaa.",
+  "kategoria": "repliikki",
+  "puhuttu": "Älä sano vaimolle et pullo on kahvia. Hik! Se maistaa."
+ },
+ {
+  "tiedosto": "isanta_7.mp3",
+  "hahmo": "isanta",
+  "teksti": "Koira ajoi jänistä eilen. Jänis ajoi koiraa tänään. Tasapeli.",
+  "kategoria": "repliikki",
+  "puhuttu": "Koira ajoi jänistä eilen. Jänis ajoi koiraa tänään. Tasapeli. Hik!"
+ },
+ {
+  "tiedosto": "isanta_8.mp3",
+  "hahmo": "isanta",
+  "teksti": "Hoi, kuka siellä horjuu, sinä vai mä?",
+  "kategoria": "ohikulku",
+  "puhuttu": "Hoi, Hik! kuka siellä horjuu, Hik! sinä vai mä?"
+ },
+ {
+  "tiedosto": "isanta_9.mp3",
+  "hahmo": "isanta",
+  "teksti": "Tule tänne, mulla on teoria jäniksistä.",
+  "kategoria": "ohikulku",
+  "puhuttu": "Tule tänne, Hik! mulla on teoria jäniksistä."
+ },
+ {
+  "tiedosto": "isanta_10.mp3",
+  "hahmo": "isanta",
+  "teksti": "Pullo on puolillaan. Tai mä oon.",
+  "kategoria": "ohikulku",
+  "puhuttu": "Pullo on puolillaan. Hik! Tai mä oon. Hik!"
+ },
+ {
+  "tiedosto": "isanta_11.mp3",
+  "hahmo": "isanta",
+  "teksti": "Älä kerro vaimolle että näit mut.",
+  "kategoria": "ohikulku",
+  "puhuttu": "Älä kerro vaimolle että näit mut. Hik!"
+ },
+ {
+  "tiedosto": "isanta_12.mp3",
+  "hahmo": "isanta",
+  "teksti": "Metsä on iso. Minä oon isompi. Melkein.",
+  "kategoria": "ohikulku",
+  "puhuttu": "Metsä on iso. Hik! Minä oon isompi. Melkein."
+ },
+ {
+  "tiedosto": "isanta_13.mp3",
+  "hahmo": "isanta",
+  "teksti": "Kävely on yliarvostettua.",
+  "kategoria": "ohikulku",
+  "puhuttu": "Kävely on yliarvostettua. Hik!"
+ },
+ {
+  "tiedosto": "isanta_14.mp3",
+  "hahmo": "isanta",
+  "teksti": "Terve. Tai jotain sinnepäin.",
+  "kategoria": "ohikulku",
+  "puhuttu": "Terve. Hik! Tai jotain sinnepäin."
+ },
+ {
+  "tiedosto": "isanta_15.mp3",
+  "hahmo": "isanta",
+  "teksti": "Jos näet hatun, se on mun. Tai ei.",
+  "kategoria": "ohikulku",
+  "puhuttu": "Jos näet hatun, Hik! se on mun. Tai ei."
+ },
+ {
+  "tiedosto": "isanta_16.mp3",
+  "hahmo": "isanta",
+  "teksti": "Hei, kyytiä, mennhään kylille!",
+  "kategoria": "ohikulku_vitara",
+  "puhuttu": "Hei, kyytiä, Hik! mennhään kylille!"
+ },
+ {
+  "tiedosto": "isanta_17.mp3",
+  "hahmo": "isanta",
+  "teksti": "Seisauta se Vitara, mä mahdun takakonttiin!",
+  "kategoria": "ohikulku_vitara",
+  "puhuttu": "Seisauta se Vitara, Hik! mä mahdun takakonttiin! Hik!"
+ },
+ {
+  "tiedosto": "isanta_18.mp3",
+  "hahmo": "isanta",
+  "teksti": "Aja hiljaa, pullo ei pysy sylissä!",
+  "kategoria": "ohikulku_vitara",
+  "puhuttu": "Aja hiljaa, Hik! pullo ei pysy sylissä!"
+ },
+ {
+  "tiedosto": "isanta_19.mp3",
+  "hahmo": "isanta",
+  "teksti": "Ota mut kyytiin. Mä tiedän tien. Suurin piirtein.",
+  "kategoria": "ohikulku_vitara",
+  "puhuttu": "Ota mut kyytiin. Hik! Mä tiedän tien. Suurin piirtein. Hik!"
+ },
+ {
+  "tiedosto": "isanta_20.mp3",
+  "hahmo": "isanta",
+  "teksti": "Älä osoita, mä oon jo kaatunu sisältä.",
+  "kategoria": "ohikulku_ase",
+  "puhuttu": "Älä osoita, Hik! mä oon jo kaatunu sisältä."
+ },
+ {
+  "tiedosto": "isanta_21.mp3",
+  "hahmo": "isanta",
+  "teksti": "Hieno pyssy. Mä ammuin kerran ohi lähempää.",
+  "kategoria": "ohikulku_ase",
+  "puhuttu": "Hieno pyssy. Hik! Mä ammuin kerran ohi lähempää."
+ },
+ {
+  "tiedosto": "isanta_22.mp3",
+  "hahmo": "isanta",
+  "teksti": "Piippu pois. Tää pullo ei ole jänis.",
+  "kategoria": "ohikulku_ase",
+  "puhuttu": "Piippu pois. Hik! Tää pullo ei ole jänis."
+ },
+ {
+  "tiedosto": "isanta_23.mp3",
+  "hahmo": "isanta",
+  "teksti": "Saitko sinä sen? Mä väitin että mä sain.",
+  "kategoria": "ohikulku_saalis",
+  "puhuttu": "Saitko sinä sen? Mä väitin että mä sain. Hik!"
+ },
+ {
+  "tiedosto": "isanta_24.mp3",
+  "hahmo": "isanta",
+  "teksti": "Näytä saalis. Mä kehun, jos se on iso.",
+  "kategoria": "ohikulku_saalis",
+  "puhuttu": "Näytä saalis. Hik! Mä kehun, jos se on iso."
+ },
+ {
+  "tiedosto": "isanta_25.mp3",
+  "hahmo": "isanta",
+  "teksti": "Kantoitko sen itse? Koira on rehellisempi.",
+  "kategoria": "ohikulku_saalis",
+  "puhuttu": "Kantoitko sen itse? Hik! Koira on rehellisempi."
+ },
+ {
+  "tiedosto": "isanta_26.mp3",
+  "hahmo": "isanta",
+  "teksti": "Koira! Se on parempi seura kuin mä. Älä kerro.",
+  "kategoria": "ohikulku_koira",
+  "puhuttu": "Koira! Hik! Se on parempi seura kuin mä. Älä kerro."
+ },
+ {
+  "tiedosto": "isanta_27.mp3",
+  "hahmo": "isanta",
+  "teksti": "Anna koiran tulla. Mulla on teoria sillekin.",
+  "kategoria": "ohikulku_koira",
+  "puhuttu": "Anna koiran tulla. Mulla on teoria sillekin. Hik!"
+ },
+ {
+  "tiedosto": "isanta_28.mp3",
+  "hahmo": "isanta",
+  "teksti": "Haukku kuulostaa mun serkultani.",
+  "kategoria": "ohikulku_koira",
+  "puhuttu": "Haukku kuulostaa mun serkultani. Hik!"
+ },
+ {
+  "tiedosto": "mummo_1.mp3",
+  "hahmo": "mummo",
+  "teksti": "Viattomia metsän eläimiä ei saa metsästää! Minä soitan poliisille!",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "mummo_2.mp3",
+  "hahmo": "mummo",
+  "teksti": "Ja Yleisradioon myös. Siellä kuunnellaan mummoja.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "mummo_3.mp3",
+  "hahmo": "mummo",
+  "teksti": "Minä ruokkin jäniksiä porkkanoilla. Ne ovat ruokavieraita, eivät saalista.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "mummo_4.mp3",
+  "hahmo": "mummo",
+  "teksti": "Keppi heiluu, jos tähtäätte pihalleni. Korvat matalaksi.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "mummo_5.mp3",
+  "hahmo": "mummo",
+  "teksti": "Kirjoitin yleisönosastoon. Otsikko oli: jättäkää puput rauhaan.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "mummo_6.mp3",
+  "hahmo": "mummo",
+  "teksti": "Koira saa tulla, jos se ei hauku porkkanoilleni.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "mummo_7.mp3",
+  "hahmo": "mummo",
+  "teksti": "Saunassa saa laulaa. Metsässä ei saa paukutella.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "mummo_8.mp3",
+  "hahmo": "mummo",
+  "teksti": "Sinä kannat jänistä! Se oli mun ruokavieras!",
+  "kategoria": "raivo"
+ },
+ {
+  "tiedosto": "mummo_9.mp3",
+  "hahmo": "mummo",
+  "teksti": "Laita se heti maahan! Porkkana odottaa vielä!",
+  "kategoria": "raivo"
+ },
+ {
+  "tiedosto": "mummo_10.mp3",
+  "hahmo": "mummo",
+  "teksti": "Poliisi, Yleisradio ja kyläkauppa saavat kuulla tästä!",
+  "kategoria": "raivo"
+ },
+ {
+  "tiedosto": "mummo_11.mp3",
+  "hahmo": "mummo",
+  "teksti": "Keppi on valmis. Korvasi myös.",
+  "kategoria": "raivo"
+ },
+ {
+  "tiedosto": "mummo_12.mp3",
+  "hahmo": "mummo",
+  "teksti": "Se söi aamuporkkanan minun kädestä. Nyt se roikkuu sinun kädessä.",
+  "kategoria": "raivo"
+ },
+ {
+  "tiedosto": "mummo_13.mp3",
+  "hahmo": "mummo",
+  "teksti": "Häpeä! Jänikset muistavat, ja minä muistan paremmin.",
+  "kategoria": "raivo"
+ },
+ {
+  "tiedosto": "mummo_14.mp3",
+  "hahmo": "mummo",
+  "teksti": "Soitan heti. Numero on jo valmiina villatakissa.",
+  "kategoria": "raivo"
+ },
+ {
+  "tiedosto": "mummo_15.mp3",
+  "hahmo": "mummo",
+  "teksti": "Taas se murhaaja kulkee!",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "mummo_16.mp3",
+  "hahmo": "mummo",
+  "teksti": "Pidä piippu maassa, minä näen sen!",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "mummo_17.mp3",
+  "hahmo": "mummo",
+  "teksti": "Porkkanat on jo jaettu. Jänikset on syönyt.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "mummo_18.mp3",
+  "hahmo": "mummo",
+  "teksti": "Älä hiivi. Minä kuulen lumen.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "mummo_19.mp3",
+  "hahmo": "mummo",
+  "teksti": "Keppi on mukana. Muista se.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "mummo_20.mp3",
+  "hahmo": "mummo",
+  "teksti": "Metsä ei ole sinun kauppasi.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "mummo_21.mp3",
+  "hahmo": "mummo",
+  "teksti": "Terve. Se ei ollut lupa.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "mummo_22.mp3",
+  "hahmo": "mummo",
+  "teksti": "Jos pupu tulee, väistä. Se asuu tässä.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "mummo_23.mp3",
+  "hahmo": "mummo",
+  "teksti": "Aja hitaammin, puput on tiellä!",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "mummo_24.mp3",
+  "hahmo": "mummo",
+  "teksti": "Älä pölytä pihaani sillä autolla!",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "mummo_25.mp3",
+  "hahmo": "mummo",
+  "teksti": "Vitara ei ole lupa metsästää.",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "mummo_26.mp3",
+  "hahmo": "mummo",
+  "teksti": "Älä osoita sillä minua!",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "mummo_27.mp3",
+  "hahmo": "mummo",
+  "teksti": "Piippu alas, tai soitan poliisille jo pihasta!",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "mummo_28.mp3",
+  "hahmo": "mummo",
+  "teksti": "Se pyssy näkyy. Jäniksetkin näkee.",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "mummo_29.mp3",
+  "hahmo": "mummo",
+  "teksti": "Mitä sinä kannat? Minä en halua tietää!",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "mummo_30.mp3",
+  "hahmo": "mummo",
+  "teksti": "Saalis tuoksuu. Häpeä tuoksuu samalta.",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "mummo_31.mp3",
+  "hahmo": "mummo",
+  "teksti": "Jos se on jänis, käänny ympäri.",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "mummo_32.mp3",
+  "hahmo": "mummo",
+  "teksti": "Koira saa tulla. Sinä et.",
+  "kategoria": "ohikulku_koira"
+ },
+ {
+  "tiedosto": "mummo_33.mp3",
+  "hahmo": "mummo",
+  "teksti": "Pidä koira kaukana porkkanoista!",
+  "kategoria": "ohikulku_koira"
+ },
+ {
+  "tiedosto": "mummo_34.mp3",
+  "hahmo": "mummo",
+  "teksti": "Haukahdus kuuluu. Minä kuulen sen.",
+  "kategoria": "ohikulku_koira"
+ },
+ {
+  "tiedosto": "naapuri_1.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Älä sano että minä sanoin, mutta isännän pullo ei ole kahvia.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "naapuri_2.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Mummo vie porkkanoita metsään joka aamu. Jänikset jonottavat.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "naapuri_3.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Traktorin äijältä katosi mutteri. Se etsii sitä vuodesta kaksituhattakahdeksan.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "naapuri_4.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Saunan savu näkyi eilen. Joku lopetti jahdin kesken kehumisen.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "naapuri_5.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Koira toi saappaan. Saapas oli mun. Älä sano että minä sanoin.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "naapuri_6.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Vitara kävi pihassa kahdesti. Kuski tervehti itseään.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "naapuri_7.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Kuulin että joku ampui niin kaukaa että jänis ehti vanheta. Isäntä kertoi sen itse.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "naapuri_8.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Minä näin sinut. Älä sano että minä näin.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "naapuri_9.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Kello käy. Juorukin käy.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "naapuri_10.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Pihasta näkee kaiken. Valitettavasti.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "naapuri_11.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Kävelet kuin sinulla olisi asiaa.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "naapuri_12.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Minä en kuunnellut. Minä vain kuulin.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "naapuri_13.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Terve. Tämä ei ole kutsu kahville.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "naapuri_14.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Aidan takaa näkee paremmin.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "naapuri_15.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Jos kysyt, minä en ollut täällä.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "naapuri_16.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Vitara! Minä kerron minne se meni. Myöhemmin.",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "naapuri_17.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Aja ohi. Minä ehdin lukea rekisterin.",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "naapuri_18.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Kaasujalka kuuluu naapuriin asti.",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "naapuri_19.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Ase esillä. Minä panen tämän muistiin.",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "naapuri_20.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Älä osoita tänne. Minä en ole uutinen. Vielä.",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "naapuri_21.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Piippu näkyy. Mummo näkee sen myös.",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "naapuri_22.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Saalista? Minä en kysy. Minä arvaan.",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "naapuri_23.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Kannat jotain. Kylä tietää jo.",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "naapuri_24.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Älä näytä sitä mummolle. Liian myöhäistä.",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "naapuri_25.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Koira tuli ensin. Sinä perässä. Tyypillistä.",
+  "kategoria": "ohikulku_koira"
+ },
+ {
+  "tiedosto": "naapuri_26.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Haukahdus tallentui. Minä toistan sen myöhemmin.",
+  "kategoria": "ohikulku_koira"
+ },
+ {
+  "tiedosto": "naapuri_27.mp3",
+  "hahmo": "naapuri",
+  "teksti": "Koira ei juoruile. Sinä juoruilet kävelemällä.",
+  "kategoria": "ohikulku_koira"
+ },
+ {
+  "tiedosto": "aija_1.mp3",
+  "hahmo": "aija",
+  "teksti": "Mutteri on ollut löysällä siitä asti kun radio keksittiin.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "aija_2.mp3",
+  "hahmo": "aija",
+  "teksti": "Traktori käynnistyy jos sitä pyytää nätisti ja potkaisee.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "aija_3.mp3",
+  "hahmo": "aija",
+  "teksti": "Älä ammu tännepäin. Tää on varaosa, ei jänis.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "aija_4.mp3",
+  "hahmo": "aija",
+  "teksti": "Isäntä toi pullon, ei kiintoavainta. Pullo ei käy kierteeseen.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "aija_5.mp3",
+  "hahmo": "aija",
+  "teksti": "Yksi pyörä pyörii. Kolme miettii vielä.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "aija_6.mp3",
+  "hahmo": "aija",
+  "teksti": "Jarrut toimii, jos muistaa että niitä ei ole.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "aija_7.mp3",
+  "hahmo": "aija",
+  "teksti": "Korjaan tämän ennen juhannusta. En sano minkä vuoden.",
+  "kategoria": "repliikki"
+ },
+ {
+  "tiedosto": "aija_8.mp3",
+  "hahmo": "aija",
+  "teksti": "Älä astu mutterin päälle. Se on jossain.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "aija_9.mp3",
+  "hahmo": "aija",
+  "teksti": "Traktori kuulee sinut. Se ei välitä.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "aija_10.mp3",
+  "hahmo": "aija",
+  "teksti": "Mä korjaan. Älä auta.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "aija_11.mp3",
+  "hahmo": "aija",
+  "teksti": "Käsi on rasvassa. Tervehdys peruutettu.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "aija_12.mp3",
+  "hahmo": "aija",
+  "teksti": "Jos se käynnistyy, se on vahinko.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "aija_13.mp3",
+  "hahmo": "aija",
+  "teksti": "Seis siinä. Tai missä vaan, ei väliä.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "aija_14.mp3",
+  "hahmo": "aija",
+  "teksti": "Pihassa on varaosia. Sinä et ole niistä.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "aija_15.mp3",
+  "hahmo": "aija",
+  "teksti": "Öljy on tuoretta. Lumi ei.",
+  "kategoria": "ohikulku"
+ },
+ {
+  "tiedosto": "aija_16.mp3",
+  "hahmo": "aija",
+  "teksti": "Vitara menee ohi. Traktori miettii vielä.",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "aija_17.mp3",
+  "hahmo": "aija",
+  "teksti": "Hieno auto. Tässä on hienompi, kun se käy.",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "aija_18.mp3",
+  "hahmo": "aija",
+  "teksti": "Aja ympäri. Mä kuuntelen koneesta vian.",
+  "kategoria": "ohikulku_vitara"
+ },
+ {
+  "tiedosto": "aija_19.mp3",
+  "hahmo": "aija",
+  "teksti": "Älä ammu traktoria. Se on jo haavoittunut.",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "aija_20.mp3",
+  "hahmo": "aija",
+  "teksti": "Piippu pois päin jakohihnasta.",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "aija_21.mp3",
+  "hahmo": "aija",
+  "teksti": "Pyssy ei käy kiintoavaimeksi. Mä kokeilin.",
+  "kategoria": "ohikulku_ase"
+ },
+ {
+  "tiedosto": "aija_22.mp3",
+  "hahmo": "aija",
+  "teksti": "Sait saalista. Mä sain ruosteen.",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "aija_23.mp3",
+  "hahmo": "aija",
+  "teksti": "Jänis ei korjaa tätä. Älä tarjoa.",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "aija_24.mp3",
+  "hahmo": "aija",
+  "teksti": "Kanna se ohi. Mulla on kädet täynnä.",
+  "kategoria": "ohikulku_saalis"
+ },
+ {
+  "tiedosto": "aija_25.mp3",
+  "hahmo": "aija",
+  "teksti": "Koira saa nuuskia. Ei jakoavainta.",
+  "kategoria": "ohikulku_koira"
+ },
+ {
+  "tiedosto": "aija_26.mp3",
+  "hahmo": "aija",
+  "teksti": "Haukku ei käynnistä tätä.",
+  "kategoria": "ohikulku_koira"
+ },
+ {
+  "tiedosto": "aija_27.mp3",
+  "hahmo": "aija",
+  "teksti": "Koira on parempi apulainen. Se ei neuvo.",
+  "kategoria": "ohikulku_koira"
+ }
+]

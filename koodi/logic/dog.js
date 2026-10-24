@@ -1,6 +1,7 @@
 // Suomenajokoira: haku -> yöjälki -> ylösotto -> ajo (haukkuen) -> hukka -> ajo
 import { mulberry32 } from './rng.js';
 import { haukkuTila } from './haukku.js';
+import { hajunArvo, katkoKerroin, jalkiIka } from './lumi.js';
 import { clampB } from './bounds.js';
 import { BUILDINGS, YARD_POLYS, farmFootprints } from './world.js';
 export const HEAR_CMD=150, IGNORE_AJO=0.7, SCENT_R=4;
@@ -43,12 +44,20 @@ function pathBlocked(x0,z0,x1,z1,skip,extras){const start=solidAt(x0,z0),minx=Ma
 // Sama askeltarkistus kuin koiran _go: suora jana osuu rakennukseen tai pihan laatikkoon.
 export function askelEstetty(x0,z0,x1,z1){return pathBlocked(x0,z0,x1,z1,null,null);}
 // lähin jäniksen jälki (yöjälki tai pakojälki) annetun pisteen säteellä, tai makuualue (6 m)
-export function nearTrack(hare,p,r){
-  if(hare.state==='makuu'&&Math.hypot(hare.x-p.x,hare.z-p.z)<6)return{kind:'yo',idx:hare.nightTrail.length-1};
+function hajuHeikko(pt,lumi){return !!lumi&&hajunArvo(jalkiIka(pt,lumi),lumi)<0.35;}
+export function nearTrack(hare,p,r,lumi){
+  if(hare.state==='makuu'&&Math.hypot(hare.x-p.x,hare.z-p.z)<6&&!hajuHeikko(hare.nightTrail.at(-1),lumi))return{kind:'yo',idx:hare.nightTrail.length-1};
   let best=null,bd=r;
-  const scan=(arr,kind)=>{for(let i=0;i<arr.length;i++){const d=Math.hypot(arr[i].x-p.x,arr[i].z-p.z);if(d<bd){bd=d;best={kind,idx:i};}}};
+  const scan=(arr,kind)=>{for(let i=0;i<arr.length;i++){if(hajuHeikko(arr[i],lumi))continue;const d=Math.hypot(arr[i].x-p.x,arr[i].z-p.z);if(d<bd){bd=d;best={kind,idx:i};}}};
   if(hare.state==='makuu')scan(hare.nightTrail,'yo');else if(hare.alive)scan(hare.trail,'ajo');
   return best;}
+// Näköyhteys: rakennus tai valinnainen puu katkaisee linjan. Puu-callbackia ei kutsuta testeissä, joissa metsää ei ole.
+export function nakoEsteetta(x0,z0,x1,z1,puu){
+  const dx=x1-x0,dz=z1-z0,L=Math.hypot(dx,dz);
+  if(L<0.8)return true;
+  const n=Math.max(1,Math.ceil(L/4));
+  for(let i=1;i<n;i++){const t=i/n,x=x0+dx*t,z=z0+dz*t;if(solidAt(x,z)!==null)return false;if(typeof puu==='function'&&puu(x,z))return false;}
+  return true;}
 export const D = { NARUSSA:'narussa', TANNE:'tänne', SEURAA:'seuraa', TAALLA:'täällä', HAKU:'haku', YOJALKI:'yöjälki', YLOSOTTO:'ylösotto', AJO:'ajo', HUKKA:'hukka', PALUU:'paluu', NOUTO:'nouto', KANTO:'kanto' };
 export const CATCH_R=1.0, FETCH_R=150;
 export class Dog {
@@ -110,10 +119,24 @@ export class Dog {
   _lenkki(player){const a=this.rand()*Math.PI*2,r=80+this.rand()*170;let x=player.x+Math.cos(a)*r,z=player.z+Math.sin(a)*r;
     if(solidAt(x,z)!==null){const dx=player.x-x,dz=player.z-z;for(let k=0;k<14&&solidAt(x,z)!==null;k++){x+=dx*0.08;z+=dz*0.08;}}
     this.wp={x,z};this.curve=(this.rand()-.5)*1.6;this.curveF=0.3+this.rand()*0.5;}
-  _scent(hares){for(const h of hares){if(!h)continue;const f=nearTrack(h,this,SCENT_R);if(f){this.target=h;this._onTrack(f);return true;}}return false;}
+  _scent(hares){for(const h of hares){if(!h)continue;const f=nearTrack(h,this,SCENT_R,this.lumi);if(f){this.target=h;this._onTrack(f);return true;}}return false;}
+  // Näköhaukku: juokseva jänis näkyy, jäljestys jää väliin. Koira ottaa linjan muutaman pisteen takaa, ettei se leikkaa passin editse.
+  _yritaNako(hs,puu){
+    if(this.riding||this.leashed)return false;
+    if(![D.HAKU,D.PALUU].includes(this.state))return false;
+    let best=null,bd=60;
+    for(const h of hs){if(!h||!h.alive||h.state==='makuu')continue;const d=Math.hypot(h.x-this.x,h.z-this.z);if(d>=bd||d<0.4)continue;if(!nakoEsteetta(this.x,this.z,h.x,h.z,puu))continue;bd=d;best=h;}
+    if(!best)return false;
+    const tr=best.trail||[];
+    this.target=best;this.state=D.AJO;this.idx=Math.max(0,tr.length-4);this.t=0;this._nakoEta=bd;return true;}
   _onTrack(f){if(f.kind==='yo'){this.state=D.YOJALKI;this.idx=f.idx;}else{this.state=D.AJO;this.idx=f.idx;}this.t=0;}
-  update(dt,{hare,hares,player,players,fetch=[],obstacles,ride}={}){
-    this.t+=dt;this.obstacles=obstacles||null;this.barking=false;this.sniffing=false;
+  _hukkaan(){this.state=D.HUKKA;this.t=0;this.hx=this.x;this.hz=this.z;this.ring=3;this.hukkaTime=6+this.rand()*14;this.hukkaIdx=this.idx;}
+  // Katko löytää linjan vasta, kun edessä oleva jälkipiste on nenän alla. Juuri menetetty hyppy ei kelpaa.
+  _jalkiEdessa(tr){if(!tr)return false;const alku=(this.hukkaIdx??this.idx)+1;let best=null,bd=SCENT_R;
+    for(let i=alku;i<tr.length;i++){if(hajuHeikko(tr[i],this.lumi))continue;const d=Math.hypot(tr[i].x-this.x,tr[i].z-this.z);if(d<bd){bd=d;best=i;}}
+    if(best==null)return false;this.state=D.AJO;this.idx=best;this.t=0;return true;}
+  update(dt,{hare,hares,player,players,fetch=[],obstacles,ride,puu,lumi}={}){
+    this.t+=dt;this.obstacles=obstacles||null;this.barking=false;this.sniffing=false;this.wag=false;this.lumi=lumi||null;this._nakoEta=0;
     if(this.riding){if(ride){this.x=ride.x;this.z=ride.z;if(ride.dir!=null)this.dir=ride.dir;}return;}
     const hs=hares||[hare];
     // kaatunut, noutamaton jänis lähellä -> nouto (vapaana olevat tilat)
@@ -147,23 +170,28 @@ export class Dog {
         const d=Math.hypot(player.x-this.x,player.z-this.z);
         if(d>1.5)this._go(player.x,player.z,dt,this.speed,true); else if((this.searchT-=dt)<=0)this._onTrack(this.found);
         break;}
-      case D.YOJALKI:{ // selvittää yöjälkeä hitaasti makuuta kohti; talon läpi kulkevat pisteet ohitetaan
+      case D.YOJALKI:{ // kuono maassa, häntä heiluu, mutkittelee; ei hauku. Talon läpi kulkevat pisteet ohitetaan.
+        this.sniffing=true;this.wag=true;
         const nt=hare.nightTrail;while(this.idx<nt.length-1&&solidAt(nt[this.idx].x,nt[this.idx].z)!==null)this.idx++;
         const p=nt[Math.min(this.idx,nt.length-1)];
-        if(p&&this._go(p.x,p.z,dt,this.speed*0.5)<0.5)this.idx++;
+        if(p){const dx=p.x-this.x,dz=p.z-this.z,d=Math.hypot(dx,dz)||1;let tx=p.x,tz=p.z;
+          if(d>2){const px=-dz/d,pz=dx/d,w=Math.sin(this.t*2.3+this.idx)*0.9;tx+=px*w;tz+=pz*w;}
+          this._go(tx,tz,dt,this.speed*0.55);if(Math.hypot(p.x-this.x,p.z-this.z)<0.7)this.idx++;}
         if(this.idx>=nt.length-2||this.idx>=nt.length){this.state=D.YLOSOTTO;this.t=0;}
         break;}
-      case D.YLOSOTTO: // paluuperien selvitys; jänis lähtee kun koira lähellä
+      case D.YLOSOTTO: // paluuperien selvitys, kuono maassa; jänis lähtee kun koira lähellä
+        this.sniffing=true;this.wag=true;
         this._go(hare.home.x,hare.home.z,dt,this.speed*0.4);
         if(hare.state!=='makuu'){this.state=D.AJO;this.idx=0;this.t=0;}
         break;
       case D.AJO:{
         const tr=hare.trail; if(!tr.length)break;
-        while(this.idx<tr.length-1&&solidAt(tr[this.idx].x,tr[this.idx].z)!==null){this.idx++;if(tr[this.idx].jump&&this.rand()<this.hukkaChance){this.state=D.HUKKA;this.t=0;this.hx=this.x;this.hz=this.z;this.ring=3;this.hukkaTime=6+this.rand()*14;break;}}
+        const katko=()=>this.hukkaChance*katkoKerroin(hajunArvo(jalkiIka(tr[Math.min(this.idx,tr.length-1)],this.lumi),this.lumi),this.lumi);
+        while(this.idx<tr.length-1&&solidAt(tr[this.idx].x,tr[this.idx].z)!==null){this.idx++;if(tr[this.idx].jump&&this.rand()<katko()){this._hukkaan();break;}}
         if(this.state!==D.AJO)break; const p=tr[Math.min(this.idx,tr.length-1)];
         if(this._go(p.x,p.z,dt)<0.5&&this.idx<tr.length-1){this.idx++;
-          if(tr[this.idx].jump&&this.rand()<this.hukkaChance){this.state=D.HUKKA;this.t=0;this.hx=this.x;this.hz=this.z;this.ring=3;this.hukkaTime=6+this.rand()*14;}}
-        this.barking=hare.alive;
+          if(tr[this.idx].jump&&this.rand()<katko())this._hukkaan();}
+        if(this.state===D.AJO)this.barking=hare.alive;
         // nappaus: haavoittunut tai tauolla oleva jänis kiinni ajossa
         if(hare.alive&&(hare.wounded||hare.paused||hare.speed<1)&&Math.hypot(hare.x-this.x,hare.z-this.z)<CATCH_R){hare.shoot('koira');hare.owner=hare.owner??hare.woundedBy;this._carry(hare);break;}
         if(!hare.alive){if(!hare.delivered&&!hare.carried){this.state=D.NOUTO;this.t=0;}else{this._haku();this.target=null;this.ring=30;}}
@@ -175,14 +203,18 @@ export class Dog {
         const o=(players&&hare.owner!=null&&players[hare.owner])||player;hare.x=this.x;hare.z=this.z;
         if(this._go(o.x,o.z,dt,this.speed*0.9,true)<1.6){hare.carried=false;hare.delivered=true;hare.x=this.x+Math.cos(this.dir||0)*0.4;hare.z=this.z+Math.sin(this.dir||0)*0.4;this.delivered=(this.delivered||0)+1;this.state=D.TANNE;this.t=0;this.target=null;}
         break;}
-      case D.HUKKA:{ // hiljaa, laajenevat kehät hukkakohdan ympäri
-        this.ang+=dt*this.speed/this.ring;this.ring+=dt*1.5;
-        let tx=this.hx+Math.cos(this.ang)*this.ring,tz=this.hz+Math.sin(this.ang)*this.ring;
-        if(solidAt(tx,tz)!==null){const dx=tx-this.hx,dz=tz-this.hz,L=Math.hypot(dx,dz)||1;for(let k=0;k<10&&solidAt(tx,tz)!==null;k++){tx-=dx/L*1.2;tz-=dz/L*1.2;}}
-        this._go(tx,tz,dt);
-        if(this.t>this.hukkaTime){this.state=D.AJO;this.t=0;}
+      case D.HUKKA:{ // hiljaa. Kehät, sitten takaisin jäljelle. Ajoon vasta kun linja löytyy nenän edestä.
+        this.sniffing=true;
+        const tr=hare&&hare.trail;
+        if(this._jalkiEdessa(tr))break;
+        if(this.t>this.hukkaTime&&tr&&tr.length){const i=Math.min(tr.length-1,Math.max(0,(this.hukkaIdx??this.idx)+1));const p=tr[i];this._go(p.x,p.z,dt,this.speed*0.5);}
+        else{this.ang+=dt*this.speed/this.ring;this.ring+=dt*1.5;
+          let tx=this.hx+Math.cos(this.ang)*this.ring,tz=this.hz+Math.sin(this.ang)*this.ring;
+          if(solidAt(tx,tz)!==null){const dx=tx-this.hx,dz=tz-this.hz,L=Math.hypot(dx,dz)||1;for(let k=0;k<10&&solidAt(tx,tz)!==null;k++){tx-=dx/L*1.2;tz-=dz/L*1.2;}}
+          this._go(tx,tz,dt);}
         break;}
     }
+    if(this._yritaNako(hs,puu))hare=this.target;
     const ht=hare?Math.hypot((hare.x??0)-this.x,(hare.z??0)-this.z):1e9;
     this.haukku=haukkuTila(this.state,ht,!!(hare&&hare.alive));
     if(this.haukku==='jalki'||this.haukku==='nako')this.barking=true;
