@@ -1,4 +1,5 @@
 // Saavutukset ovat pelaajan omassa selaimessa. Moninpeli ei lähetä niitä.
+import { RIISTAKAMERA } from './config.js';
 const AVAIN = 'jahti_saavutukset';
 export { AVAIN };
 
@@ -154,18 +155,23 @@ export function kirjaa(tila, ev = {}) {
   else if (tyyppi === 'kyla') avaa('kauhu');
   else if (tyyppi === 'haukku') avaa('haukku');
   else if (tyyppi === 'gps') avaa('gps');
-  else if (tyyppi === 'bigfoot') avaa('bigfoot');
+  else if (tyyppi === 'bigfoot' && RIISTAKAMERA) avaa('bigfoot');
   return { tila, uudet, muuttui };
 }
 
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
+function nakyvatSaavutukset() {
+  return RIISTAKAMERA ? SAAVUTUKSET : SAAVUTUKSET.filter(s => s.id !== 'bigfoot');
+}
+
 export function saavutuksetHtml(tila) {
+  const lista = nakyvatSaavutukset();
   const auki = tila?.avatut || {};
-  const n = SAAVUTUKSET.filter(s => auki[s.id]).length;
-  const kortit = SAAVUTUKSET.map(s => {
+  const n = lista.filter(s => auki[s.id]).length;
+  const kortit = lista.map(s => {
     if (!auki[s.id]) return '<article class="saav lukko"><div class="saav-ikoni">?</div><b>???</b><p>???</p></article>';
     return `<article class="saav auki"><div class="saav-ikoni">${s.ikoni}</div><b>${esc(s.nimi)}</b><p>${esc(s.kuvaus)}</p></article>`;
   }).join('');
-  return `<h2>Saavutukset</h2><p class="saav-maara">${n} / ${SAAVUTUKSET.length}</p><div class="saav-ruudukko">${kortit}</div>`;
+  return `<h2>Saavutukset</h2><p class="saav-maara">${n} / ${lista.length}</p><div class="saav-ruudukko">${kortit}</div>`;
 }

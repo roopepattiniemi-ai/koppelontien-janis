@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { Hare, H } from '../logic/hare.js';
+import { Hare, H, alkujaljenHamaykset } from '../logic/hare.js';
 import { Dog, D, nearTrack, dogInside } from '../logic/dog.js';
 import { audibility } from '../logic/hearing.js';
 import { Car, bodyBox } from '../logic/car.js';
@@ -8,7 +8,9 @@ import { shotgun } from '../logic/shot.js';
 import { judgeShot } from '../logic/rules.js';
 import { Critter } from '../logic/wild.js';
 let n=0;const mulberryT=s=>{let a=s;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};};const t=(name,f)=>{f();n++;console.log('ok',name);};
-t('jänis makuulla, paluuperät + sivuloikka yöjäljessä',()=>{const h=new Hare({seed:3});assert.equal(h.state,H.MAKUU);assert.ok(h.nightTrail.at(-1).jump);assert.ok(h.nightTrail.length>90);});
+t('jänis makuulla, alkujäljessä 0–1 hämäystä',()=>{const h=new Hare({seed:3});assert.equal(h.state,H.MAKUU);assert.ok(h.nightTrail.length>90);assert.ok(h.nightTrail.every(p=>p.yo));
+  let nolla=0,yksi=0;for(let s=1;s<=40;s++){const n=alkujaljenHamaykset(new Hare({seed:s}).nightTrail);assert.ok(n<=1,'hämäys '+s+' '+n);if(n===0)nolla++;else yksi++;}
+  assert.ok(nolla>0&&yksi>0,nolla+'/'+yksi);});
 t('jänis lähtee kun koira lähellä, kierto <~1 km',()=>{const h=new Hare({seed:3});h.update(.1,{dog:{x:h.x+5,z:h.z}});assert.equal(h.state,H.PAKO);
   let maxR=0,states=new Set();for(let i=0;i<20000;i++){h.update(.05,{dog:{x:h.x+100,z:h.z},player:{x:9999,z:9999}});states.add(h.state);maxR=Math.max(maxR,Math.hypot(h.x-h.home.x,h.z-h.home.z));}
   assert.ok(states.has(H.KIERTO)&&states.has(H.PALUU),[...states]);assert.ok(maxR<1100,maxR);});
@@ -95,12 +97,12 @@ t('narussa koira pysyy 3 m sisällä vaikka pelaaja siirtyy kauas',async()=>{con
 t('aloitusruudun ohjeet kattavat kaikki main.js:n näppäimet, ei passia',async()=>{const fs=await import('fs');const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
   globalThis.localStorage=globalThis.localStorage||{getItem:()=>null};const {OHJEET,KREDIITIT}=await import('../public/aloitus.js');const have=new Set(OHJEET.flatMap(o=>o[2]||[]));
   const used=new Set([...src.matchAll(/e\.code===?'([A-Za-z0-9]+)'/g)].map(m=>m[1]).concat([...src.matchAll(/\b(Key[A-Z]|Digit[0-9]):/g)].map(m=>m[1])));
-  for(const k of used)assert.ok(have.has(k),'ohjeista puuttuu '+k);assert.ok(!JSON.stringify(OHJEET).toLowerCase().includes('passi'));for(const n of['Lukas Beck','Livlandfahrer','Benboncan','Pierre Grandjean','YleArkisto'])assert.ok(KREDIITIT.includes(n),n);});
+  for(const k of used)assert.ok(have.has(k),'ohjeista puuttuu '+k);assert.ok(!JSON.stringify(OHJEET).toLowerCase().includes('passi'));assert.ok(!JSON.stringify(OHJEET).toLowerCase().includes('riistakamera'));for(const n of['Lukas Beck','Livlandfahrer','Benboncan','Pierre Grandjean','YleArkisto'])assert.ok(KREDIITIT.includes(n),n);});
 {const W=await import('../logic/world.js');const fs=await import('fs');t('eläimet tuplana: 10 jänistä ≥~100 m välein koko kartalla, koira ajaa yhtä, AI-harvennus',()=>{const r=mulberryT(5);const sp=W.spreadHares(10,r);assert.equal(sp.length,10);
   let md=1e9,xs=[],zs=[];for(const a of sp){xs.push(a.x);zs.push(a.z);for(const b of sp)if(a!==b)md=Math.min(md,Math.hypot(a.x-b.x,a.z-b.z));}assert.ok(md>=80,md);assert.ok(Math.max(...xs)-Math.min(...xs)>400&&Math.max(...zs)-Math.min(...zs)>400,'levitys');
   assert.equal(W.aiInterval(50),0);assert.ok(W.aiInterval(400)>0);
   const hs=sp.map((p,k)=>new Hare({...p,seed:k+1}));const h=hs[3],g=new Dog({x:h.home.x+30,z:h.home.z,seed:3});g.command('etsi',{x:h.home.x+30,z:h.home.z},h);let ajo=false;
-  for(let i=0;i<6000&&!ajo;i++){g.update(.05,{hares:hs,player:{x:h.home.x+30,z:h.home.z}});for(const x of hs)x.update(.05,{dog:g.pos,player:{x:h.home.x+30,z:h.home.z}});if(g.state===D.AJO)ajo=true;}assert.ok(ajo,'koira ajoon');
+  for(let i=0;i<18000&&!ajo;i++){g.update(.05,{hares:hs,player:{x:h.home.x+30,z:h.home.z}});for(const x of hs)x.update(.05,{dog:g.pos,player:{x:h.home.x+30,z:h.home.z}});if(g.state===D.AJO)ajo=true;}assert.ok(ajo,'koira ajoon');
   const src=fs.readFileSync(new URL('../public/v09.js',import.meta.url),'utf8');const C=JSON.parse(src.match(/COUNTS=(\{[^}]*\})/)[1].replace(/(\w+):/g,'"$1":'));assert.deepEqual(C,{kettu:2,peura:6,orava:8,teeriParvet:4,teeriParvessa:12,korppi:12,tiainen:24});assert.ok(!/kind:'tiainen'/.test(src)&&!/SphereGeometry\(0\.05/.test(src),'tiaispallot poistettu');assert.match(src,/play3d\('amb_tiainen_'/);assert.match(src,/__tiainenSoitot\+\+/);});}
 t('koira kiertää rakennukset eikä ole sisällä pitkässä simulaatiossa',()=>{
   const inside=(x,z)=>dogInside(x,z);

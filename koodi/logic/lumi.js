@@ -1,7 +1,8 @@
-// Lumisade. Vanha jälki haalistuu sateessa. Sateen jälkeen tuore jälki on koiralle selvä.
+// Lumisade. Vanha jälki haalistuu, ei katoa. Sateen jälkeen tuore jälki on koiralle selvä.
+// Yöjälki (piste.yo) pysyy aina löydettävänä: hajunArvo voi olla 0, mutta koira ei ohita sitä.
 
-export function lumiAlku() {
-  return { on: false, voima: 0, sadeAika: 0, jalkeen: 0, tauko: 0, kesto: 0, kello: 0 };
+export function lumiAlku(rand = Math.random) {
+  return { on: false, voima: 0, sadeAika: 0, jalkeen: 0, tauko: 180 + rand() * 150, kesto: 0, kello: 0 };
 }
 
 // kello on yhteinen peliaika, jotta jäljen ikä ja synkka käyttävät samaa kelloa.
@@ -14,15 +15,16 @@ export function lumiPaivita(st, dt, rand = Math.random, kello = (st.kello || 0) 
       st.on = false;
       st.sadeAika = 0;
       st.jalkeen = 0.01;
-      st.tauko = 70 + rand() * 90;
+      st.tauko = 200 + rand() * 220;
     }
   } else {
     if (st.jalkeen > 0) st.jalkeen += dt;
     st.tauko -= dt;
-    if (st.tauko <= 0 && rand() < dt / 45) {
+    // Ei heti jahdin alussa. Tauon jälkeenkin sade on harvinainen ja lyhyt.
+    if (st.tauko <= 0 && (st.kello || 0) >= 150 && rand() < dt / 160) {
       st.on = true;
-      st.voima = 0.55 + rand() * 0.4;
-      st.kesto = 36 + rand() * 40;
+      st.voima = 0.4 + rand() * 0.35;
+      st.kesto = 12 + rand() * 14;
       st.sadeAika = 0;
       st.jalkeen = 0;
     }
@@ -45,7 +47,18 @@ export function lumiKayta(st, p) {
   return st;
 }
 
-// 1 = täysi haju tai näkyvä painauma. 0 = lumi peitti.
+// Näkyvyys 1..0.5. Vanhimmat haalistuvat ensin, mikään jälki ei katoa.
+export function nakyvyys(ika, lumi) {
+  if (!lumi || (!lumi.on && !(lumi.jalkeen > 0))) return 1;
+  const t = Math.max(0, Number(ika) || 0);
+  const vanhuus = Math.min(1, t / 48);
+  if (lumi.on) return 1 - 0.5 * vanhuus;
+  if (t <= (lumi.jalkeen || 0) + 0.2) return 1;
+  const yli = Math.min(1, Math.max(0, t - (lumi.jalkeen || 0)) / 48);
+  return 1 - 0.5 * yli;
+}
+
+// 1 = täysi haju. 0 = lumi vei hajun ajosta. Yöjälkeä tämä ei koske (koira katsoo piste.yo).
 export function hajunArvo(ika, lumi) {
   if (!lumi || (!lumi.on && !(lumi.jalkeen > 0))) return 1;
   const t = Math.max(0, Number(ika) || 0);

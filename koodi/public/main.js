@@ -31,8 +31,9 @@ import { seuraavaHyppy, hyppySallittu, pelaajaSavy } from '/logic/hyppy.js';
 import { etsiPuhe } from '/logic/puhe.js';
 import { fsdTila, fsdKaynnista, fsdPaivita, fsdSaaKutsua, fsdKomento, FSD_TEKSTI } from '/logic/fsd.js';
 import { kettuMukana } from '/logic/kettu.js';
-import { lumiAlku, lumiPaivita, lumiPaketti, lumiKayta, hajunArvo } from '/logic/lumi.js';
-import { kameratPihasta, koneMaailma, koneLaatikko, ohikulut, paivitaHauskat, bigfootKuva } from '/logic/riista.js';
+import { lumiAlku, lumiPaivita, lumiPaketti, lumiKayta, nakyvyys } from '/logic/lumi.js';
+import { RIISTAKAMERA } from '/logic/config.js';
+import { pelinKamerat, pelinKone, pelinKoneLaatikko, ohikulut, paivitaHauskat, bigfootKuva } from '/logic/riista.js';
 import { sijoitaKylalaiset, seuraavaRepliikki, seuraavaHuuto, teePihaReitti, pihaKohta, JUTTELE_SADE, HUUTO_SADE, HUUTO_TAUKO, NIMET, KYLA_OTSIKOT } from '/logic/kylalaiset.js';
 import { lataa as lataaSaav, talleta as talletaSaav, kirjaa as kirjaaSaav } from '/logic/saavutukset.js';
 import { makeKylalainen } from '/hahmo.js';
@@ -164,25 +165,26 @@ lumiPisteet.frustumCulled=false;lumiPisteet.visible=false;scene.add(lumiPisteet)
 function lumiPiirra(dt){lumiPisteet.visible=!!lumiTila.on;if(!lumiTila.on)return;const p=lumiGeo.attributes.position.array,v=2.1+(lumiTila.voima||0.6)*2.4;
   for(let i=0;i<LUMI_N;i++){p[i*3+1]-=dt*v;if(p[i*3+1]<0){p[i*3]=(Math.random()-0.5)*46;p[i*3+1]=14+Math.random()*6;p[i*3+2]=(Math.random()-0.5)*46;}}
   lumiGeo.attributes.position.needsUpdate=true;lumiPisteet.position.set(pl.x,height(pl.x,pl.z),pl.z);}
-let KAMERAT=kameratPihasta(CABIN),riistaOn=false,riistaI=0,riistaT=0.4;
+let KAMERAT=pelinKamerat(CABIN),riistaOn=false,riistaI=0,riistaT=0.4;
 const riistaKuvat=[],hauskat=[],hauskaMesh=new Map(),kameraMallit=[];
 function luoKameranMalli(){const g=new THREE.Group(),puu=new THREE.MeshLambertMaterial({color:0x5a4632}),musta=new THREE.MeshLambertMaterial({color:0x242820});
   const tolppa=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,1.2,6),puu);tolppa.position.y=-0.55;g.add(tolppa);
   const runko=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.15,0.34),musta);g.add(runko);
   const linssi=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.045,0.07,8),new THREE.MeshLambertMaterial({color:0x0c0c0c}));linssi.rotation.x=Math.PI/2;linssi.position.z=0.2;g.add(linssi);
   scene.add(g);return g;}
-for(let i=0;i<2;i++)kameraMallit.push(luoKameranMalli());
 const koneRyhma=new THREE.Group();koneRyhma.name='riistakone';{
   const puu=new THREE.MeshLambertMaterial({color:0x6a5038}),harmaa=new THREE.MeshLambertMaterial({color:0xc4c0b4}),ruutuVari=new THREE.MeshLambertMaterial({color:0x163024});
   const kansi=new THREE.Mesh(new THREE.BoxGeometry(0.95,0.07,0.58),puu);kansi.position.y=0.74;koneRyhma.add(kansi);
   const jalka=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.74,0.08),puu);jalka.position.y=0.37;koneRyhma.add(jalka);
   const torni=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.28,0.32),harmaa);torni.position.set(0.22,0.92,0.02);koneRyhma.add(torni);
-  const ruutu=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.3,0.03),ruutuVari);ruutu.position.set(-0.08,1.02,-0.08);ruutu.rotation.x=-0.18;koneRyhma.add(ruutu);
-  scene.add(koneRyhma);}
-function sijoitaRiista(){KAMERAT=kameratPihasta(CABIN);KAMERAT.forEach((k,i)=>{const m=kameraMallit[i];if(!m)return;m.position.set(k.x,height(k.x,k.z)+1.15,k.z);m.rotation.y=k.yaw;});
-  const p=koneMaailma(CABIN);koneRyhma.position.set(p.x,height(p.x,p.z),p.z);koneRyhma.rotation.y=CABIN.rot||0;}
+  const ruutu=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.3,0.03),ruutuVari);ruutu.position.set(-0.08,1.02,-0.08);ruutu.rotation.x=-0.18;koneRyhma.add(ruutu);}
+function sijoitaRiista(){if(!RIISTAKAMERA){koneRyhma.visible=false;return;}
+  KAMERAT=pelinKamerat(CABIN);while(kameraMallit.length<KAMERAT.length)kameraMallit.push(luoKameranMalli());
+  KAMERAT.forEach((k,i)=>{const m=kameraMallit[i];if(!m)return;m.visible=true;m.position.set(k.x,height(k.x,k.z)+1.15,k.z);m.rotation.y=k.yaw;});
+  const p=pelinKone(CABIN);if(!p)return;if(!koneRyhma.parent)scene.add(koneRyhma);
+  koneRyhma.visible=true;koneRyhma.position.set(p.x,height(p.x,p.z),p.z);koneRyhma.rotation.y=CABIN.rot||0;}
 sijoitaRiista();
-function nearKone(x,z){const p=koneMaailma(CABIN);return Math.hypot(x-p.x,z-p.z)<2.3;}
+function nearKone(x,z){if(!RIISTAKAMERA)return false;const p=pelinKone(CABIN);return !!p&&Math.hypot(x-p.x,z-p.z)<2.3;}
 function luoHauska(laji){const g=new THREE.Group(),iho=new THREE.MeshLambertMaterial({color:laji==='bigfoot'?0x3a2a18:laji==='norsu'?0x8a8e92:laji==='ufomies'?0x7d8cff:0xc4a574});
   if(laji==='norsu'){const ruho=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.3,2.1),iho);ruho.position.y=1.15;g.add(ruho);
     const karsa=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.08,1.1,6),iho);karsa.position.set(0,0.7,1.15);karsa.rotation.x=0.7;g.add(karsa);}
@@ -220,7 +222,7 @@ function piirraRiistaKanvas(kuva){const c=$('riista-c');if(!c)return;const g=c.g
 function naytaRiista(){const k=riistaKuvat[riistaI];piirraRiistaKanvas(k);const info=$('riista-info');if(info)info.textContent=k?`${riistaI+1} / ${riistaKuvat.length} · ${k.teksti||k.laji} · ${k.kamera}`:'Ei vielä kuvia. Kamerat katsovat pihaa ja metsän reunaa.';if(k&&bigfootKuva(k))saavuta({tyyppi:'bigfoot'});}
 function avaaRiista(){if(lehtiOn||loppuOn||lukuOn||editorOn)return;riistaOn=true;riistaI=Math.max(0,riistaKuvat.length-1);varmistaRiista().style.display='flex';if(document.pointerLockElement)document.exitPointerLock();$('menu').style.display='none';naytaRiista();}
 function suljeRiista(){if(!riistaOn)return;riistaOn=false;const el=$('riista');if(el)el.style.display='none';if(window.__peliAlkanut&&!lehtiOn&&!loppuOn)cvs.requestPointerLock();}
-function riistaSim(dt){piirraHauskat();if(isGuest())return;paivitaHauskat(hauskat,KAMERAT,dt,Math.random,lumiKello);
+function riistaSim(dt){if(!RIISTAKAMERA)return;piirraHauskat();if(isGuest())return;paivitaHauskat(hauskat,KAMERAT,dt,Math.random,lumiKello);
   riistaT-=dt;if(riistaT>0)return;riistaT=0.45;const yo=(lumiKello%300)>210,elukat=[];
   for(const h of hares)if(h.alive)elukat.push({laji:h.laji==='kettu'?'kettu':'janis',x:h.x,z:h.z,alive:true});
   for(const c of WL.critters)if(c.alive!==false)elukat.push({laji:c.kind,x:c.x,z:c.z,alive:true});
@@ -275,9 +277,9 @@ const jm={},jd={},jn={};for(const k in TEXS){jm[k]=new THREE.InstancedMesh(jg,ne
 const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),_tp=new THREE.Vector3(),_ts=new THREE.Vector3();
 let trackDirty=true,trackAt={x:1e9,z:1e9},trackT=0;
 let lumiKello=0;const lumiTila=lumiAlku();
-function addTrack(kind,p){const a=jd[kind];if(!a)return;if(a.length>=MAXDATA)a.shift();a.push({x:p.x,z:p.z,dir:p.dir||0,y:height(p.x,p.z)+0.1+(kind==='veri'?0.005:0),s:p.s||SIZES[kind]||1,luotu:lumiKello});trackDirty=true;}
+function addTrack(kind,p){const a=jd[kind];if(!a)return;if(a.length>=MAXDATA)a.shift();a.push({x:p.x,z:p.z,dir:p.dir||0,y:height(p.x,p.z)+0.1+(kind==='veri'?0.005:0),s:p.s||SIZES[kind]||1,luotu:p.synty!=null?p.synty:lumiKello,yo:!!p.yo});trackDirty=true;}
 function cullTracks(px,pz){for(const k in jd){const a=jd[k],m=jm[k];let n=0;for(let i=a.length-1;i>=0&&n<MAXJ;i--){const p=a[i];if(Math.abs(p.x-px)>TRACK_R||Math.abs(p.z-pz)>TRACK_R)continue;
-  const nak=hajunArvo(lumiKello-(p.luotu||0),lumiTila);if(nak<0.05)continue;const sc=p.s*Math.max(0.28,nak);
+  const nak=nakyvyys(lumiKello-(p.luotu||0),lumiTila);if(nak<0.05)continue;const sc=p.s*Math.max(0.28,nak);
   Q.setFromAxisAngle(Y,-p.dir);_tp.set(p.x,p.y,p.z);_ts.set(sc,1,sc);M4.compose(_tp,Q,_ts);m.setMatrixAt(n++,M4);}m.count=n;m.instanceMatrix.needsUpdate=true;}trackDirty=false;trackAt={x:px,z:pz};}
 window.__tracks=()=>{const o={};for(const k in jd)o[k]=[jd[k].length,jm[k].count];return o;};
 // ---------- naru: tekstuuri toistuu pystysuunnassa, venyy kädestä pantaan ----------
@@ -324,7 +326,7 @@ const gpsCtx=$('gpsc').getContext('2d',{willReadFrequently:true});let gpsImgT=0;
 let engine=null;let gpsOn=false,gpsMode=0,gpsSpan=800,gpsKoriNyt=null,hyppyCd=0,hyppyEd=null,luovutus=0,vierasLuovutus=0;const gh={};for(const n of['ajo','seisonta','haukku','hiljaa'])(gh[n]=new Image()).src=G+'hud/gps_haukku_'+n+'.png';const gArrow=new Image();gArrow.src=G+'hud/gps_suunta_nuoli.png';const gDot=new Image();gDot.src=G+'hud/gps_reitti_piste.png';const gpsMap=new Image();let gpsGeo={m_per_px:SIZE/1024,maailma_origo_px:[512,512]};gpsMap.src=G+'hud/gps_kartta.png';fetch(G+'hud/gps_kartta.json').then(r=>r.ok&&r.json()).then(j=>{if(j)gpsGeo=j;}).catch(()=>{});const gi={};for(const n of['pelaaja','koira','koira_ajo','koira_haku','koira_hukka']){gi[n]=new Image();gi[n].src=G+'hud/gps_'+n+'.png';}
 let dogJaw=0,ambT=12;let dn=0,barkT=0,terrierBarkT=1.4,stepT=0,msgT=0,puheT=0,huutoTauko=0,lastDog=dog.state,shotFlash=0,hareFlushed=false,muistiT=0;
 for(const h of hares)for(const p of h.nightTrail)addTrack(h.laji==='kettu'?'kettu':'janis',p);
-{const G={};for(const t of TREES)(G[Math.floor(t.x/4)+','+Math.floor(t.z/4)]??=[]).push(t);car.blocked=(x,z)=>{const gx=Math.floor(x/4),gz=Math.floor(z/4);for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)for(const t of G[(gx+a)+','+(gz+b)]||[])if(Math.hypot(t.x-x,t.z-z)<1.4)return true;return poytaEstaa(car.x,car.z,x,z,poytaLaatikko(CABIN,1))||poytaEstaa(car.x,car.z,x,z,koneLaatikko(CABIN));};}
+{const G={};for(const t of TREES)(G[Math.floor(t.x/4)+','+Math.floor(t.z/4)]??=[]).push(t);car.blocked=(x,z)=>{const gx=Math.floor(x/4),gz=Math.floor(z/4);for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)for(const t of G[(gx+a)+','+(gz+b)]||[])if(Math.hypot(t.x-x,t.z-z)<1.4)return true;return poytaEstaa(car.x,car.z,x,z,poytaLaatikko(CABIN,1))||poytaEstaa(car.x,car.z,x,z,pelinKoneLaatikko(CABIN));};}
 const PUUSOLU=8,PUUG=new Map();
 for(const t of TREES){if(/^(kanto|taimi|kaatunut)/.test(t.model||''))continue;const k=Math.floor(t.x/PUUSOLU)+','+Math.floor(t.z/PUUSOLU);(PUUG.get(k)??PUUG.set(k,[]).get(k)).push(t);}
 function puuEdessa(x,z){const gx=Math.floor(x/PUUSOLU),gz=Math.floor(z/PUUSOLU);for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)for(const t of PUUG.get((gx+a)+','+(gz+b))||[])if((t.x-x)**2+(t.z-z)**2<5.3)return true;return false;}
@@ -684,7 +686,7 @@ function paivitaPihaMallit(){const v=pihaVersio();if(v===pihaNaky)return;pihaNak
 function voiEditoida(){return !isGuest();}
 function varmistaEditori(){if(editorEl)return editorEl;editorEl=document.createElement('div');editorEl.id='piha-editori';
   editorEl.style.cssText='position:fixed;left:16px;bottom:16px;z-index:40;background:rgba(18,16,12,.92);color:#f6efe2;padding:12px 14px;border:1px solid #e2c27a;border-radius:8px;font:14px/1.4 Georgia,serif;max-width:380px';
-  editorEl.innerHTML='<b>Rakennuseditori</b><div id="piha-nimi"></div><div>Hiiri siirtää valittua, Q ja E kääntävät, F8 sulkee. Kamera on ylhäältä. Pihapöytä ja lehti siirtyvät mökin mukana. Riistakamerat ja tietokone siirtyvät myös.</div><label>Salasana <input id="piha-sala" type="password" autocomplete="off" style="width:8em"></label><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button type="button" id="piha-vie">Vie</button><button type="button" id="piha-tallenna">Tallenna pysyvästi</button></div><p style="margin:8px 0 0;font-size:12px">Tallenna pysyvästi kirjoittaa sijainnit palvelimelle heti. Renderin ilmaisversiossa tiedosto katoaa uudelleenkäynnistyksessä ja deployssa. Vie kopioi JSONin, jonka voi myöhemmin kirjoittaa koodin oletussijainneiksi.</p>';
+  editorEl.innerHTML='<b>Rakennuseditori</b><div id="piha-nimi"></div><div>Hiiri siirtää valittua, Q ja E kääntävät, F8 sulkee. Kamera on ylhäältä. Pihapöytä ja lehti siirtyvät mökin mukana.'+(RIISTAKAMERA?' Riistakamerat ja tietokone siirtyvät myös.':'')+'</div><label>Salasana <input id="piha-sala" type="password" autocomplete="off" style="width:8em"></label><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button type="button" id="piha-vie">Vie</button><button type="button" id="piha-tallenna">Tallenna pysyvästi</button></div><p style="margin:8px 0 0;font-size:12px">Tallenna pysyvästi kirjoittaa sijainnit palvelimelle heti. Renderin ilmaisversiossa tiedosto katoaa uudelleenkäynnistyksessä ja deployssa. Vie kopioi JSONin, jonka voi myöhemmin kirjoittaa koodin oletussijainneiksi.</p>';
   document.body.appendChild(editorEl);
   editorEl.querySelector('#piha-sala').addEventListener('keydown',e=>e.stopPropagation());
   editorEl.querySelector('#piha-vie').onclick=async()=>{const t=JSON.stringify(pihaNykyinen(),null,2);try{await navigator.clipboard.writeText(t);}catch{}say('Sijainnit kopioitu leikepöydälle.');};
@@ -751,7 +753,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   if(pl.moving){pl.raise=0;pl.raising=false;} if(pl.raising){pl.raise=Math.min(1,pl.raise+dt/0.3);if(pl.raise>=1)pl.raising=false;}
   pl.revealT=Math.max(0,pl.revealT-dt); const aiming=pl.raise>=1&&!pl.inCar; $('aim').style.display='none'; $('gun').style.display='none'; $('cross').style.display=aiming||pl.inCar||WP.binoOn?'none':'block';$('vignette').style.opacity=vm.aim*0.9;
   {const zf=WP.update(dt,{t:clock.elapsedTime,aim:aiming,inCar:pl.inCar});cam.fov=zf>1?65/zf:65-10*vm.aim;cam.updateProjectionMatrix();}
-  if(pl.moving){const sp=pl.crouch?0.7:keys.ShiftLeft?4:1.6;let nx=pl.x+(-Math.sin(pl.yaw)*f+Math.cos(pl.yaw)*s)*sp*dt,nz=pl.z+(-Math.cos(pl.yaw)*f-Math.sin(pl.yaw)*s)*sp*dt;const laatikot=[poytaLaatikko(CABIN),koneLaatikko(CABIN)];
+  if(pl.moving){const sp=pl.crouch?0.7:keys.ShiftLeft?4:1.6;let nx=pl.x+(-Math.sin(pl.yaw)*f+Math.cos(pl.yaw)*s)*sp*dt,nz=pl.z+(-Math.cos(pl.yaw)*f-Math.sin(pl.yaw)*s)*sp*dt;const laatikot=[poytaLaatikko(CABIN),pelinKoneLaatikko(CABIN)];
     const estaa=(x1,z1)=>laatikot.some(b=>poytaEstaa(pl.x,pl.z,x1,z1,b));
     if(estaa(nx,nz)){if(!estaa(nx,pl.z))nz=pl.z;else if(!estaa(pl.x,nz))nx=pl.x;else{nx=pl.x;nz=pl.z;}}pl.x=nx;pl.z=nz;stepT-=dt;}pl.x=clampB(pl.x);pl.z=clampB(pl.z);
   if(walk)walk.g.gain.value=pl.moving?0.4:0;
@@ -769,7 +771,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   if(NET?.peer){const tunnettu=ME==='v'||!!NET.last,guestIn=ME==='v'?pl.inCar:!!(NET.last&&NET.last.inCar);if(guestIn)nouseTerrieri();else if(tunnettu&&terrier.riding&&window.__peliAlkanut)jumpPet();}
   const rideAt=slot=>{const q=car.cargo(slot);return{x:q.x,z:q.z,dir:car.heading};};
   if(dog.riding){const r=rideAt(0);dog.x=r.x;dog.z=r.z;dog.dir=r.dir;}
-  if(!GUEST)dog.update(dt,{hares,fetch:WL.birds.filter(b=>b.kind==='teeri'),player:P,players:{[ME]:P,...(NET?.last&&!GUEST?{v:{x:NET.last.x,z:NET.last.z}}:{})},obstacles:[bodyBox(car),poytaLaatikko(CABIN),koneLaatikko(CABIN)],puu:puuEdessa,lumi:lumiTila,ride:dog.riding?rideAt(0):null});
+  if(!GUEST)dog.update(dt,{hares,fetch:WL.birds.filter(b=>b.kind==='teeri'),player:P,players:{[ME]:P,...(NET?.last&&!GUEST?{v:{x:NET.last.x,z:NET.last.z}}:{})},obstacles:[bodyBox(car),poytaLaatikko(CABIN),pelinKoneLaatikko(CABIN)].filter(Boolean),puu:puuEdessa,lumi:lumiTila,ride:dog.riding?rideAt(0):null});
   if(NET?.peer){const gp=ME==='v'?P:(NET.last?{x:NET.last.x,z:NET.last.z}:P);terrier.update(dt,{player:gp,hares:[],obstacles:[bodyBox(car),poytaLaatikko(CABIN)],ride:terrier.riding?rideAt(1):null});}
   hare=dog.target||hare;const ajajat=[];if(!pl.inCar)ajajat.push({x:pl.x,z:pl.z,moving:!!(pl.moving||pl.revealT>0),crouch:!!pl.crouch,run:!!(keys.ShiftLeft&&pl.moving),id:ME});
   if(NET?.last&&!GUEST&&!NET.last.inCar)ajajat.push({x:NET.last.x,z:NET.last.z,moving:vierasVauhti>0.45,crouch:!!NET.last.crouch,run:vierasVauhti>3.2,id:NET.last.role||'v'});

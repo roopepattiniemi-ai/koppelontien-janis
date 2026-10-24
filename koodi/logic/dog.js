@@ -44,7 +44,7 @@ function pathBlocked(x0,z0,x1,z1,skip,extras){const start=solidAt(x0,z0),minx=Ma
 // Sama askeltarkistus kuin koiran _go: suora jana osuu rakennukseen tai pihan laatikkoon.
 export function askelEstetty(x0,z0,x1,z1){return pathBlocked(x0,z0,x1,z1,null,null);}
 // lähin jäniksen jälki (yöjälki tai pakojälki) annetun pisteen säteellä, tai makuualue (6 m)
-function hajuHeikko(pt,lumi){return !!lumi&&hajunArvo(jalkiIka(pt,lumi),lumi)<0.35;}
+function hajuHeikko(pt,lumi){if(pt&&pt.yo)return false;return !!lumi&&hajunArvo(jalkiIka(pt,lumi),lumi)<0.35;}
 export function nearTrack(hare,p,r,lumi){
   if(hare.state==='makuu'&&Math.hypot(hare.x-p.x,hare.z-p.z)<6&&!hajuHeikko(hare.nightTrail.at(-1),lumi))return{kind:'yo',idx:hare.nightTrail.length-1};
   let best=null,bd=r;

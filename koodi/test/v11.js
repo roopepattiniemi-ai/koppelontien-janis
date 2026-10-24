@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';import fs from 'node:fs';
 import { Relay } from '../logic/relay.js';
 import { roomSeed, enc, dec, packWorld, applyWorld, Interp, seatFor, startSeat, newRoomCode } from '../logic/sync.js';
 import { pelletPattern, swarmR, swarmHits, judgeHits, woundDmg, groundImpacts, PELLETS, SWARM_KILL } from '../logic/shot.js';
-import { Hare, H, passiKohde } from '../logic/hare.js';
+import { Hare, H, passiKohde, alkujaljenHamaykset } from '../logic/hare.js';
 import { Dog, D, dogInside, askelEstetty, nakoEsteetta } from '../logic/dog.js';
 import { spreadHares } from '../logic/world.js';
 import { mulberry32 } from '../logic/rng.js';
@@ -346,6 +346,7 @@ t('kyläläiset: pihat, jutut ja lehden otsikko', () => {
   assert.notEqual(mum.getObjectByName('keppi').rotation.z, z0);
 });
 import { SAAVUTUKSET, tyhja, lataa as lataaSaav, talleta as talletaSaav, kirjaa, saavutuksetHtml } from '../logic/saavutukset.js';
+import { RIISTAKAMERA } from '../logic/config.js';
 t('saavutukset: kaksikymmentä, oma kirja, lukko ja auki', () => {
   assert.equal(SAAVUTUKSET.length, 22);
   const nimet = SAAVUTUKSET.map(s => s.nimi);
@@ -394,7 +395,7 @@ t('saavutukset: kaksikymmentä, oma kirja, lukko ja auki', () => {
   assert.deepEqual(yksi({ tyyppi: 'kaato', laji: 'janis', matka: 4, jahti: 'd' }), ['pata']);
   assert.deepEqual(yksi({ tyyppi: 'olematon' }), []);
   assert.deepEqual(yksi({ tyyppi: 'kaato', laji: 'kettu', matka: 20, osumat: 4, jahti: 'd' }), ['repolainen']);
-  assert.deepEqual(yksi({ tyyppi: 'bigfoot' }), ['bigfoot']);
+  assert.deepEqual(yksi({ tyyppi: 'bigfoot' }), RIISTAKAMERA ? ['bigfoot'] : []);
   const st = mem();
   talletaSaav(st, tila);
   const luettu = lataaSaav(st);
@@ -404,7 +405,12 @@ t('saavutukset: kaksikymmentä, oma kirja, lukko ja auki', () => {
   assert.equal(luettu.noudot, 5);
   assert.equal(luettu.jahti, 'd');
   const lukko = saavutuksetHtml(tyhja());
-  assert.equal((lukko.match(/class="saav lukko"/g) || []).length, SAAVUTUKSET.length);
+  const nakyvia = SAAVUTUKSET.filter(s => RIISTAKAMERA || s.id !== 'bigfoot').length;
+  assert.equal((lukko.match(/class="saav lukko"/g) || []).length, nakyvia);
+  const kaikki = tyhja();
+  for (const s of SAAVUTUKSET) kaikki.avatut[s.id] = 'avattu';
+  const sivu = saavutuksetHtml(kaikki);
+  assert.equal(sivu.includes('Bigfoot on totta'), !!RIISTAKAMERA);
   assert.ok(!lukko.includes('Ensimmäinen jänis'));
   assert.ok(lukko.includes('?'));
   assert.ok(lukko.includes('???'));
@@ -459,7 +465,7 @@ t('ajo: lenkki palaa ylösajoon ja kiertää hiljaa seisovan passin', () => {
   for (let i = 0; i < 80 && reuna.state !== H.KIERTO; i++) reuna.update(0.1, { dog: { x: reuna.x + 5, z: reuna.z }, player: seis, hunters: [seis] });
   assert.ok(reuna.reitit.has('yo'));
   assert.ok(reuna.reitit.has('metsatie') || reuna.reitit.has('oja') || reuna.reitit.has('pelto'), [...reuna.reitit].join(','));
-  const oja = new Hare({ x: -160, z: -90, seed: 1 });
+  const oja = new Hare({ x: -400, z: -160, seed: 1 });
   for (let i = 0; i < 80 && oja.state !== H.KIERTO; i++) oja.update(0.1, { dog: { x: oja.x + 5, z: oja.z }, player: { x: oja.x + 30, z: oja.z, moving: false }, hunters: [{ x: oja.x + 30, z: oja.z, moving: false }] });
   assert.ok(oja.reitit.has('oja'), [...oja.reitit].join(','));
   const juoksu = new Hare({ x: -180, z: 120, seed: 5 });
@@ -801,8 +807,9 @@ t('hyppy: ei samaa repliikkiä kahdesti, puhe jos tiedosto löytyy', () => {
   assert.match(al, /'Space'/);
 });
 import { kettuMukana, KETTU_OSUUS } from '../logic/kettu.js';
-import { lumiAlku, lumiPaivita, lumiPaketti, lumiKayta, hajunArvo, katkoKerroin } from '../logic/lumi.js';
-import { kameratPihasta, koneMaailma, nakyy, lisaaKuva, ohikulut, paivitaHauskat, bigfootKuva } from '../logic/riista.js';
+import { lumiAlku, lumiPaivita, lumiPaketti, lumiKayta, hajunArvo, katkoKerroin, nakyvyys } from '../logic/lumi.js';
+import { kameratPihasta, koneMaailma, nakyy, lisaaKuva, ohikulut, paivitaHauskat, bigfootKuva, pelinKamerat, pelinKone, pelinKoneLaatikko } from '../logic/riista.js';
+import { nearTrack } from '../logic/dog.js';
 t('näköhaukku ja passi: useimmat lenkit tulevat ampumaetäisyydelle', () => {
   assert.equal(nakoEsteetta(-20, 0, 20, 0, (x, z) => Math.hypot(x, z) < 3), false);
   assert.equal(nakoEsteetta(0, 0, 10, 0, () => false), true);
@@ -866,19 +873,32 @@ t('kettu: harvinainen, laajempi lenkki ja vaikeampi ohitus', () => {
   assert.ok(k.lenkki.filter(p => p.jump).length >= 2);
   assert.ok(HAUSKAT.some(o => /Repolainen/.test(o[0])));
 });
-t('lumisade peittää vanhan jäljen, tuore on varmempi', () => {
+t('lumisade haalistaa vanhaa jälkeä, yöjälki ja tuore haju säilyvät', () => {
   const sade = { on: true, jalkeen: 0, kello: 100 };
   assert.ok(hajunArvo(3, sade) > 0.8);
   assert.equal(hajunArvo(80, sade), 0);
+  assert.ok(nakyvyys(3, sade) > nakyvyys(80, sade));
+  assert.ok(nakyvyys(80, sade) >= 0.5);
+  assert.ok(nakyvyys(400, sade) >= 0.5);
   const jalkeen = { on: false, jalkeen: 15, kello: 100 };
   assert.equal(katkoKerroin(hajunArvo(4, jalkeen), jalkeen), 0.35);
+  assert.equal(nakyvyys(4, jalkeen), 1);
+  assert.ok(nakyvyys(90, jalkeen) >= 0.5 && nakyvyys(90, jalkeen) < 1);
   assert.equal(katkoKerroin(1, null), 1);
-  const st = lumiAlku();
-  lumiPaivita(st, 1, () => 0, 10);
+  const st = lumiAlku(() => 0);
+  assert.ok(st.tauko >= 180);
+  lumiPaivita(st, 20, () => 0, 20);
+  assert.equal(st.on, false);
+  st.tauko = 0;
+  lumiPaivita(st, 1, () => 0, 30);
+  assert.equal(st.on, false);
+  lumiPaivita(st, 1, () => 0, 400);
   assert.equal(st.on, true);
-  const st2 = lumiKayta(lumiAlku(), lumiPaketti(st));
+  assert.ok(st.kesto >= 12 && st.kesto <= 28, st.kesto);
+  const paketti = lumiPaketti(st);
+  const st2 = lumiKayta(lumiAlku(() => 0), paketti);
   assert.equal(st2.on, true);
-  assert.equal(st2.kello, 10);
+  assert.equal(st2.kello, 400);
   const h = new Hare({ x: -200, z: 80, seed: 4 });
   h.flush({ x: h.x + 2, z: h.z });
   for (let i = 0; i < 220; i++) h.update(0.2, { dog: { x: 9000, z: 9000 }, player: { x: 9000, z: 9000 }, kello: i * 0.2 });
@@ -892,6 +912,42 @@ t('lumisade peittää vanhan jäljen, tuore on varmempi', () => {
   g0.state = D.HAKU;
   g0.update(0.05, { hares: [h], player: { x: vanha.x + 120, z: vanha.z }, puu: () => false });
   assert.equal(g0.state, D.AJO);
+  const makuu = new Hare({ x: -180, z: 40, seed: 8 });
+  const sateenJalkeen = { on: false, jalkeen: 90, kello: 600, voima: 0.8 };
+  const kesken = { on: true, jalkeen: 0, kello: 600, voima: 0.8 };
+  for (const p of makuu.nightTrail) {
+    assert.equal(nearTrack(makuu, p, 3, sateenJalkeen)?.kind, 'yo');
+    assert.equal(nearTrack(makuu, p, 3, kesken)?.kind, 'yo');
+  }
+  assert.ok(Math.hypot(makuu.nightTrail.at(-1).x - makuu.x, makuu.nightTrail.at(-1).z - makuu.z) < 2);
+  const alku = makuu.nightTrail[Math.max(0, makuu.nightTrail.length - 30)];
+  const gYo = new Dog({ x: alku.x, z: alku.z, seed: 3 });
+  gYo.state = D.HAKU;
+  for (let i = 0; i < 6000 && makuu.state === H.MAKUU; i++) {
+    gYo.update(0.05, { hare: makuu, hares: [makuu], player: { x: alku.x + 400, z: alku.z }, lumi: sateenJalkeen, puu: () => false });
+    makuu.update(0.05, { dog: gYo.pos, player: { x: 9000, z: 9000 }, kello: 600 });
+  }
+  assert.notEqual(makuu.state, H.MAKUU, gYo.state);
+});
+t('alkujälki on ruokailujälki, ajon koukut säilyvät', () => {
+  let nolla = 0, yksi = 0;
+  for (let s = 1; s <= 24; s++) {
+    const h = new Hare({ x: -160, z: 90, seed: s });
+    const n = alkujaljenHamaykset(h.nightTrail);
+    assert.ok(n <= 1, 'alku ' + s + ' ' + n);
+    if (n === 0) nolla++; else yksi++;
+    assert.ok(h.nightTrail.filter(p => p.jump).length <= 1);
+  }
+  assert.ok(nolla > 0 && yksi > 0, nolla + '/' + yksi);
+  const ajo = new Hare({ x: -180, z: 120, seed: 5 });
+  const P = { x: ajo.x + 28, z: ajo.z - 16, moving: false, id: 'p' };
+  const koira = { x: ajo.x + 6, z: ajo.z };
+  for (let i = 0; i < 8000 && !ajo.trail.some(p => p.jump); i++) {
+    ajo.update(0.1, { dog: koira, player: P, hunters: [P] });
+    if (ajo.trail.length > 8) { const q = ajo.trail.at(-8); koira.x = q.x; koira.z = q.z; }
+  }
+  assert.ok(ajo.trail.some(p => p.jump), 'ajokoukku');
+  assert.ok((ajo.koukut || 0) >= 1 || ajo.state === H.PALUU);
 });
 t('riistakamera: ohikulku, bigfoot ja tietokone pihalla', () => {
   const cam = { id: 'piha', x: 0, z: 0, yaw: 0, kantama: 22, kulma: 0.8 };
@@ -910,6 +966,10 @@ t('riistakamera: ohikulku, bigfoot ja tietokone pihalla', () => {
   assert.equal(lisaaKuva(kuvat, { laji: 'janis', kamera: 'piha', aika: 14 }, 14), false);
   const cams = kameratPihasta(CABIN);
   assert.equal(cams.length, 2);
+  assert.equal(RIISTAKAMERA, false);
+  assert.deepEqual(pelinKamerat(CABIN), []);
+  assert.equal(pelinKone(CABIN), null);
+  assert.equal(pelinKoneLaatikko(CABIN), null);
   const kone = koneMaailma(CABIN);
   assert.ok(!inBuilding(kone.x, kone.z), 'tietokone mökissä');
   const lista = [];
@@ -921,6 +981,12 @@ t('riistakamera: ohikulku, bigfoot ja tietokone pihalla', () => {
   assert.match(src, /lumiPaivita/);
   assert.match(src, /kettuMukana/);
   assert.match(src, /Bigfoot on totta|tyyppi:'bigfoot'/);
+  assert.match(src, /RIISTAKAMERA/);
+  assert.match(src, /if\(!RIISTAKAMERA\)return/);
+  assert.match(src, /nakyvyys/);
+  const alOhje = fs.readFileSync(new URL('../public/aloitus.js', import.meta.url), 'utf8');
+  assert.match(alOhje, /RIISTAKAMERA\?' Tietokone pöydällä E avaa riistakameran kuvat/);
+  assert.match(alOhje, /haalistaa vanhoja jälkiä/);
 });
 import { lahetaKoirakomento, vastaanotaKoirakomento } from '../logic/koirakomento.js';
 t('moninpeli: vieras irrottaa terrierin, isäntä näkee haun', () => {
