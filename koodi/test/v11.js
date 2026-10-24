@@ -12,7 +12,7 @@ import { toLocal, rayEllipsoid, region, HARE_BODY } from '../logic/osumat.js';
 import * as THREE from 'three';
 import { makeHunter, makeKylalainen } from '../public/hahmo.js';
 import { YARD, distToRoad, inBounds } from '../logic/world.js';
-import { sijoitaKylalaiset, seuraavaRepliikki, REPLIIKIT, KYLA_OTSIKOT, NIMET, JUTTELE_SADE } from '../logic/kylalaiset.js';
+import { sijoitaKylalaiset, seuraavaRepliikki, seuraavaHuuto, huudonTila, REPLIIKIT, OHIKULKU, OHIKULKU_TILA, KYLA_OTSIKOT, NIMET, JUTTELE_SADE, HUUTO_SADE, HUUTO_TAUKO } from '../logic/kylalaiset.js';
 let n=0;const t=(name,f)=>{f();n++;console.log('ok',name);};
 const peer=()=>({});
 t('rele: 2/huone, eka isäntä, kolmas torjutaan, viesti vain toiselle',()=>{const r=new Relay(),a=peer(),b=peer(),c=peer();
@@ -238,8 +238,37 @@ t('kyläläiset: pihat, jutut ja lehden otsikko', () => {
   assert.ok(!lehti(9, 4, 'Mummo').otsikko.includes('Mummo ammuttiin'));
   assert.ok(!lehtiPoyta(9).otsikko.includes('Mummo ammuttiin'));
   assert.equal(JUTTELE_SADE, 2.4);
+  assert.equal(HUUTO_SADE, 8);
+  assert.equal(HUUTO_TAUKO, 20);
+  const jutut = new Set(Object.values(REPLIIKIT).flat());
+  for (const laji of ['isanta', 'mummo', 'naapuri', 'aija']) {
+    assert.ok(OHIKULKU[laji].length >= 8, laji);
+    for (const s of OHIKULKU[laji]) assert.ok(!jutut.has(s), s);
+    for (const tila of ['vitara', 'ase', 'saalis', 'koira']) {
+      const p = OHIKULKU_TILA[laji][tila];
+      assert.ok(p.length >= 2, laji + ' ' + tila);
+      for (const s of p) { assert.ok(!jutut.has(s), s); assert.ok(!OHIKULKU[laji].includes(s), s); }
+    }
+  }
+  assert.equal(OHIKULKU.mummo[0], 'Taas se murhaaja kulkee!');
+  assert.equal(OHIKULKU_TILA.isanta.vitara[0], 'Hei, kyytiä, mennhään kylille!');
+  const hm = { laji: 'mummo' };
+  const h1 = seuraavaHuuto(hm, null), h2 = seuraavaHuuto(hm, null);
+  assert.equal(h1, 'Taas se murhaaja kulkee!');
+  assert.notEqual(h1, h2);
+  const hi = { laji: 'isanta' };
+  seuraavaHuuto(hi, null);
+  assert.equal(seuraavaHuuto(hi, 'vitara'), 'Hei, kyytiä, mennhään kylille!');
+  assert.notEqual(seuraavaHuuto(hi, 'vitara'), 'Hei, kyytiä, mennhään kylille!');
+  assert.equal(huudonTila({ vitara: true, saalis: true, ase: true }), 'vitara');
+  assert.equal(huudonTila({ saalis: true, koira: true }), 'saalis');
+  assert.equal(huudonTila({ koira: true, ase: true }), 'koira');
+  assert.equal(huudonTila({ ase: true }), 'ase');
+  assert.equal(huudonTila({}), null);
   const src = fs.readFileSync(new URL('../public/main.js', import.meta.url), 'utf8');
   assert.match(src, /E – juttele/);
+  assert.match(src, /seuraavaHuuto/);
+  assert.match(src, /HUUTO_SADE/);
   assert.match(src, /kyla:npc\.k\.id|kyla:extra\.kyla/);
   const mets = makeHunter(0);
   const vari = mets.getObjectByName('liivi').material.color.getHex();

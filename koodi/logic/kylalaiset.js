@@ -3,6 +3,8 @@
 import { mulberry32 } from './rng.js';
 
 export const JUTTELE_SADE = 2.4;
+export const HUUTO_SADE = 8;
+export const HUUTO_TAUKO = 20;
 
 export const NIMET = {
   isanta: 'Maatilan isäntä',
@@ -57,6 +59,142 @@ export const REPLIIKIT = {
     'Jarrut toimii, jos muistaa että niitä ei ole.',
     'Korjaan tämän ennen juhannusta. En sano minkä vuoden.'
   ]
+};
+
+// Lyhyet ohikulkuhuudot. Eivät ole E-keskustelun repliikkejä.
+export const OHIKULKU = {
+  isanta: [
+    'Hoi, kuka siellä horjuu, sinä vai mä?',
+    'Tule tänne, mulla on teoria jäniksistä.',
+    'Pullo on puolillaan. Tai mä oon.',
+    'Älä kerro vaimolle että näit mut.',
+    'Metsä on iso. Minä oon isompi. Melkein.',
+    'Kävely on yliarvostettua.',
+    'Terve. Tai jotain sinnepäin.',
+    'Jos näet hatun, se on mun. Tai ei.'
+  ],
+  mummo: [
+    'Taas se murhaaja kulkee!',
+    'Pidä piippu maassa, minä näen sen!',
+    'Porkkanat on jo jaettu. Jänikset on syönyt.',
+    'Älä hiivi. Minä kuulen lumen.',
+    'Keppi on mukana. Muista se.',
+    'Metsä ei ole sinun kauppasi.',
+    'Terve. Se ei ollut lupa.',
+    'Jos pupu tulee, väistä. Se asuu tässä.'
+  ],
+  naapuri: [
+    'Minä näin sinut. Älä sano että minä näin.',
+    'Kello käy. Juorukin käy.',
+    'Pihasta näkee kaiken. Valitettavasti.',
+    'Kävelet kuin sinulla olisi asiaa.',
+    'Minä en kuunnellut. Minä vain kuulin.',
+    'Terve. Tämä ei ole kutsu kahville.',
+    'Aidan takaa näkee paremmin.',
+    'Jos kysyt, minä en ollut täällä.'
+  ],
+  aija: [
+    'Älä astu mutterin päälle. Se on jossain.',
+    'Traktori kuulee sinut. Se ei välitä.',
+    'Mä korjaan. Älä auta.',
+    'Käsi on rasvassa. Tervehdys peruutettu.',
+    'Jos se käynnistyy, se on vahinko.',
+    'Seis siinä. Tai missä vaan, ei väliä.',
+    'Pihassa on varaosia. Sinä et ole niistä.',
+    'Öljy on tuoretta. Lumi ei.'
+  ]
+};
+
+export const OHIKULKU_TILA = {
+  isanta: {
+    vitara: [
+      'Hei, kyytiä, mennhään kylille!',
+      'Seisota se Vitara, mä mahdun takakonttiin!',
+      'Aja hiljaa, pullo ei pysy sylissä!',
+      'Ota mut kyytiin. Mä tiedän tien. Suurin piirtein.'
+    ],
+    ase: [
+      'Älä osoita, mä oon jo kaatunu sisältä.',
+      'Hieno pyssy. Mä ammuin kerran ohi lähempää.',
+      'Piippu pois. Tää pullo ei ole jänis.'
+    ],
+    saalis: [
+      'Saitko sinä sen? Mä väitin että mä sain.',
+      'Näytä saalis. Mä kehun, jos se on iso.',
+      'Kantoitko sen itse? Koira on rehellisempi.'
+    ],
+    koira: [
+      'Koira! Se on parempi seura kuin mä. Älä kerro.',
+      'Anna koiran tulla. Mulla on teoria sillekin.',
+      'Haukku kuulostaa mun serkultani.'
+    ]
+  },
+  mummo: {
+    vitara: [
+      'Aja hitaammin, puput on tiellä!',
+      'Älä pölytä pihaani sillä autolla!',
+      'Vitara ei ole lupa metsästää.'
+    ],
+    ase: [
+      'Älä osoita sillä minua!',
+      'Piippu alas, tai soitan poliisille jo pihasta!',
+      'Se pyssy näkyy. Jäniksetkin näkee.'
+    ],
+    saalis: [
+      'Mitä sinä kannat? Minä en halua tietää!',
+      'Saalis tuoksuu. Häpeä tuoksuu samalta.',
+      'Jos se on jänis, käänny ympäri.'
+    ],
+    koira: [
+      'Koira saa tulla. Sinä et.',
+      'Pidä koira kaukana porkkanoista!',
+      'Haukahdus kuuluu. Minä kuulen sen.'
+    ]
+  },
+  naapuri: {
+    vitara: [
+      'Vitara! Minä kerron minne se meni. Myöhemmin.',
+      'Aja ohi. Minä ehdin lukea rekisterin.',
+      'Kaasujalka kuuluu naapuriin asti.'
+    ],
+    ase: [
+      'Ase esillä. Minä panen tämän muistiin.',
+      'Älä osoita tänne. Minä en ole uutinen. Vielä.',
+      'Piippu näkyy. Mummo näkee sen myös.'
+    ],
+    saalis: [
+      'Saalista? Minä en kysy. Minä arvaan.',
+      'Kannat jotain. Kylä tietää jo.',
+      'Älä näytä sitä mummolle. Liian myöhäistä.'
+    ],
+    koira: [
+      'Koira tuli ensin. Sinä perässä. Tyypillistä.',
+      'Haukahdus tallentui. Minä toistan sen myöhemmin.',
+      'Koira ei juoruile. Sinä juoruilet kävelemällä.'
+    ]
+  },
+  aija: {
+    vitara: [
+      'Vitara menee ohi. Traktori miettii vielä.',
+      'Hieno auto. Tässä on hienompi, kun se käy.',
+      'Aja ympäri. Mä kuuntelen koneesta vian.'
+    ],
+    ase: [
+      'Älä ammu traktoria. Se on jo haavoittunut.',
+      'Piippu pois päin jakohihnasta.',
+      'Pyssy ei käy kiintoavaimeksi. Mä kokeilin.'
+    ],
+    saalis: [
+      'Sait saalista. Mä sain ruosteen.',
+      'Jänis ei korjaa tätä. Älä tarjoa.',
+      'Kanna se ohi. Mulla on kädet täynnä.'
+    ],
+    koira: [
+      'Koira saa nuuskia. Ei jakoavainta.',
+      'Haukku ei käynnistä tätä.',
+      'Koira on parempi apulainen. Se ei neuvo.'
+    ]
+  }
 };
 
 // Oma otsikko Kollinmäen Sanomiin. Ei kuulu kaveriosuman suruotsikoihin.
@@ -152,4 +290,28 @@ export function seuraavaRepliikki(npc, raivo) {
   const i = ((npc.i ?? -1) + 1) % pool.length;
   npc.i = i;
   return pool[i];
+}
+
+// Tilanne, jos se on päällä. Vitara voittaa, sitten saalis, koira ja ase.
+export function huudonTila(t) {
+  if (t?.vitara) return 'vitara';
+  if (t?.saalis) return 'saalis';
+  if (t?.koira) return 'koira';
+  if (t?.ase) return 'ase';
+  return null;
+}
+
+export function seuraavaHuuto(npc, tila) {
+  const erikois = tila && OHIKULKU_TILA[npc.laji]?.[tila];
+  const pool = erikois?.length ? erikois : (OHIKULKU[npc.laji] || OHIKULKU.naapuri);
+  const avain = erikois?.length ? 'hi_' + tila : 'hi_yleinen';
+  let i = npc[avain] ?? -1;
+  let line = pool[0];
+  for (let n = 0; n < pool.length; n++) {
+    i = (i + 1) % pool.length;
+    if (pool[i] !== npc.viimeHuuto) { line = pool[i]; break; }
+  }
+  npc[avain] = i;
+  npc.viimeHuuto = line;
+  return line;
 }
