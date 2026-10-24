@@ -72,11 +72,12 @@ function numero(seed, lista, pikkuLista) {
 }
 
 // Lopetus: surullinen pääotsikko, hauskat pikku-uutiset, kuolinilmoitus ja pisteet.
-export function lehti(seed, pisteet = 0, nimi) {
+// pakko.otsikko korvaa pääotsikon (kyläläisen oma juttu). Surulistaa ei muuteta.
+export function lehti(seed, pisteet = 0, nimi, pakko) {
   const { o, pikku, mainokset, r } = numero(seed, SURUT, HAUSKAT);
   const muisto = MUISTOT[Math.floor(r() * MUISTOT.length)];
   return {
-    nimi: LEHDEN_NIMI, otsikko: o[0], ingressi: o[1], pikku, mainokset, pisteet: pisteet | 0,
+    nimi: LEHDEN_NIMI, otsikko: pakko?.otsikko || o[0], ingressi: pakko?.ingressi || o[1], pikku, mainokset, pisteet: pisteet | 0,
     kuolin: { nimi: siistiNimi(nimi), muisto }, kuva: 'kaatui',
     ala: 'Kollinmäki · Kurikka · ilmestyy kun kaveri kaatuu'
   };

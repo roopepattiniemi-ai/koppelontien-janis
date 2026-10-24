@@ -88,10 +88,10 @@ function rakenna() {
   const vartalo = pivot(lantio, 0, 0.02, 0, 'vartalo');
   const takki = put(vartalo, cyl(0.2, 0.15, 0.46, 8), ruskea, 0, 0.28, 0, 'takki');
   put(vartalo, box(0.34, 0.4, 0.05), liivi, 0, 0.3, 0.11, 'liivi');
-  put(vartalo, box(0.13, 0.36, 0.05), liivi, -0.09, 0.3, -0.12);
-  put(vartalo, box(0.13, 0.36, 0.05), liivi, 0.09, 0.3, -0.12);
-  put(vartalo, box(0.36, 0.035, 0.2), heijaste, 0, 0.22, 0);
-  put(vartalo, box(0.36, 0.035, 0.2), heijaste, 0, 0.4, 0);
+  put(vartalo, box(0.13, 0.36, 0.05), liivi, -0.09, 0.3, -0.12, 'liivi');
+  put(vartalo, box(0.13, 0.36, 0.05), liivi, 0.09, 0.3, -0.12, 'liivi');
+  put(vartalo, box(0.36, 0.035, 0.2), heijaste, 0, 0.22, 0, 'heijaste');
+  put(vartalo, box(0.36, 0.035, 0.2), heijaste, 0, 0.4, 0, 'heijaste');
   const huppu = put(vartalo, sph(0.11, 8, 6), ruskea, 0, 0.48, 0.1, 'huppu');
   huppu.scale.set(1.1, 0.7, 0.8);
 
@@ -276,4 +276,136 @@ export function asetaHanskat(root) {
     host.add(g);
     o.visible = false;
   }
+}
+
+const TAKKI = { isanta: 0x7c5b3c, mummo: 0x8d4d5c, naapuri: 0x4f6794, aija: 0x5c636c };
+
+function paalle(h, laji) {
+  h.g.name = 'kylalainen';
+  h.g.traverse(o => { if (o.name === 'liivi' || o.name === 'heijaste') o.visible = false; });
+  h.lakkiLippa.visible = false;
+  h.lakkiKorva.visible = false;
+  h.ase.g.visible = false;
+  const takki = mat(TAKKI[laji] || TAKKI.isanta);
+  for (const m of h.takit) m.material = takki;
+  h.g.traverse(o => { if (o.isMesh && o.material?.color?.getHex?.() === 0xff6a00) o.material = takki; });
+  return takki;
+}
+
+function lakki(paa, vari, nimi) {
+  const m = mat(vari);
+  const g = new THREE.Group();
+  g.name = nimi;
+  paa.add(g);
+  put(g, sph(0.124, 10, 8), m, 0, 0.09, 0.01).scale.set(1.05, 0.48, 1.05);
+  put(g, box(0.14, 0.012, 0.08), m, 0, 0.05, -0.12);
+  return g;
+}
+
+// Kyläläinen samasta vartalosta. Liivi, oranssi lakki ja ase jäävät pois. Idle on oma, ei metsästäjän asentoa.
+export function makeKylalainen(laji = 'naapuri') {
+  const h = rakenna();
+  paalle(h, laji);
+  const kasi = h.g.getObjectByName('hanska_o');
+  if (laji === 'isanta') {
+    lakki(h.paa, 0x3a2a22, 'lippalakki');
+    put(h.paa, box(0.07, 0.025, 0.02), mat(0x6a5344), 0, -0.055, -0.09, 'parta');
+    const pullo = new THREE.Group();
+    pullo.name = 'pullo';
+    put(pullo, cyl(0.03, 0.034, 0.2, 7), mat(0xb7d7a8), 0, 0.06, 0);
+    put(pullo, cyl(0.012, 0.016, 0.05, 6), mat(0x8eae86), 0, 0.18, 0);
+    kasi.add(pullo);
+    pullo.rotation.z = 0.4;
+  } else if (laji === 'mummo') {
+    h.g.scale.setScalar(0.88);
+    put(h.lantio, cyl(0.16, 0.26, 0.46, 8), mat(0x3a2a38), 0, -0.22, 0, 'hame');
+    const huivi = mat(0x8a3040);
+    put(h.paa, sph(0.132, 10, 8), huivi, 0, 0.07, 0.02, 'huivi').scale.set(1.12, 0.5, 1.08);
+    put(h.paa, box(0.2, 0.02, 0.08), huivi, 0, 0.02, -0.08);
+    const keppi = put(kasi, cyl(0.013, 0.016, 0.86, 5), mat(0x6b4a28), 0.02, -0.46, -0.02, 'keppi');
+    keppi.rotation.x = 0.2;
+    h.keppi = keppi;
+  } else if (laji === 'aija') {
+    lakki(h.paa, 0x2a2c30, 'lippalakki');
+    const avain = new THREE.Group();
+    avain.name = 'avain';
+    put(avain, box(0.025, 0.16, 0.02), mat(0x9aa0a6), 0, -0.05, -0.04);
+    put(avain, box(0.06, 0.03, 0.02), mat(0x9aa0a6), 0, -0.14, -0.04);
+    kasi.add(avain);
+  } else {
+    lakki(h.paa, 0x6a2030, 'pipo');
+    put(h.paa, box(0.09, 0.012, 0.02), mat(0x222222), 0, 0.02, -0.11, 'lasit');
+    put(h.vartalo, box(0.22, 0.28, 0.04), mat(0xd8d0c4), 0, 0.16, 0.16, 'esiliina');
+  }
+
+  const st = { t: 0, kotiX: 0, kotiZ: 0, yaw: 0, laji };
+  const g = h.g;
+  g.userData.laji = laji;
+  g.userData.puhuu = 0;
+  g.userData.kaatunut = false;
+  g.userData.asetaKoti = (x, z, yaw) => {
+    st.kotiX = x; st.kotiZ = z; st.yaw = yaw;
+    st.t = Math.abs(Math.sin(x * 12.9898 + z * 78.233)) * 6.28318;
+    g.position.set(x, g.position.y, z);
+    g.userData.tick(0);
+  };
+  g.userData.tick = dt => {
+    if (g.userData.kaatunut) return;
+    st.t += dt;
+    g.userData.puhuu = Math.max(0, (g.userData.puhuu || 0) - dt);
+    const t = st.t;
+    h.vartalo.position.y = 0.02 + Math.sin(t * 1.6) * 0.008;
+    h.paa.rotation.x = Math.sin(t * 0.7) * 0.04;
+    h.paa.rotation.y = Math.sin(t * 0.45) * (laji === 'naapuri' ? 0.42 : 0.1);
+    if (laji === 'isanta') {
+      const sway = Math.sin(t * 1.25);
+      g.position.x = st.kotiX + sway * 0.55;
+      g.position.z = st.kotiZ + Math.cos(t * 0.65) * 0.22;
+      g.rotation.z = sway * 0.1;
+      g.rotation.y = st.yaw + sway * 0.18;
+      h.oik.olka.rotation.x = 1.15 + Math.sin(t * 1.1) * 0.12;
+      h.oik.olka.rotation.z = -0.4;
+      h.oik.kn.rotation.x = 1.25;
+      h.vas.olka.rotation.x = 0.25 + Math.sin(t * 0.8) * 0.15;
+      h.vas.olka.rotation.z = 0.28;
+      h.lantio.position.y = 1 + Math.abs(sway) * 0.02;
+    } else if (laji === 'mummo') {
+      g.position.x = st.kotiX;
+      g.position.z = st.kotiZ;
+      g.rotation.z = 0;
+      g.rotation.y = st.yaw;
+      const shake = g.userData.puhuu > 0 ? Math.sin(t * 16) * 0.4 : Math.sin(t * 1.3) * 0.06;
+      h.oik.olka.rotation.x = 0.5;
+      h.oik.olka.rotation.z = -0.85 + shake;
+      h.oik.kn.rotation.x = 0.35;
+      h.vas.olka.rotation.x = 0.12;
+      h.vas.olka.rotation.z = 0.22;
+      if (h.keppi) h.keppi.rotation.z = shake;
+      h.lantio.position.y = 1;
+    } else if (laji === 'aija') {
+      g.position.x = st.kotiX;
+      g.position.z = st.kotiZ;
+      g.rotation.z = 0;
+      g.rotation.y = st.yaw + Math.sin(t * 0.5) * 0.05;
+      h.lantio.position.y = 1;
+      h.vartalo.rotation.x = 0.38 + Math.sin(t * 2.2) * 0.04;
+      h.oik.olka.rotation.x = 1.2;
+      h.oik.olka.rotation.z = -0.25;
+      h.oik.kn.rotation.x = 0.85 + Math.sin(t * 3.1) * 0.18;
+      h.vas.olka.rotation.x = 0.85;
+      h.vas.kn.rotation.x = 0.55;
+    } else {
+      g.position.x = st.kotiX + Math.sin(t * 0.45) * 0.06;
+      g.position.z = st.kotiZ;
+      g.rotation.z = 0;
+      g.rotation.y = st.yaw + Math.sin(t * 0.35) * 0.12;
+      h.lantio.position.y = 1;
+      h.vas.olka.rotation.z = 0.2 + (g.userData.puhuu > 0 ? Math.sin(t * 8) * 0.25 : 0);
+      h.vas.olka.rotation.x = 0.35;
+      h.oik.olka.rotation.x = 0.2;
+      h.vartalo.rotation.x = 0.04;
+    }
+  };
+  g.userData.asetaKoti(0, 0, 0);
+  return g;
 }
