@@ -30,7 +30,7 @@ export const REPLIIKIT = {
   mummo: [
     'Viattomia metsän eläimiä ei saa metsästää! Minä soitan poliisille!',
     'Ja Yleisradioon myös. Siellä kuunnellaan mummoja.',
-    'Minä ruokkin jäniksiä porkkanoilla. Ne ovat ruokavieraita, ei saalista.',
+    'Minä ruokkin jäniksiä porkkanoilla. Ne ovat ruokavieraita, eivät saalista.',
     'Keppi heiluu, jos tähtäätte pihalleni. Korvat matalaksi.',
     'Kirjoitin yleisönosastoon. Otsikko oli: jättäkää puput rauhaan.',
     'Koira saa tulla, jos se ei hauku porkkanoilleni.',
@@ -113,7 +113,7 @@ export const OHIKULKU_TILA = {
   isanta: {
     vitara: [
       'Hei, kyytiä, mennhään kylille!',
-      'Seisota se Vitara, mä mahdun takakonttiin!',
+      'Seisauta se Vitara, mä mahdun takakonttiin!',
       'Aja hiljaa, pullo ei pysy sylissä!',
       'Ota mut kyytiin. Mä tiedän tien. Suurin piirtein.'
     ],
