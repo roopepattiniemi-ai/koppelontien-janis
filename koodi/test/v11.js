@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { makeHunter, makeKylalainen } from '../public/hahmo.js';
 import { YARD, distToRoad, inBounds, isForest } from '../logic/world.js';
 import { sijoitaKylalaiset, seuraavaRepliikki, seuraavaHuuto, huudonTila, teePihaReitti, pihaKohta, REPLIIKIT, OHIKULKU, OHIKULKU_TILA, KYLA_OTSIKOT, NIMET, JUTTELE_SADE, HUUTO_SADE, HUUTO_TAUKO, PIHA_SADE } from '../logic/kylalaiset.js';
+import { VERSIO, PAIVA, lueCommit, versioTeksti, versioVastaus } from '../logic/versio.js';
 let n=0;const t=(name,f)=>{f();n++;console.log('ok',name);};
 const peer=()=>({});
 t('rele: 2/huone, eka isäntä, kolmas torjutaan, viesti vain toiselle',()=>{const r=new Relay(),a=peer(),b=peer(),c=peer();
@@ -576,6 +577,23 @@ t('piha: siirto muuttaa törmäyksen ja salasana suojaa tallennuksen', () => {
     sovellaPiha(pihaOletus());
   }
   assert.ok(inBuilding(ennen.x, ennen.z));
+});
+t('versio: package.json, teksti ja /versio', () => {
+  const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(pkg.version, '1.4');
+  assert.equal(VERSIO, pkg.version);
+  assert.equal(PAIVA, '24.10.2026');
+  assert.equal(versioTeksti(''), 'v1.4 – 24.10.2026');
+  assert.equal(versioTeksti('AbC1234ffff'), 'v1.4 – 24.10.2026 · abc1234');
+  assert.equal(versioTeksti('ei-hash'), 'v1.4 – 24.10.2026');
+  assert.equal(lueCommit({ RENDER_GIT_COMMIT: 'deadbee' }), 'deadbee');
+  assert.equal(lueCommit({ GIT_COMMIT: '' }), lueCommit({}));
+  const v = versioVastaus({ RENDER_GIT_COMMIT: 'cc71bf8aaaa' });
+  assert.equal(v.versio, '1.4'); assert.equal(v.commit, 'cc71bf8'); assert.equal(v.teksti, 'v1.4 – 24.10.2026 · cc71bf8');
+  const src = fs.readFileSync(new URL('../server.js', import.meta.url), 'utf8');
+  assert.match(src, /\/versio/); assert.match(src, /versioVastaus/);
+  const al = fs.readFileSync(new URL('../public/aloitus.js', import.meta.url), 'utf8');
+  assert.match(al, /id="al-versio"/); assert.match(al, /\/versio/);
 });
 t('kylä-ääni: oma ääni ja satunnainen tunnelma', () => {
   assert.equal(kylaAani('isanta'), 'matala'); assert.equal(kylaAani('mummo'), 'kimea');

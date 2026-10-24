@@ -1,5 +1,6 @@
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url'; import { WebSocketServer } from 'ws'; import { Relay } from './logic/relay.js';
 import { pihaOletus, pihaPyynto, pihaSalasana, tarkistaPiha } from './logic/piha.js';
+import { versioVastaus } from './logic/versio.js';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const pihaTiedosto=path.join(here,'data','piha.json');
 const roots={'/three/':path.join(here,'node_modules/three/'),'/logic/':path.join(here,'logic/'),'/grafiikka/':path.join(here,'../grafiikka/'),'/aanet/':path.join(here,'../aanet/'),'/hud/':path.join(here,'../hud/'),'/':path.join(here,'public/')};
@@ -19,7 +20,7 @@ async function pihaApi(req,res){
   return json(res,200,{ok:true,piha:t.piha});
 }
 const server=http.createServer((req,res)=>{
-  let u=decodeURIComponent(req.url.split('?')[0]); if(u==='/api/piha')return pihaApi(req,res); if(u==='/')u='/index.html'; if(u==='/favicon.ico')return res.writeHead(204).end();
+  let u=decodeURIComponent(req.url.split('?')[0]); if(u==='/api/piha')return pihaApi(req,res); if(u==='/versio'){if(req.method!=='GET')return res.writeHead(405).end();return json(res,200,versioVastaus());} if(u==='/')u='/index.html'; if(u==='/favicon.ico')return res.writeHead(204).end();
   const pre=Object.keys(roots).find(p=>u.startsWith(p)); const base=roots[pre]; const f=path.join(base,u.slice(pre.length));
   if(!f.startsWith(base))return res.writeHead(403).end();
   fs.readFile(f,(e,d)=>{ if(e)return res.writeHead(404).end('ei löydy'); res.writeHead(200,{'content-type':types[path.extname(f)]||'application/octet-stream'}); res.end(d);});

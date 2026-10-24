@@ -16,6 +16,7 @@ const css=`#aloitus{position:fixed;inset:0;z-index:50;overflow:hidden;background
 #al-napit button:hover{background:#3a6a98ee}#al-napit #al-aloita{background:#b8481ecc;font-size:24px}
 #al-nimi{font:600 14px sans-serif;text-align:left}#al-nimi input{display:block;width:100%;box-sizing:border-box;margin-top:4px;font:16px sans-serif;padding:8px;border-radius:6px;border:2px solid #fff;background:#fff;color:#1a120c}
 #al-kred{position:absolute;bottom:8px;left:4vw;right:4vw;text-align:center;font-size:11px;opacity:.85;text-shadow:0 1px 2px #000}
+#al-versio{position:absolute;top:12px;left:12px;z-index:3;font:700 18px/1.2 sans-serif;letter-spacing:.02em;color:#1a120c;background:#ffe9a0;padding:7px 12px;border-radius:8px;border:2px solid #1a120c;box-shadow:0 2px 8px #0006}
 #al-ohjeet{position:absolute;inset:8vh 8vw;background:#0f2236ee;border:2px solid #fff;border-radius:8px;padding:18px 24px;overflow:auto;display:none;z-index:2}
 #al-ohjeet table{border-collapse:collapse;font-size:16px;margin:auto}#al-ohjeet td{padding:4px 14px;border-bottom:1px solid #fff3}#al-ohjeet td:first-child{font-weight:700;text-align:right;white-space:nowrap;color:#ffd9a0}
 #al-paiva,#al-saav{position:absolute;inset:8vh 6vw;background:#0f2236ee;border:2px solid #fff;border-radius:8px;padding:18px 24px;overflow:auto;display:none;z-index:2;text-align:left}
@@ -36,7 +37,8 @@ export function setupAloitus({onStart,onAanet}){const st=document.createElement(
 <div id="al-napit"><label id="al-nimi">Nimi lehdessä<input id="al-nimi-kentta" maxlength="24" placeholder="Metsäkaveri" autocomplete="nickname"></label><button id="al-aloita">Aloita jahti</button><button id="al-kutsu">Kutsu kaveri</button><button id="al-paivakirja">Saalispäiväkirja</button><button id="al-saavutukset">Saavutukset</button><button id="al-ohje">Ohjeet</button><button id="al-aani"></button></div>
 <div id="al-paiva"></div><div id="al-saav"></div>
 <div id="al-ohjeet"><h2 style="text-align:center;margin-top:0">Ohjeet</h2><table>${OHJEET.map(([k,t])=>`<tr><td>${k}</td><td>${t}</td></tr>`).join('')}</table><p style="text-align:center"><button id="al-sulje" style="font:700 18px sans-serif;padding:8px 24px">Sulje</button></p></div>
-<div id="al-kred">${KREDIITIT}</div>`;document.body.appendChild(d);const $=s=>d.querySelector(s);
+<div id="al-kred">${KREDIITIT}</div><div id="al-versio"></div>`;document.body.appendChild(d);const $=s=>d.querySelector(s);
+  fetch('/versio').then(r=>r.ok?r.json():null).then(j=>{if(!j?.teksti)return;const el=$('#al-versio');if(el)el.textContent=j.teksti;const menu=document.getElementById('menu');if(menu&&!menu.querySelector('#menu-versio')){const m=document.createElement('div');m.id='menu-versio';m.textContent=j.teksti;m.style.cssText='position:absolute;top:12px;left:12px;font:700 18px/1.2 sans-serif;color:#1a120c;background:#ffe9a0;padding:7px 12px;border-radius:8px;border:2px solid #1a120c';menu.appendChild(m);}}).catch(()=>{});
   // kuvat: kokeile, uusi yritys kunnes löytyy
   const tryImg=(url,ok,n=0)=>{const i=new Image();i.onload=()=>ok(url);i.onerror=()=>{if(n<40&&d.isConnected&&d.style.display!=='none')setTimeout(()=>tryImg(url,ok,n+1),15000);};i.src=url+(n?'?t='+n:'');};
   tryImg(H+'aloitus_tausta.png',u=>{$('#al-bg').src=u;$('#al-bg').style.display='block';});
