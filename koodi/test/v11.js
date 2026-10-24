@@ -152,6 +152,8 @@ t('lehti: pöydän numero ja kuolinilmoitus',()=>{
   const html=lehtiHtml(b);assert.match(html,/Kollinmäen Sanomat/);assert.match(html,/ks-kuolin/);assert.match(html,/ks-risti/);assert.match(html,/ks-janis/);assert.match(html,/Kurikan kuski/);assert.match(html,/61/);
   assert.equal((html.match(/class="ks-mainos"/g)||[]).length,b.mainokset.length);
   const ph=lehtiHtml(poyta);assert.match(ph,/mökin pöydältä/);assert.match(ph,/sulkee lehden/);assert.ok(!/ks-kuolin|Metsäkaveri/.test(ph));
+  assert.match(html,/ks-tarra/);assert.match(html,/KOHU!|SHOKKI!|PALJASTUS!|ERIKOINEN|UUTINEN/);assert.match(html,/Mummo|Isäntä/);
+  assert.match(ph,/ks-selaus/);assert.ok((ph.match(/class="ks-sivu/g)||[]).length>=3);
   const xss=lehtiHtml(lehti(1,0,'<img>'));assert.match(xss,/&lt;img&gt;/);assert.ok(!/<img>/.test(xss));assert.equal(siistiNimi('  '),'Metsäkaveri');assert.equal(siistiNimi('x'.repeat(40)).length,24);
   const pt=poytaMaailma(CABIN);assert.ok(inBuilding(pt.x,pt.z),'pöytä mökissä');assert.ok(!nearSauna(pt.x,pt.z,saunaPiste()));
   assert.ok(nearPoyta(pt.x,pt.z,pt));assert.ok(!nearPoyta(pt.x+POYTA_SADE+0.2,pt.z,pt));

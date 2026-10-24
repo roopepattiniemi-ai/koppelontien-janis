@@ -263,6 +263,7 @@ function radioTick(dt){peilaaRadio();if(!RS.on||isGuest()||!AC)return;
   if(NET?.peer&&ME==='h'){radioHb-=dt;if(radioHb<=0){radioHb=2;NET.send(radioKuva(RS));}}}
 const keys={};addEventListener('keydown',e=>{keys[e.code]=true;
   if(e.target&&e.target.tagName==='INPUT')return;
+  if((lukuOn||lehtiOn)&&(e.code==='ArrowRight'||e.code==='ArrowLeft')){const el=$('lehti');if(el&&el._selaa)el._selaa(e.code==='ArrowRight'?1:-1);return;}
   if(lukuOn){if(e.code==='KeyE'||e.code==='Escape')suljeLuku();return;}
   if(e.code==='F8'){vaihdaEditori();return;}
   if(editorOn&&(e.code==='KeyQ'||e.code==='KeyE')){editorPyorita(e.code==='KeyE'?0.08:-0.08);return;}
@@ -486,41 +487,52 @@ function aloitaKohtaus(yh){if(loppuOn||lehtiOn||!yh?.pelaajat)return;saavuta({ty
     else{const pair=koirat[ki++];if(!pair)continue;const [o,rotu]=pair;o.visible=true;o.position.set(p.x,height(p.x,p.z),p.z);o.rotation.y=Math.PI-Math.atan2(etu.dx,-etu.dz);loppuKoirat.push({o,k:V8.DOG_K[rotu]||1});}}
   if(!mono)terrierObj.visible=false;if(avatar)avatar.visible=false;leash.visible=false;luoSavu();naytaYhteenveto(yh);soitaLopetus();}
 function paivitaLopetus(dt){loppuAng+=dt*0.15;const y=height(loppuLook.x,loppuLook.z);cam.position.set(loppuLook.x+Math.cos(loppuAng)*loppuR,y+2.55,loppuLook.z+Math.sin(loppuAng)*loppuR);cam.lookAt(loppuLook.x,y+0.9,loppuLook.z);window._sky.position.copy(cam.position);paivitaSavu(dt);const t=clock.elapsedTime;for(const d of loppuKoirat)V8.animDog(d.o.userData.n,{t,spd:0,jaw:0,sit:true,k:d.k});for(const h of loppuHahmot)h.userData.tick?.(dt,{spd:0});renderer.autoClear=true;renderer.render(scene,cam);}
-const LEHTI_CSS=`#lehti{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(20,16,12,.45);font-family:Georgia,serif;color:#1a120c}
-.ks{width:min(980px,96vw);max-height:94vh;overflow:auto;background:#f3e6c8;padding:16px 18px 14px;box-shadow:0 12px 40px #0008;border:1px solid #c4b48a;background-image:linear-gradient(180deg,#f7edd4,#f3e6c8 40%,#efe0c0)}
-.ks-head{border-top:4px solid #1a120c;border-bottom:3px double #1a120c;margin-bottom:10px;text-align:center;padding:6px 0 4px}
-.ks-mast{display:flex;justify-content:space-between;font:12px/1.2 Georgia,serif;letter-spacing:.04em;text-transform:uppercase}
-.ks-nimi{font:700 46px/1 Georgia,serif;letter-spacing:.02em;margin:2px 0}
-.ks-ala{font:italic 13px Georgia,serif;color:#5c4030;margin-top:2px}
-.ks-runko{display:flex;gap:14px;align-items:flex-start}
-.ks-palstat{flex:1;min-width:0;column-count:2;column-gap:16px}
-.ks h1{font:700 28px/1.12 Georgia,serif;margin:8px 0 6px;column-span:all}
-.ks-ing{font-size:16px;margin:0 0 8px;column-span:all}
-.ks-kuva-juttu{margin:0 0 8px;border:1px solid #1a120c;background:#efe6d4;column-span:all}
-.ks-kuva-juttu img{display:block;width:100%;height:auto}
-.ks-kuva-juttu figcaption{font:italic 13px/1.3 Georgia,serif;padding:4px 8px 6px;border-top:1px solid #1a120c}
-.ks-mainokset{width:230px;flex:0 0 230px;display:flex;flex-direction:column;gap:8px}
-.ks-mainos{border:3px double #1a120c;padding:6px;background:#fffaf0;display:flex;gap:6px;align-items:center}
-.ks-mainos b{font-size:10px;letter-spacing:.14em;align-self:flex-start}
-.ks-mainos span{font-size:13px;line-height:1.25}
-.ks-mainoskuva{width:72px;height:auto;flex:0 0 auto;border:1px solid #1a120c}
-.ks-pikk{border-top:2px solid #1a120c;margin-top:8px;padding-top:4px;column-span:all}
-.ks-pikk h2{font:700 16px Georgia,serif;margin:0 0 4px}
-.ks-pikk ul{margin:0;padding-left:18px;font-size:14px}
-.ks-pikk li{margin:2px 0}
-.ks-kuolin{border:4px solid #111;margin:8px 0;padding:6px 10px 8px;text-align:center;background:#f7f4ee;column-span:all}
-.ks-risti{font:700 28px/1 Georgia,serif}
-.ks-kuolin h2{margin:2px 0;font:700 22px Georgia,serif}
-.ks-kuolin p{font-style:italic;margin:0}
-.ks-sulje{text-align:center;font-size:13px;color:#5c4030;margin:8px 0 0}
-@media(max-width:720px){.ks-runko,.ks-palstat{display:block}.ks-mainokset{width:auto}}`;
+const LEHTI_CSS=`#lehti{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(20,0,0,.55);font-family:Georgia,serif;color:#161616}
+.ks{width:min(640px,96vw);max-height:94vh;overflow:auto;background:#fff;padding:0 0 14px;box-shadow:0 16px 48px #000a}
+.ks-head{background:#d0121a;color:#fff;text-align:center;padding:10px 14px 8px;border-bottom:8px solid #ffe14a}
+.ks-nimi{font:900 clamp(34px,8vw,64px)/.9 Impact,"Arial Black",sans-serif;letter-spacing:-.03em;text-transform:uppercase;text-shadow:3px 3px 0 #7a0a10}
+.ks-mast{display:flex;justify-content:space-between;gap:8px;font:700 clamp(13px,2.4vw,16px)/1.2 Arial,sans-serif;color:#ffe14a;text-transform:uppercase;margin-top:4px}
+.ks-ala{font:italic clamp(14px,2.4vw,16px)/1.3 Georgia,serif;color:#ffe9a8;margin-top:2px}
+.ks-sivu{display:none;padding:14px 16px 6px}
+.ks-sivu.ks-nayta{display:block}
+.ks-tarra{display:inline-block;font:900 clamp(18px,3vw,26px)/1 Impact,"Arial Black",sans-serif;padding:6px 10px;margin:0 0 8px;transform:rotate(-6deg);border:3px solid #111}
+.ks-tarra.pun{background:#d0121a;color:#fff}
+.ks-tarra.kelt{background:#ffe14a;color:#111}
+.ks h1,.ks-kohu{font:900 clamp(36px,7.4vw,68px)/.92 Impact,"Arial Black",sans-serif;text-transform:uppercase;letter-spacing:-.03em;margin:4px 0 10px}
+.ks-ing{font:700 clamp(20px,3.4vw,28px)/1.35 Georgia,serif;margin:0 0 12px}
+.ks-lainaus{margin:8px 0 0;padding:8px 0 0;border-top:4px solid #d0121a}
+.ks-lainaus p{font:800 clamp(26px,4.6vw,40px)/1.05 Georgia,serif;margin:0}
+.ks-lainaus cite{display:block;margin-top:6px;font:900 18px/1.2 Arial,sans-serif;font-style:normal;color:#d0121a;text-transform:uppercase}
+.ks-kuva-juttu{margin:8px auto 12px;text-align:center}
+.ks-pyorea{width:min(420px,78vw);height:min(420px,78vw);object-fit:cover;border-radius:50%;border:8px solid #ffe14a;box-shadow:0 0 0 6px #d0121a;background:#eee}
+.ks-kuva-juttu figcaption{font:700 clamp(16px,2.8vw,20px)/1.3 Georgia,serif;margin-top:8px}
+.ks-mainokset{display:flex;flex-direction:column;gap:12px}
+.ks-mainos{border:4px solid #d0121a;background:#fff6c8;padding:10px;display:flex;gap:10px;align-items:center}
+.ks-mainos b{font:900 13px/1 Arial,sans-serif;letter-spacing:.12em;color:#d0121a;align-self:flex-start}
+.ks-mainos span{font:700 clamp(18px,2.8vw,22px)/1.3 Georgia,serif}
+.ks-mainoskuva{width:84px;height:auto;flex:0 0 auto;border-radius:50%;border:3px solid #d0121a}
+.ks-kuva{flex:0 0 auto;border:2px solid #111;background:#fff}
+.ks-piste{font:800 clamp(18px,3vw,24px)/1.3 Georgia,serif;background:#ffe14a;padding:10px;margin:12px 0 0}
+.ks-kuolin{border:6px solid #111;margin:14px 0 0;padding:8px 12px 12px;text-align:center;background:#fff}
+.ks-risti{font:900 36px/1 Georgia,serif}
+.ks-kuolin h2{margin:2px 0;font:900 clamp(28px,5vw,40px)/1.05 Impact,"Arial Black",sans-serif;text-transform:uppercase}
+.ks-kuolin p{font:italic clamp(18px,3vw,22px)/1.3 Georgia,serif;margin:0}
+.ks-selaus{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 14px 0}
+.ks-selaus button{font:900 18px/1 Impact,"Arial Black",sans-serif;min-height:48px;padding:12px 14px;border:3px solid #111;cursor:pointer}
+.ks-ed{background:#ffe14a;color:#111}
+.ks-seur{background:#d0121a;color:#fff}
+.ks-sivu-nro{font:900 16px/1 Arial,sans-serif}
+.ks-sulje{text-align:center;font:700 16px/1.3 Arial,sans-serif;color:#5c4030;margin:8px 14px 0}`;
 let lehtiT=0,lehtiKaatui='v';
 function muistaElain(kind,e){if(!e||e.alive||e._muistettu||!PISTE[kind])return;e._muistettu=true;try{const ampuja=e.owner==='v'||e.owner==='h'?e.owner:(e.killedBy==='koira'?'koira':'h');const rec=kirjaaKaato(localStorage,{laji:kind,paiva:tanaan(),matka:e.matka==null?null:e.matka,osumat:e.osumaLkm||e.hitCount||(e.marks?.length||0),pisteet:PISTE[kind],ampuja,koira:(e.killedBy==='koira'||e.delivered)?KOIRA_NIMI:null,jahti:JAHTI});if(rec){e._rec=rec;e._jahtiIdx=lataaKaadot(localStorage).filter(k=>k.jahti===JAHTI).length-1;}}catch{}}
 function muistiKierros(){for(const h of hares)if(!h.alive)muistaElain('janis',h);for(const b of WL.birds)if(b.kind==='teeri'&&!b.alive)muistaElain('teeri',b);for(const c of WL.critters)if(c.kind==='peura'&&!c.alive)muistaElain('peura',c);
   for(const e of[...hares,...WL.birds.filter(b=>b.kind==='teeri'),...WL.critters.filter(c=>c.kind==='peura')])if(e._rec&&!e._rec.koira&&(e.delivered||e.killedBy==='koira')){e._rec.koira=KOIRA_NIMI;try{paivitaKoira(localStorage,JAHTI,e._jahtiIdx,KOIRA_NIMI);}catch{}}}
 function kaadaKylalainen(id){const k=kylalaiset.find(x=>x.id===id);if(!k||k.kaatunut)return;k.kaatunut=true;k.obj.userData.kaatunut=true;k.obj.userData.puhuu=0;k.obj.position.set(k.x,height(k.x,k.z),k.z);k.obj.rotation.y=k.yaw;k.obj.rotation.z=1.15;}
 function kaynnistaLehti(kaatui,extra){if(lehtiOn||loppuOn)return;const y=rakennaYhteenveto();let p=0;for(const id in y.pelaajat)p+=y.pelaajat[id].pisteet||0;const seed=(Math.random()*2**32)>>>0;const k=kaatui==='h'?'h':kaatui==='k'?'k':'v';const nimi=extra?.nimi?siistiNimi(extra.nimi):(k==='h'?omaNimi():siistiNimi(NET?.last?.nimi));if(NET?.peer&&ME==='h'){const msg={t:'lehti',seed,pisteet:p,kaatui:k,nimi};if(extra?.otsikko){msg.otsikko=extra.otsikko;msg.ingressi=extra.ingressi||'';}if(extra?.kyla!=null)msg.kyla=extra.kyla|0;NET.send(msg);}aloitaLehti(seed,p,k,nimi,extra||null);}
-function naytaLehti(l){if(!document.getElementById('lehti-css')){const st=document.createElement('style');st.id='lehti-css';st.textContent=LEHTI_CSS;document.head.appendChild(st);}let el=$('lehti');if(!el){el=document.createElement('div');el.id='lehti';document.body.appendChild(el);}el.style.display='flex';el.innerHTML=lehtiHtml(l);el.querySelectorAll('canvas.ks-kuva').forEach(c=>piirraMainos(c,c.dataset.id));el.querySelectorAll('canvas.ks-janis').forEach(c=>piirraJanis(c));el.style.opacity='0';}
+function kytkeLehdenSelaus(el){const sivut=[...el.querySelectorAll('.ks-sivu')];let i=Math.max(0,sivut.findIndex(s=>s.classList.contains('ks-nayta')));
+  const nayta=d=>{if(!sivut.length)return;i=(i+d+sivut.length)%sivut.length;sivut.forEach((s,k)=>s.classList.toggle('ks-nayta',k===i));const nro=el.querySelector('.ks-sivu-nro');if(nro)nro.textContent=(i+1)+' / '+sivut.length;};
+  el._selaa=nayta;el.querySelector('.ks-ed')?.addEventListener('click',e=>{e.stopPropagation();nayta(-1);});el.querySelector('.ks-seur')?.addEventListener('click',e=>{e.stopPropagation();nayta(1);});}
+function naytaLehti(l){if(!document.getElementById('lehti-css')){const st=document.createElement('style');st.id='lehti-css';st.textContent=LEHTI_CSS;document.head.appendChild(st);}let el=$('lehti');if(!el){el=document.createElement('div');el.id='lehti';document.body.appendChild(el);}el.style.display='flex';el.innerHTML=lehtiHtml(l);el.querySelectorAll('canvas.ks-kuva').forEach(c=>piirraMainos(c,c.dataset.id));el.querySelectorAll('canvas.ks-janis').forEach(c=>piirraJanis(c));kytkeLehdenSelaus(el);el.style.opacity='0';}
 async function soitaUrut(){if(!AC||!AL.aanetPaalla())return;const b=await rbuf('musiikki_urut');if(!b||!lehtiOn)return;const s=AC.createBufferSource();s.buffer=b;s.loop=true;const g=AC.createGain();g.gain.value=0.55;s.connect(g).connect(AC.destination);s.start();}
 function piilotaPuhe(){puheT=0;const el=$('puhe');if(el)el.style.display='none';}
 function aloitaLehti(seed,pisteet,kaatui,nimi,extra){if(lehtiOn||loppuOn)return;lukuOn=false;lehtiOn=true;lehtiT=0;lehtiKaatui=kaatui==='h'?'h':kaatui==='k'?'k':'v';if(extra?.kyla!=null)kaadaKylalainen(extra.kyla|0);piilotaPuhe();if(document.pointerLockElement)document.exitPointerLock();$('menu').style.display='none';$('hud').style.display='none';const al=$('aloitus');if(al)al.style.display='none';hiljenna();naytaLehti(rakennaLehti(seed>>>0,pisteet|0,nimi,extra?.otsikko?{otsikko:extra.otsikko,ingressi:extra.ingressi}:null));soitaUrut();}
