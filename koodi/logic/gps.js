@@ -27,6 +27,8 @@ const KORIT = {
   katko: { teksti: 'Katko', aanet: ['sfx_gps_hukka'] },
   seisoo: { teksti: 'Koira seisoo', aanet: ['sfx_gps_haukkuindikaattori'] },
   paluu: { teksti: 'Koira palaa', aanet: ['sfx_gps_piippaus'] },
+  veri: { teksti: 'Koira verijäljellä', aanet: ['sfx_gps_piippaus'] },
+  haavakko: { teksti: 'Koira löysi haavakon', aanet: ['sfx_gps_piippaus', 'sfx_gps_haukkuindikaattori'] },
 };
 
 export function gpsKori(state) {
@@ -36,6 +38,8 @@ export function gpsKori(state) {
   if (state === 'hukka') return 'katko';
   if (state === 'ylösotto' || state === 'tänne') return 'seisoo';
   if (state === 'paluu') return 'paluu';
+  if (state === 'verijäljellä') return 'veri';
+  if (state === 'haavakko') return 'haavakko';
   return null;
 }
 

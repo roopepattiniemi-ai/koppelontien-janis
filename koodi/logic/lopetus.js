@@ -37,8 +37,10 @@ export function yhteenveto({ elaimet = [], laukaukset = {}, noudot = 0, moninpel
   const pelaajat = {};
   for (const id of (moninpeli ? ['h', 'v'] : ['h'])) pelaajat[id] = tyhja();
   const rivi = [];
+  let kadonnut = 0;
   for (const e of elaimet) {
-    if (!e || e.alive || !PISTE[e.kind]) continue;
+    if (e && (e.haava || e.haavaKuollut) && !e.loytyi && (e.alive || e.haavaKuollut)) kadonnut++;
+    if (!e || e.alive || e.haavaKuollut || !PISTE[e.kind]) continue;
     let owner = e.owner === 'v' ? 'v' : 'h';
     if (!moninpeli) owner = 'h';
     const p = pelaajat[owner] || (pelaajat[owner] = tyhja());
@@ -51,7 +53,7 @@ export function yhteenveto({ elaimet = [], laukaukset = {}, noudot = 0, moninpel
     pelaajat[id].laukaukset = s.laukaukset | 0;
     pelaajat[id].osumat = s.osumat | 0;
   }
-  return { pelaajat, noudot: noudot | 0, rivi, moninpeli: !!moninpeli };
+  return { pelaajat, noudot: noudot | 0, rivi, moninpeli: !!moninpeli, kadonnut };
 }
 
 const LEV = { janis: 0.8, teeri: 0.65, peura: 1.55, kauris: 1.05, kettu: 0.9 };
@@ -95,5 +97,6 @@ export function yhteenvetoTeksti(y) {
     lines.push('');
   }
   lines.push(`Koiran noudot: ${y.noudot}`);
+  if (y.kadonnut > 0) lines.push('Löytämättä jäi haavakko');
   return lines.join('\n');
 }

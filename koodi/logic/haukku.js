@@ -8,6 +8,7 @@ export function haukkuTila(state, dist, alive) {
   if (state === 'hukka') return 'epavarma';
   if (state === 'yöjälki' || state === 'ylösotto') return dist > HILJAA_M ? null : 'vingahdus';
   if (state === 'ajo' && alive) return 'nako';
+  if (state === 'verijäljellä') return null;
   return null;
 }
 
@@ -17,6 +18,7 @@ export function haukkuVali(tila, dist = 0) {
   if (tila === 'vingahdus') return 0.55 + Math.min(Math.max(dist, 0), 90) / 22;
   if (tila === 'jalki') return 1.7 + Math.min(Math.max(dist, 0), 220) / 90;
   if (tila === 'epavarma') return 5.2;
+  if (tila === 'seisonta') return 2.4;
   return 30;
 }
 
@@ -26,6 +28,7 @@ export function haukkuSavel(rotu) { return rotu === 'terrieri' ? 1.5 : 1; }
 export function haukkuAani(tila, rotu, n = 0) {
   if (!tila) return null;
   if (tila === 'epavarma' || tila === 'vingahdus') return 'sfx_koira_vinkuu';
+  if (tila === 'seisonta') return rotu === 'terrieri' ? 'sfx_koira_haukku_1' : 'sfx_koira_ylosotto';
   if (rotu === 'terrieri') return 'sfx_koira_haukku_' + (1 + (Math.abs(n | 0) % 3));
   if (tila === 'nako') return 'sfx_koira_ajo_tiivis';
   return (n & 1) ? 'sfx_koira_ajo_harva' : 'sfx_koira_haukku_' + (4 + (Math.abs(n | 0) % 3));
