@@ -1,6 +1,6 @@
-// Saalissäännöt: haulikolla jänis, teeri ja harvinainen kettu, kiväärillä valkohäntäpeura. Muut rauhoitettuja.
-export const LAJIT={janis:'jänis',peura:'valkohäntäpeura',kettu:'kettu',orava:'orava',teeri:'teeri',korppi:'korppi',tiainen:'tiainen'};
-const LAILLINEN={janis:'haulikko',teeri:'haulikko',peura:'kivaari',kettu:'haulikko'};
+// Saalissäännöt: haulikolla jänis, teeri ja harvinainen kettu, kiväärillä valkohäntäpeura ja metsäkauris. Muut rauhoitettuja.
+export const LAJIT={janis:'jänis',peura:'valkohäntäpeura',kauris:'metsäkauris',kettu:'kettu',orava:'orava',teeri:'teeri',korppi:'korppi',tiainen:'tiainen'};
+const LAILLINEN={janis:'haulikko',teeri:'haulikko',peura:'kivaari',kauris:'kivaari',kettu:'haulikko'};
 const RAUHOITETTU=new Set(['orava','korppi','tiainen']);
 // palauttaa {saalis:bool, huomautus:string|null}
 export function judgeShot(laji,ase){

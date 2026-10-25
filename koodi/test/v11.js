@@ -59,13 +59,13 @@ t('render: web-palvelu, ws-riippuvuus, sama portti',()=>{const y=fs.readFileSync
   assert.ok(JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url))).dependencies.ws);assert.match(fs.readFileSync(new URL('../server.js',import.meta.url),'utf8'),/WebSocketServer\(\{server,path:'\/ws'/);});
 import { Critter } from '../logic/wild.js';import { BUILDINGS, SIZE } from '../logic/world.js';import { BOUND } from '../logic/bounds.js';import { judgeShot } from '../logic/rules.js';
 t('kentän raja: pitkä simulaatio, kukaan (jänis, koira, riista) ei poistu',()=>{const r=mulberry32(7),hs=spreadHares(10,r).map((p,k)=>new Hare({...p,seed:k+1}));const L=BOUND;
-  const cr=[];for(const [k,c] of [['peura',6],['kettu',2],['orava',8]])for(let i=0;i<c;i++)cr.push(new Critter(k,{x:(r()-.5)*2*L*0.95,z:(r()-.5)*2*L*0.95,seed:i+3}));
+  const cr=[];for(const [k,c] of [['peura',6],['kauris',3],['kettu',2],['orava',8]])for(let i=0;i<c;i++)cr.push(new Critter(k,{x:(r()-.5)*2*L*0.95,z:(r()-.5)*2*L*0.95,seed:i+3}));
   const dog=new Dog({x:0,z:0,seed:2});dog.command('irti',{x:0,z:0});const out=new Set(),o=(e,id)=>{if(Math.abs(e.x)>L||Math.abs(e.z)>L)out.add(id);};
   for(let i=0;i<36000;i++){const ch={x:Math.cos(i/900)*L*.97,z:Math.sin(i/700)*L*.97};dog.update(.05,{hares:hs,player:ch});hs.forEach((h,k)=>{h.update(.05,{dog:dog.pos,player:ch});o(h,'j'+k);});
     cr.forEach((c,k)=>{c.update(.05,{threats:[ch,dog.pos]});o(c,c.kind+k);});o(dog,'koira');}assert.equal(out.size,0,[...out].join(' '));});
 t('kentän raja: kaikki rakennukset maaston sisällä',()=>{for(const b of BUILDINGS)for(const [x,z] of b){assert.ok(Math.abs(x)<SIZE/2-15&&Math.abs(z)<SIZE/2-15,JSON.stringify(b));}});
 t('teeri: haulikolla saalis, korppi rauhoitettu, pyrähdys koira 15 m / ihminen 25 m',()=>{assert.equal(judgeShot('teeri','haulikko').huomautus,null);assert.equal(judgeShot('korppi','haulikko').saalis,false);
-  const v=fs.readFileSync(new URL('../public/v09.js',import.meta.url),'utf8');assert.match(v,/FLUSH=\{koira:15,ihminen:25\}/);assert.match(fs.readFileSync(new URL('../public/aloitus.js',import.meta.url),'utf8'),/teeri/i);
+  const v=fs.readFileSync(new URL('../public/v09.js',import.meta.url),'utf8');assert.match(v,/FLUSH=\{koira:15,ihminen:25\}/);const ohje=fs.readFileSync(new URL('../public/aloitus.js',import.meta.url),'utf8');assert.match(ohje,/teeri/i);assert.match(ohje,/metsäkauris kiväärillä/);
   assert.match(fs.readFileSync(new URL('../public/v08.js',import.meta.url),'utf8'),/E – ulos autosta/);});
 t('osumat: jakauma lentoradan mukaan – sivulta kylki, takaa takaosa',()=>{const {C,R}=HARE_BODY;
   const run=(from,heading)=>{const pos={x:0,y:0,z:0},tg={x:0,y:0.2,z:0},o={x:tg.x+from.x,y:1.6,z:tg.z+from.z},L=Math.hypot(tg.x-o.x,tg.y-o.y,tg.z-o.z),d={x:(tg.x-o.x)/L,y:(tg.y-o.y)/L,z:(tg.z-o.z)/L};
@@ -84,7 +84,9 @@ t('lopetus: saunan luona, saalisrivi ja yhteenveto',()=>{const p=saunaPiste(),e=
   const elaimet=[{kind:'janis',alive:false,owner:'h'},{kind:'teeri',alive:false,owner:'v'},{kind:'peura',alive:false},{kind:'janis',alive:true,owner:'h'},{kind:'kettu',alive:false,owner:'h'}];
   const lauk={h:{laukaukset:4,osumat:2},v:{laukaukset:1,osumat:1}};
   const y=yhteenveto({elaimet,laukaukset:lauk,noudot:3,moninpeli:true});
-  assert.equal(y.pelaajat.h.janis,1);assert.equal(y.pelaajat.h.peura,1);assert.equal(y.pelaajat.h.kettu,1);assert.equal(y.pelaajat.h.pisteet,PISTE.janis+PISTE.peura+PISTE.kettu);
+  assert.equal(y.pelaajat.h.janis,1);assert.equal(y.pelaajat.h.peura,1);assert.equal(y.pelaajat.h.kettu,1);assert.equal(y.pelaajat.h.kauris,0);assert.equal(y.pelaajat.h.pisteet,PISTE.janis+PISTE.peura+PISTE.kettu);
+  const yk=yhteenveto({elaimet:[{kind:'kauris',alive:false,owner:'h'}],laukaukset:lauk,noudot:0,moninpeli:false});
+  assert.equal(yk.pelaajat.h.kauris,1);assert.equal(yk.pelaajat.h.pisteet,18);assert.match(yhteenvetoTeksti(yk),/metsäkauris/);
   assert.equal(y.pelaajat.v.teeri,1);assert.equal(y.pelaajat.v.pisteet,PISTE.teeri);assert.equal(y.rivi.length,4);assert.equal(y.noudot,3);
   assert.equal(y.pelaajat.h.laukaukset,4);assert.equal(y.pelaajat.v.osumat,1);
   const solo=yhteenveto({elaimet,laukaukset:lauk,noudot:1,moninpeli:false});
@@ -96,7 +98,7 @@ t('lopetus: saunan luona, saalisrivi ja yhteenveto',()=>{const p=saunaPiste(),e=
   const t0=performance.now();for(let i=0;i<4000;i++)yhteenveto({elaimet,laukaukset:lauk,noudot:3,moninpeli:true});assert.ok(performance.now()-t0<80);
   const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
   const html=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
-  assert.match(src,/E – lopeta jahti saunalle/);assert.match(src,/janis:'E – ota jänis'/);assert.match(html,/id="lopeta"/);
+  assert.match(src,/E – lopeta jahti saunalle/);assert.match(src,/janis:'E – ota jänis'/);assert.match(src,/kauris:'E – tarkastele metsäkaurista'/);assert.match(src,/t\.kind==='peura'\|\|t\.kind==='kauris'/);assert.match(src,/kauris:0\.62/);assert.match(html,/id="lopeta"/);
   assert.match(html,/JATKA JAHTIA/);assert.match(html,/Haluatko varmasti lopettaa jahdin\?/);assert.match(html,/id="jatka"/);assert.match(html,/id="lopeta-varmistus"/);
   assert.match(src,/lopeta-varmistus/);assert.match(src,/lopeta-kylla/);assert.match(src,/e\.code==='Enter'/);
   assert.ok(!/\$\('lopeta'\)\?\.addEventListener\('click',e=>\{e\.stopPropagation\(\);pyydaLopetus\(\);\}/.test(src));
@@ -117,9 +119,11 @@ t('päiväkirja: kaato, noutaja ja ennätykset',()=>{const s=mem();
   lisaa(s,{laji:'teeri',paiva:'2026-10-23',matka:18,osumat:5,pisteet:8,ampuja:'v',koira:'terrieri',jahti:'a'});
   lisaa(s,{laji:'peura',paiva:'2026-10-22',matka:40,osumat:1,pisteet:25,ampuja:'koira',koira:'ajokoira',jahti:'b'});
   const e=ennatykset(lataa(s));assert.equal(e.pisin.matka,120);assert.equal(e.paras.pisteet,25);assert.equal(e.eniten.maara,2);
+  const kr=lisaa(s,{laji:'kauris',paiva:'2026-10-24',matka:30,osumat:1,pisteet:18,ampuja:'h',jahti:'d'});
+  assert.equal(kr.laji,'kauris');assert.equal(ennatykset(lataa(s)).paras.pisteet,25);assert.equal(ennatykset(lataa(s)).eniten.maara,2);
   assert.ok(paivitaKoira(s,'a',0,'ajokoira'));assert.equal(lataa(s).find(k=>k.laji==='janis').koira,'ajokoira');
   assert.ok(!paivitaKoira(s,'a',0,'terrieri'));
-  const html=paivakirjaHtml(lataa(s));assert.match(html,/Saalispäiväkirja/);assert.match(html,/Ennätykset/);assert.match(html,/120/);
+  const html=paivakirjaHtml(lataa(s));assert.match(html,/Saalispäiväkirja/);assert.match(html,/Ennätykset/);assert.match(html,/120/);assert.match(html,/metsäkauris/);
   assert.match(jahdinTeksti(lataa(s),'a'),/Tämän jahdin kaadot/);assert.match(jahdinTeksti(lataa(s),'a'),/nouti ajokoira/);
   assert.match(jahdinTeksti([],'x'),/ei kaatoja/);});
 t('haukku: jälki harva, näköajo tiheä, hukka epävarma, terrieri kimeämpi',()=>{

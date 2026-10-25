@@ -270,9 +270,9 @@ const FREQ={parkano:'98.4',country:'103.7',tekno:'91.1'};
 // TRACK_R metrin sisällä, max MAXJ/laji; uudelleenrakennus 0.5 s välein tai kun pelaaja siirtyy >10 m.
 const MAXJ=1500,TRACK_R=160,MAXDATA=20000; const jg=new THREE.PlaneGeometry(0.3,0.3).rotateX(-Math.PI/2);
 const blot=(col,n,r)=>canvasTex(32,32,g=>{g.fillStyle=col;for(let k=0;k<n;k++){const a=k*2.4,d=k?r*Math.sqrt(k/n)*10:0;g.beginPath();g.arc(16+Math.cos(a)*d,16+Math.sin(a)*d,k?2+((k*7)%3):6,0,7);g.fill();}});
-const TEXS={janis:jalkiT.janis,koira:jalkiT.koira,kettu:V9.trackCanvas('kettu'),peura:V9.trackCanvas('peura'),veri:canvasTex(32,32,g=>{// v1.1c pisaramaiset roiskeet
+const TEXS={janis:jalkiT.janis,koira:jalkiT.koira,kettu:V9.trackCanvas('kettu'),peura:V9.trackCanvas('peura'),kauris:V9.trackCanvas('kauris'),veri:canvasTex(32,32,g=>{// v1.1c pisaramaiset roiskeet
   g.fillStyle='#6e0a0a';const D=[[16,16,3.2,0],[8,10,1.6,0.6],[24,9,1.3,-0.5],[25,22,1.8,0.9],[9,24,1.2,2.4],[18,5,1,0],[4,17,0.9,0],[28,15,0.8,0]];for(const[x,y,r,a]of D){g.beginPath();g.ellipse(x,y,r,r*1.6,a,0,7);g.fill();}}),polly:blot('rgba(150,160,175,0.7)',6,1)};
-const SIZES={veri:0.17,polly:0.22,janis:1.6};
+const SIZES={veri:0.17,polly:0.22,janis:1.6,kauris:0.62};
 const jm={},jd={},jn={};for(const k in TEXS){jm[k]=new THREE.InstancedMesh(jg,new THREE.MeshBasicMaterial({map:TEXS[k],transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}),MAXJ);jm[k].count=0;jm[k].frustumCulled=false;scene.add(jm[k]);jd[k]=[];jn[k]=0;}
 const M4=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),_tp=new THREE.Vector3(),_ts=new THREE.Vector3();
 let trackDirty=true,trackAt={x:1e9,z:1e9},trackT=0;
@@ -333,7 +333,7 @@ function puuEdessa(x,z){const gx=Math.floor(x/PUUSOLU),gz=Math.floor(z/PUUSOLU);
 const WL=V9.setupWildlife(scene,{rand:mulberry32(WSEED+1),height,isForest,trees:TREES,play3d:(n,o)=>play3d(n,o),aiInterval});
 const kylalaiset=sijoitaKylalaiset(BUILDINGS,WSEED,YARD,(x,z)=>inBounds(x,z,2)&&!inBuilding(x,z)&&distToRoad(x,z)>1.2&&Math.hypot(x-YARD.x,z-YARD.z)>YARD.r+6).map(k=>{const obj=makeKylalainen(k.laji);obj.userData.asetaKoti(k.x,k.z,k.yaw);obj.position.y=height(k.x,k.z);scene.add(obj);const reitti=teePihaReitti(k,BUILDINGS[k.talo],{tie:distToRoad,metsa:isForest});return {...k,obj,i:-1,kaatunut:false,reitti,vaihe:k.id*11.3};});
 V9.setupGrass(scene,{height,ok:(x,z)=>distToRoad(x,z)>4&&Math.hypot(x-YARD.x,z-YARD.z)>YARD.r+3&&!inField(x,z)});
-const ALLSND=['sfx_kivaari_laukaus','sfx_kivaari_lataus','sfx_teeri_pyrahdus_1','sfx_teeri_pyrahdus_2','amb_teeri_kuherrus_1','sfx_peura_pakenee_1','sfx_kettu_haukahdus_1','sfx_kettu_haukahdus_2','amb_tiainen_1','amb_tiainen_2','amb_korppi_lento_1'];
+const ALLSND=['sfx_kivaari_laukaus','sfx_kivaari_lataus','sfx_teeri_pyrahdus_1','sfx_teeri_pyrahdus_2','amb_teeri_kuherrus_1','sfx_peura_pakenee_1','sfx_kauris_haukku_1','sfx_kettu_haukahdus_1','sfx_kettu_haukahdus_2','amb_tiainen_1','amb_tiainen_2','amb_korppi_lento_1'];
 // ---------- autoradio: isäntä arpoo, vieras kelautuu samaan kohtaan ----------
 const CH=[{n:'Parkano Rock',k:'parkano'},{n:'Jalasjärven Country',k:'country'},{n:'Koppelontien Tekno',k:'tekno'}];
 const RS=uusiRadio(WSEED^0x51ed);
@@ -452,19 +452,19 @@ function fire(arg){const local=!arg;if(local){const d=new THREE.Vector3();cam.ge
   if(hareLaji){const res=rifle?'kaatui':judgeHits(n);tgt.hitCount=(tgt.hitCount||0)+n;
     if(res==='haavoittui'){t.h.wound(woundDmg(n),o);t.h.woundedBy=t.h.woundedBy??by;t.h.owner=t.h.owner??by;if(local)say('Haavakko – '+n+' haulia osui, '+(t.kind==='kettu'?'kettu':'jänis')+' jatkoi');window.__lastShot={kind:t.kind,haavakko:true,n};return{haavakko:true,n};}
     t.h.owner=t.h.owner??by;}
-  else if(!rifle&&t.kind==='peura'||(!rifle&&t.kind==='kettu'&&n<3)){if(local)say('Haavakko');return{haavakko:true,n};}
+  else if(!rifle&&(t.kind==='peura'||t.kind==='kauris')||(!rifle&&t.kind==='kettu'&&n<3)){if(local)say('Haavakko');return{haavakko:true,n};}
   const lento=t.kind==='teeri'&&!!(t.b?.fly||t.b?.F?.state==='lentaa');
   t.shoot();tgt.owner=tgt.owner??by;tgt.matka=best.dist;tgt.osumaLkm=(tgt.osumaLkm||0)+(tgt.hitCount||n);const j=judgeShot(t.kind,rifle?'kivaari':'haulikko');if(by===ME){if(j.huomautus&&/rauhoitettu/.test(j.huomautus))saavuta({tyyppi:'rauhoitettu'});else if(PISTE[t.kind]){if(!tgt._saavKaato){tgt._saavKaato=true;saavuta({tyyppi:'kaato',laji:t.kind,matka:tgt.matka,osumat:tgt.osumaLkm||n,jahti:JAHTI});}if(lento)saavuta({tyyppi:'lento'});if(t.kind==='janis'&&(tgt.wounded||tgt.damage>0)&&!tgt._saavVeri){tgt._saavVeri=true;saavuta({tyyppi:'veri'});}}}muistaElain(t.kind,tgt);
   // jänis ja peura kirjataan tarkastelun jälkeen; muut heti
   if(j.saalis&&!INSPECT_KINDS.includes(t.kind)&&by===ME)addBag(t.kind);
   if(local)say((j.huomautus?j.huomautus+' · ':'')+(LAJIT[t.kind]||t.kind)+' kaatui'+(rifle?'':' ('+n+' haulia)'));window.__lastShot={kind:t.kind,n,...j};return j;}
 // saalis lajeittain (pl.bagBy), pl.bag = yhteensä
-const INSPECT_KINDS=['janis','peura','teeri','kettu'];pl.bagBy={};function addBag(k){pl.bag++;pl.bagBy[k]=(pl.bagBy[k]||0)+1;}
+const INSPECT_KINDS=['janis','peura','kauris','teeri','kettu'];pl.bagBy={};function addBag(k){pl.bag++;pl.bagBy[k]=(pl.bagBy[k]||0)+1;}
 // ---- E-kohde: lähin voittaa (auto / kaatunut jänis / peura) ----
-const E_R={auto:3,janis:2.2,peura:3,teeri:2.2,kettu:2.2};
+const E_R={auto:3,janis:2.2,peura:3,kauris:3,teeri:2.2,kettu:2.2};
 function deadTargets(){const out=[];for(const h of hares)if(!h.alive&&!h.carried&&!h.held&&!h.counted)out.push({kind:h.laji==='kettu'?'kettu':'janis',o:h,x:h.x,z:h.z});
   for(const b of WL.birds)if(b.kind==='teeri'&&!b.alive&&!b.carried&&!b.held&&!b.counted)out.push({kind:'teeri',o:b,x:b.x,z:b.z});
-  for(const c of WL.critters)if(c.kind==='peura'&&!c.alive&&!c.held&&!c.counted)out.push({kind:'peura',o:c,x:c.x,z:c.z});return out;}
+  for(const c of WL.critters)if((c.kind==='peura'||c.kind==='kauris')&&!c.alive&&!c.held&&!c.counted)out.push({kind:c.kind,o:c,x:c.x,z:c.z});return out;}
 function nearestE(){let b=null,bd=1e9;const cand=[{kind:'auto',x:car.x,z:car.z},...deadTargets()];for(const c of cand){const d=Math.hypot(c.x-pl.x,c.z-pl.z);if(d<E_R[c.kind]&&d<bd){bd=d;b=c;}}return b;}
 const SAUNA_PISTE=saunaPiste();
 function lahinKylalainen(){let b=null,bd=JUTTELE_SADE;for(const k of kylalaiset){if(k.kaatunut)continue;const d=Math.hypot(k.obj.position.x-pl.x,k.obj.position.z-pl.z);if(d<bd){bd=d;b=k;}}return b;}
@@ -481,7 +481,7 @@ function updateE(){const el=$('ehint');if(!el)return;if(loppuOn||lehtiOn){el.tex
   if(!pl.inCar&&!INS.on&&(!c||c.kind==='auto')&&nearPoyta(pl.x,pl.z,POYTA)){el.textContent='E – lue lehteä';return;}
   if(!pl.inCar&&!INS.on&&(!c||c.kind==='auto')&&nearKone(pl.x,pl.z)){el.textContent='E – riistakameran kuvat';return;}
   if(!pl.inCar&&(!c||c.kind==='auto')&&lahinKylalainen()){el.textContent='E – juttele';return;}
-  el.textContent=INS.on?'E / Esc – laske maahan · hiiri kääntää':c?{auto:'E – autoon',janis:'E – ota jänis',peura:'E – tarkastele peuraa',teeri:'E – ota teeri',kettu:'E – ota kettu'}[c.kind]:'';}
+  el.textContent=INS.on?'E / Esc – laske maahan · hiiri kääntää':c?{auto:'E – autoon',janis:'E – ota jänis',peura:'E – tarkastele peuraa',kauris:'E – tarkastele metsäkaurista',teeri:'E – ota teeri',kettu:'E – ota kettu'}[c.kind]:'';}
 // ---- saaliin tarkastelu: kopio mallista oman kameran eteen, hiiri kääntää, osumat (h.marks) pinnalla ----
 const INS={on:false,c:null,obj:null,yaw:0,pitch:0,scene:new THREE.Scene(),cam:new THREE.PerspectiveCamera(40,1,0.05,20)};
 INS.scene.add(new THREE.HemisphereLight(0xdfe8ff,0x777777,1.6));{const dl=new THREE.DirectionalLight(0xffffff,1.4);dl.position.set(1,2,2);INS.scene.add(dl);}
@@ -492,7 +492,7 @@ const holeGeo=new THREE.CircleGeometry(1,8),RC=new THREE.Raycaster();
 function applyMarks(obj,marks,kind){if(!obj||!marks)return;const ud=obj.userData;if(ud.mk&&!obj.children.includes(ud.mk))ud.mk=null;
   if(!ud.mk){ud.mk=new THREE.Group();ud.mk.userData.dekaali=true;obj.add(ud.mk);ud.nm=0;}if(ud.nm>=marks.length)return;
   obj.updateMatrixWorld(true);const meshes=[];obj.traverseVisible(o=>{if(o.isMesh&&!o.parent?.userData.dekaali)meshes.push(o);});// vain näkyvät meshit (piilotettu varamuoto/hitbox antoi ennen vääriä osumia)
-  const by=kind==='janis'?0.2:kind==='teeri'?0.15:0.9,bs=kind==='peura'?0.03:0.025,R=kind==='teeri'?{x:0.09,y:0.1,z:0.2}:kind==='janis'?{x:0.11,y:0.13,z:0.24}:{x:0.25,y:0.35,z:0.7};
+  const by=kind==='janis'?0.2:kind==='teeri'?0.15:kind==='kauris'?0.5:0.9,bs=kind==='peura'?0.03:0.025,R=kind==='teeri'?{x:0.09,y:0.1,z:0.2}:kind==='janis'?{x:0.11,y:0.13,z:0.24}:kind==='kauris'?{x:0.16,y:0.22,z:0.42}:{x:0.25,y:0.35,z:0.7};
   const inv=new THREE.Matrix4().copy(obj.matrixWorld).invert(),C=new THREE.Vector3(0,by,0);
   // Mallin kolmiot obj-koordinaatistossa nykyasennossa (osat animoituvat, ei välimuistia) + bbox-ellipsoidi varalle
   {const T=[],RG=[],v=new THREE.Vector3(),bb=new THREE.Box3();for(const m of meshes){const g=m.geometry,pa=g.attributes.position,ix=g.index,M=new THREE.Matrix4().multiplyMatrices(inv,m.matrixWorld),n=ix?ix.count:pa.count;RG.push([T.length/9,m]);for(let i=0;i<n;i++){v.fromBufferAttribute(pa,ix?ix.getX(i):i).applyMatrix4(M);T.push(v.x,v.y,v.z);bb.expandByPoint(v);}}ud.tris=new Float32Array(T);ud.rg=RG;ud.ell=T.length?ellipsoidFromBox(bb.min,bb.max):null;}
@@ -507,14 +507,14 @@ function applyMarks(obj,marks,kind){if(!obj||!marks)return;const ud=obj.userData
     const mk=(mat,r,off)=>{const m=new THREE.Mesh(holeGeo,mat);m.scale.setScalar(r);m.position.copy(pt).addScaledVector(nl,off);m.lookAt(m.position.clone().add(nl));m.rotateZ(ud.nm*2.4);m.renderOrder=2;ud.mk.add(m);if(host){m.updateMatrixWorld(true);let dg=host.children.find(c=>c.userData.dekaali);if(!dg){dg=new THREE.Group();dg.userData.dekaali=true;host.add(dg);}dg.attach(m);}};// reikä kiinni osuttuun osaan (runko/pää animoituvat)
     mk(holeMat,k.bullet?0.016:0.007,0.0015);if(k.bullet)mk(splatMat,0.03,0.001);}}
 window.__marks=()=>hareObjs.map(o=>{let n=0;o?.traverse(c=>{if(c.parent?.userData.dekaali)n++;});return n;});
-function insPick(c){const hareO=c.kind==='janis'||(c.kind==='kettu'&&hares.includes(c.o));if(!hareO&&c.o.obj)applyMarks(c.o.obj,c.o.marks,c.kind);if(hareO)NET?.send({t:'pick',i:hares.indexOf(c.o)});const src=hareO?hareObjs[hares.indexOf(c.o)]:c.o.obj;const small=c.kind!=='peura';if(!src)return;c.o.held=true;
+function insPick(c){const hareO=c.kind==='janis'||(c.kind==='kettu'&&hares.includes(c.o));if(!hareO&&c.o.obj)applyMarks(c.o.obj,c.o.marks,c.kind);if(hareO)NET?.send({t:'pick',i:hares.indexOf(c.o)});const src=hareO?hareObjs[hares.indexOf(c.o)]:c.o.obj;const small=c.kind!=='peura'&&c.kind!=='kauris';if(!src)return;c.o.held=true;
   if(hareO)applyMarks(src,c.o.marks,c.kind);const g=new THREE.Group(),m=src.clone(true);m.position.set(0,0,0);m.rotation.set(0,0,0);m.visible=true;g.add(m);
-  const by=c.kind==='kettu'?0.24:c.kind==='janis'?0.2:c.kind==='teeri'?0.15:0.9,bs=small?0.025:0.03;
+  const by=c.kind==='kettu'?0.24:c.kind==='janis'?0.2:c.kind==='teeri'?0.15:c.kind==='kauris'?0.5:0.9,bs=small?0.025:0.03;
   applyMarks(src,c.o.marks,c.kind);
   const sz=small?0.75:2.6;if(c.kind==='teeri')m.rotation.set(0,0,0);g.position.set(0,-by,-sz);INS.yaw=0.6;INS.pitch=0.25;INS.scene.add(g);Object.assign(INS,{on:true,c,obj:g,dist:sz});
-  const n=c.o.marks?.length||c.o.hitCount||0;const NM={janis:'Jänis',peura:'Peura',teeri:'Teeri'};$('insinfo').textContent=NM[c.kind]+' · osumia '+n+(small?' haulia':(n===1?' luoti':' luotia'))+(c.o.killedBy==='koira'?' · koiran ottama':'');$('insinfo').style.display='block';
+  const n=c.o.marks?.length||c.o.hitCount||0;const NM={janis:'Jänis',peura:'Peura',kauris:'Metsäkauris',teeri:'Teeri'};$('insinfo').textContent=NM[c.kind]+' · osumia '+n+(small?' haulia':(n===1?' luoti':' luotia'))+(c.o.killedBy==='koira'?' · koiran ottama':'');$('insinfo').style.display='block';
   if(c.kind==='janis'||c.kind==='kettu')for(const ch of m.children)ch.traverse?.(()=>{});}
-function insDrop(){if(!INS.on)return;const o=INS.c.o;if(INS.c.kind==='janis'||INS.c.kind==='kettu')NET?.send({t:'drop',i:hares.indexOf(o)});o.held=false;if(!o.counted){o.counted=true;if((o.owner??ME)===ME){addBag(INS.c.kind);say({janis:'Jänis',peura:'Peura',teeri:'Teeri',kettu:'Kettu'}[INS.c.kind]+' kirjattu saaliiksi');}}INS.scene.remove(INS.obj);INS.on=false;INS.c=null;$('insinfo').style.display='none';window.__insDrops=(window.__insDrops||0)+1;}
+function insDrop(){if(!INS.on)return;const o=INS.c.o;if(INS.c.kind==='janis'||INS.c.kind==='kettu')NET?.send({t:'drop',i:hares.indexOf(o)});o.held=false;if(!o.counted){o.counted=true;if((o.owner??ME)===ME){addBag(INS.c.kind);say({janis:'Jänis',peura:'Peura',kauris:'Metsäkauris',teeri:'Teeri',kettu:'Kettu'}[INS.c.kind]+' kirjattu saaliiksi');}}INS.scene.remove(INS.obj);INS.on=false;INS.c=null;$('insinfo').style.display='none';window.__insDrops=(window.__insDrops||0)+1;}
 window.__insYaw=v=>{INS.yaw+=v;};window.__INS=INS;
 addEventListener('mousemove',e=>{if(!INS.on)return;INS.yaw+=e.movementX*0.01;INS.pitch=Math.max(-1.4,Math.min(1.4,INS.pitch+e.movementY*0.01));});
 document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&INS.on)insDrop();});
@@ -595,7 +595,7 @@ let loppuAng=0,loppuR=9,loppuLook={x:0,z:0},loppuMus=null;const loppuSavu=[],lop
 function rakennaYhteenveto(){const elaimet=[];
   for(const h of hares)elaimet.push({kind:'janis',alive:!!h.alive,owner:h.owner});
   for(const b of WL.birds)if(b.kind==='teeri')elaimet.push({kind:'teeri',alive:!!b.alive,owner:b.owner});
-  for(const c of WL.critters)if(c.kind==='peura')elaimet.push({kind:'peura',alive:!!c.alive,owner:c.owner});
+  for(const c of WL.critters)if(c.kind==='peura'||c.kind==='kauris')elaimet.push({kind:c.kind,alive:!!c.alive,owner:c.owner});
   return yhteenveto({elaimet,laukaukset:lauk,noudot:dog.delivered||0,moninpeli:!!(NET&&NET.peer)});}
 function pyydaLopetus(){if(loppuOn||lehtiOn)return;if(lopetusPyynto(ME,!!(NET&&NET.peer))==='pyynto'){NET.send({t:'lopeta'});say('Odotetaan isäntää…');return;}kaynnistaLopetus();}
 function pyydaUusiJahti(){if(!(loppuOn||lehtiOn))return;if(uusiJahtiKomento(ME,!!(NET&&NET.peer))==='pyynto'){NET.send({t:'uusi',pyynto:1});const v=$('kierros-viesti');if(v)v.textContent='Odotetaan isäntää…';return;}kaynnistaUusiJahti();}
@@ -613,11 +613,11 @@ function luoSavu(){if(loppuSavu.length||!savuMerkki)return;const c=document.crea
 function paivitaSavu(dt){for(const p of loppuSavu){p.life+=dt;if(p.life<0)continue;if(p.life>p.age)nollaaSavu(p);const k=Math.max(0,Math.min(1,p.life/p.age));p.mesh.position.y+=dt*(0.65+.55*k);p.mesh.position.x+=p.dx*dt;p.mesh.position.z+=p.dz*dt;p.mesh.scale.setScalar(.3+k*2.2);p.mesh.material.opacity=.4*Math.sin(k*Math.PI);}}
 function aloitaKohtaus(yh){if(loppuOn||lehtiOn||!yh?.pelaajat)return;saavuta({tyyppi:'sauna'});muistiKierros();loppuOn=true;piilotaPuhe();if(document.pointerLockElement)document.exitPointerLock();$('menu').style.display='none';$('hud').style.display='none';const al=$('aloitus');if(al)al.style.display='none';iltahamara();hiljenna();
   const etu=saunaEtu(),mono=!!yh.moninpeli,paikat=riviPaikat(etu,yh.rivi||[],mono?2:1,mono?2:1);loppuLook=paikat.look;loppuR=paikat.radius;loppuAng=Math.atan2(etu.dz,etu.dx);
-  const malli={janis:hareObjs[0],teeri:WL.birds.find(b=>b.kind==='teeri')?.obj,peura:WL.critters.find(c=>c.kind==='peura')?.obj};
-  for(const p of paikat.elaimet){const src=malli[p.kind];if(!src)continue;let g;try{g=cloneSkinned(src);}catch{g=src.clone(true);}g.visible=true;g.traverse(o=>{o.frustumCulled=false;});g.position.set(p.x,height(p.x,p.z)+(p.kind==='peura'?0.2:0.04),p.z);g.rotation.set(0,paikat.yaw+Math.PI/2,Math.PI/2);scene.add(g);}
+  const malli={janis:hareObjs[0],teeri:WL.birds.find(b=>b.kind==='teeri')?.obj,peura:WL.critters.find(c=>c.kind==='peura')?.obj,kauris:WL.critters.find(c=>c.kind==='kauris')?.obj};
+  for(const p of paikat.elaimet){const src=malli[p.kind];if(!src)continue;let g;try{g=cloneSkinned(src);}catch{g=src.clone(true);}g.visible=true;g.traverse(o=>{o.frustumCulled=false;});g.position.set(p.x,height(p.x,p.z)+(p.kind==='peura'?0.2:p.kind==='kauris'?0.1:0.04),p.z);g.rotation.set(0,paikat.yaw+Math.PI/2,Math.PI/2);scene.add(g);}
   hares.forEach((h,i)=>{if(!h.alive)hareObjs[i].visible=false;});
   for(const b of WL.birds)if(b.kind==='teeri'&&!b.alive&&b.obj)b.obj.visible=false;
-  for(const c of WL.critters)if(c.kind==='peura'&&!c.alive&&c.obj)c.obj.visible=false;
+  for(const c of WL.critters)if((c.kind==='peura'||c.kind==='kauris')&&!c.alive&&c.obj)c.obj.visible=false;
   let hi=0,ki=0;const koirat=[[dogObj,DOGBREED],[terrierObj,'terrieri']];
   for(const p of paikat.ihmiset){if(p.kind==='metsastaja'){const h=V8.makeHunter(hi++);h.position.set(p.x,height(p.x,p.z),p.z);h.rotation.y=p.yaw;h.userData.sit?.(false);loppuHahmot.push(h);scene.add(h);}
     else{const pair=koirat[ki++];if(!pair)continue;const [o,rotu]=pair;o.visible=true;o.position.set(p.x,height(p.x,p.z),p.z);o.rotation.y=Math.PI-Math.atan2(etu.dx,-etu.dz);loppuKoirat.push({o,k:V8.DOG_K[rotu]||1});}}
@@ -661,8 +661,8 @@ const LEHTI_CSS=`#lehti{position:fixed;inset:0;z-index:80;display:flex;align-ite
 .ks-sulje{text-align:center;font:700 16px/1.3 Arial,sans-serif;color:#5c4030;margin:8px 14px 0}`;
 let lehtiT=0,lehtiKaatui='v';
 function muistaElain(kind,e){if(!e||e.alive||e._muistettu||!PISTE[kind])return;e._muistettu=true;try{const ampuja=e.owner==='v'||e.owner==='h'?e.owner:(e.killedBy==='koira'?'koira':'h');const rec=kirjaaKaato(localStorage,{laji:kind,paiva:tanaan(),matka:e.matka==null?null:e.matka,osumat:e.osumaLkm||e.hitCount||(e.marks?.length||0),pisteet:PISTE[kind],ampuja,koira:(e.killedBy==='koira'||e.delivered)?KOIRA_NIMI:null,jahti:JAHTI});if(rec){e._rec=rec;e._jahtiIdx=lataaKaadot(localStorage).filter(k=>k.jahti===JAHTI).length-1;}}catch{}}
-function muistiKierros(){for(const h of hares)if(!h.alive)muistaElain(h.laji==='kettu'?'kettu':'janis',h);for(const b of WL.birds)if(b.kind==='teeri'&&!b.alive)muistaElain('teeri',b);for(const c of WL.critters)if(c.kind==='peura'&&!c.alive)muistaElain('peura',c);
-  for(const e of[...hares,...WL.birds.filter(b=>b.kind==='teeri'),...WL.critters.filter(c=>c.kind==='peura')])if(e._rec&&!e._rec.koira&&(e.delivered||e.killedBy==='koira')){e._rec.koira=KOIRA_NIMI;try{paivitaKoira(localStorage,JAHTI,e._jahtiIdx,KOIRA_NIMI);}catch{}}}
+function muistiKierros(){for(const h of hares)if(!h.alive)muistaElain(h.laji==='kettu'?'kettu':'janis',h);for(const b of WL.birds)if(b.kind==='teeri'&&!b.alive)muistaElain('teeri',b);for(const c of WL.critters)if((c.kind==='peura'||c.kind==='kauris')&&!c.alive)muistaElain(c.kind,c);
+  for(const e of[...hares,...WL.birds.filter(b=>b.kind==='teeri'),...WL.critters.filter(c=>c.kind==='peura'||c.kind==='kauris')])if(e._rec&&!e._rec.koira&&(e.delivered||e.killedBy==='koira')){e._rec.koira=KOIRA_NIMI;try{paivitaKoira(localStorage,JAHTI,e._jahtiIdx,KOIRA_NIMI);}catch{}}}
 function kaadaKylalainen(id){const k=kylalaiset.find(x=>x.id===id);if(!k||k.kaatunut)return;k.kaatunut=true;k.obj.userData.kaatunut=true;k.obj.userData.puhuu=0;k.obj.position.set(k.x,height(k.x,k.z),k.z);k.obj.rotation.y=k.yaw;k.obj.rotation.z=1.15;}
 function kaynnistaLehti(kaatui,extra){if(lehtiOn||loppuOn)return;const y=rakennaYhteenveto();let p=0;for(const id in y.pelaajat)p+=y.pelaajat[id].pisteet||0;const seed=(Math.random()*2**32)>>>0;const k=kaatui==='h'?'h':kaatui==='k'?'k':'v';const nimi=extra?.nimi?siistiNimi(extra.nimi):(k==='h'?omaNimi():siistiNimi(NET?.last?.nimi));if(NET?.peer&&ME==='h'){const msg={t:'lehti',seed,pisteet:p,kaatui:k,nimi};if(extra?.otsikko){msg.otsikko=extra.otsikko;msg.ingressi=extra.ingressi||'';}if(extra?.kyla!=null)msg.kyla=extra.kyla|0;NET.send(msg);}aloitaLehti(seed,p,k,nimi,extra||null);}
 function kytkeLehdenSelaus(el){const sivut=[...el.querySelectorAll('.ks-sivu')];let i=Math.max(0,sivut.findIndex(s=>s.classList.contains('ks-nayta')));
@@ -876,7 +876,7 @@ function piirraSaavutus(dt){
   soittoSaavutus();saavutusT=4.6;
 }
 function saavutusElukat(){
-  const lista=[...hares.map(e=>({kind:e.laji==='kettu'?'kettu':'janis',e})),...WL.birds.filter(b=>b.kind==='teeri').map(e=>({kind:'teeri',e})),...WL.critters.filter(c=>c.kind==='peura').map(e=>({kind:'peura',e}))];
+  const lista=[...hares.map(e=>({kind:e.laji==='kettu'?'kettu':'janis',e})),...WL.birds.filter(b=>b.kind==='teeri').map(e=>({kind:'teeri',e})),...WL.critters.filter(c=>c.kind==='peura'||c.kind==='kauris').map(e=>({kind:e.kind,e}))];
   for(const {kind,e} of lista){
     if(!e.alive&&e.owner===ME&&!e._saavKaato){e._saavKaato=true;saavuta({tyyppi:'kaato',laji:kind,matka:e.matka,osumat:e.osumaLkm||e.hitCount||1,jahti:JAHTI});if(kind==='janis'&&(e.wounded||e.damage>0)&&!e._saavVeri){e._saavVeri=true;saavuta({tyyppi:'veri'});}}
     else if(!e.alive&&kind==='janis'&&(e.wounded||e.damage>0)&&(e.woundedBy===ME||e.owner===ME)&&!e._saavVeri){e._saavVeri=true;saavuta({tyyppi:'veri'});}
