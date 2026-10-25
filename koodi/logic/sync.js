@@ -6,7 +6,7 @@ import { sovellaPiha } from './piha.js';
 //  {t:'s', o:{x,y,z}, d:{x,y,z}, w:'haulikko'|'kivaari', seed, by}  laukaus: molemmat soittavat 3D-äänen; isäntä ratkaisee osumat samalla siemenellä
 //  {t:'r', on, ch, song, clip, pos, lastJ, gen}  radion tila isännältä. Vieras lähettää {t:'r', act:'on'|'ch'}.
 //  {t:'piha', piha}  isännän rakennussiirrot (mökki, sauna, navetta). Maailmapaketissa piha on valinnainen.
-//  {t:'cmd', c, x,z}  vieraan koirakomento isännälle;  {t:'pick', i}/{t:'drop', i} saaliin otto/lasku (isäntä kirjaa)
+//  {t:'cmd', c, x,z, kenelle?:'koira'|'terrieri'}  vieras käskee omaa terrieriään (kenelle:'terrieri'). Ilman kenelle-kenttää isäntä soveltaa ajokoiraan. Maailmapaketti ei ylikirjoita terrierin narua. {t:'pick', i}/{t:'drop', i} saaliin otto/lasku (isäntä kirjaa)
 //  {t:'lopeta'}  vieras pyytää jahdin loppua;  {t:'loppu', yhteenveto}  isäntä käynnistää loppukohtauksen molemmille
 //  {t:'lehti', seed, pisteet, kaatui:'h'|'v'|'k', nimi, otsikko?, ingressi?, kyla?}  isäntä: osuma pelaajaan tai kyläläiseen, sama lehti molemmille. Kyläläiset syntyvät huonesiemenestä, eivät maailmapaketista. Pihalenkki lasketaan samasta siemenestä ja kellosta, joten paikkaa ei lähetetä. Jutut, ohikulkuhuudot ja saavutukset eivät synkkaa. Ajon lenkin laskee isäntä; jäniksen paikka, suunta ja tila kulkevat maailmapaketissa kuten ennen. Saavutukset ovat pelaajan omassa selaimessa. dog.tone = haukun tila, dog.kimea = terrieri. Pelaajan tilassa nimi on kuolinilmoitusta varten.
 export function roomSeed(code){let h=2166136261;for(const ch of String(code))h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0;}

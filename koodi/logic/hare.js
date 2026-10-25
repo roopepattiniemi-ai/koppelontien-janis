@@ -3,6 +3,15 @@ import { mulberry32 } from './rng.js';
 import { turnBack, clampB, BOUND } from './bounds.js';
 import { ROADS, FIELDS } from './world.js';
 export const H = { MAKUU:'makuu', PAKO:'pako', KIERTO:'kierto', PALUU:'paluuperat', KUOLLUT:'kuollut' };
+// Alkujäljen hämäykset: sivuloikka (jump) tai paluu omalle jäljelle. Rauhallinen mutka ei ole hämäys.
+export function alkujaljenHamaykset(trail){
+  const t=trail||[];let n=0;
+  for(const p of t)if(p.jump)n++;
+  for(let i=10;i<t.length;i++){const p=t[i];
+    for(let j=0;j<i-8;j++){if(Math.hypot(p.x-t[j].x,p.z-t[j].z)>1.8)continue;
+      const mid=t[(i+j)>>1];if(Math.hypot(mid.x-t[j].x,mid.z-t[j].z)<6)continue;n++;i+=10;break;}}
+  return n;
+}
 const SISALLA = BOUND - 30;
 const rajaa = (x, z) => ({ x: Math.max(-SISALLA, Math.min(SISALLA, x)), z: Math.max(-SISALLA, Math.min(SISALLA, z)) });
 
@@ -18,33 +27,42 @@ export function passiKohde(hunters, ylos, max = 280) {
   return best;
 }
 export class Hare {
-  constructor({x=0,z=0,seed=1,feed=null,laji='janis'}={}){this.feed=feed;this.laji=laji==='kettu'?'kettu':'janis';
+  constructor({x=0,z=0,seed=1,feed=null,laji='janis'}={}){this.feed=feed;this.seed=seed|0;this.laji=laji==='kettu'?'kettu':'janis';
     this.rand=mulberry32(seed); this.x=x; this.z=z; this.home={x,z}; this.state=H.MAKUU; this.t=0;
     this.trail=[]; this.nightTrail=this.makeNightTrail(); this.heading=0; this.loopAngle=0; this.loops=0;
     this.relocT=180+this.rand()*300;this.wounded=false;this.loopR=200+this.rand()*150; this.dirSign=this.rand()<.5?1:-1; this.speed=0; this.alive=true;
   }
   _pt(arr,x,z,jump=false){arr.push({x,z,jump,dir:Math.atan2(x-(arr.at(-1)?.x??x),-(z-(arr.at(-1)?.z??z)))});}
-  // yöjälki ruokailupaikalta makuulle; lopussa 3 paluuperää + sivuloikka
-  // yöreitti: ruokailupaikka (pelto/oja/pajukko, feed(x,z)) -> mutkitteleva kulku makuulle; ruokailun pyörinät,
-  // lopussa 3 paluuperää + sivuloikka. Täysin siemenestä (rand) -> sama kaikilla pelaajilla.
-  makeNightTrail(){
-    const r=this.rand,t=[],H0=this.home;let fx,fz;
+  // Vanha yöjälki kulutti this.rand samalla kaavalla. Kulutus pidetään, jotta ajon satunnaisuus ei vaihdu.
+  _vanhaYokulutus(){
+    const r=this.rand,H0=this.home;let fx,fz,x,z,h;
     for(let k=0;k<60;k++){const a=r()*Math.PI*2,L=150+r()*250;fx=H0.x+Math.cos(a)*L;fz=H0.z+Math.sin(a)*L;if(!this.feed||this.feed(fx,fz))break;}
-    // ruokailu: pieniä silmukoita ruokapaikan ympärillä
-    let x=fx,z=fz,h=r()*6.28;for(let i=0;i<25;i++){h+=(r()-.5)*1.8;x+=Math.cos(h)*1.3;z+=Math.sin(h)*1.3;this._pt(t,x,z);}
-    // kulku makuulle: suunta kohti makuuta + kohina, askel ~1.6 m
+    x=fx;z=fz;h=r()*6.28;for(let i=0;i<25;i++){h+=(r()-.5)*1.8;x+=Math.cos(h)*1.3;z+=Math.sin(h)*1.3;}
     for(let i=0;i<600;i++){const dx=H0.x-x,dz=H0.z-z,D=Math.hypot(dx,dz);if(D<2)break;const want=Math.atan2(dz,dx);let e=want-h;e=Math.atan2(Math.sin(e),Math.cos(e));
-      h+=e*0.25+(r()-.5)*0.9;x+=Math.cos(h)*1.6;z+=Math.sin(h)*1.6;this._pt(t,x,z);}
-    this._pt(t,H0.x,H0.z);
-    // paluuperät: kuljetaan omaa jälkeä takaisin ja eteen (koukkaus)
-    const end=t.length-1;for(let k=0;k<3;k++){for(let i=1;i<=6;i++)this._pt(t,t[end-i].x,t[end-i].z);for(let i=5;i>=0;i--)this._pt(t,t[end-i].x,t[end-i].z);}
-    // sivuloikka: makuu jäljen sivussa
-    const last=t.at(-1);this._pt(t,last.x+2.5,last.z+1.0,true);
-    this.x=this.home.x=last.x;this.z=this.home.z=last.z;return t;
+      h+=e*0.25+(r()-.5)*0.9;x+=Math.cos(h)*1.6;z+=Math.sin(h)*1.6;}
   }
-  // makuupaikan vaihto: lyhyt siirtymä + sivuloikka, jatkaa yöjälkeä (koira löytää uuden makuun)
-  relocate(){const r=this.rand,a=r()*6.28,n=6+(r()*10|0);let h=a;for(let i=0;i<n;i++){h+=(r()-.5)*0.8;this.x+=Math.cos(h)*1.5;this.z+=Math.sin(h)*1.5;this._pt(this.nightTrail,this.x,this.z);}
-    this.x+=Math.cos(h+1.4)*2.5;this.z+=Math.sin(h+1.4)*2.5;this._pt(this.nightTrail,this.x,this.z,true);this.home={x:this.x,z:this.z};this.relocations=(this.relocations||0)+1;}
+  // Yöjälki: rauhallinen ruokailujälki makuulle. Ei paluuperiä eikä sivuloikkia.
+  // Juuri ennen makuuta voi olla yksi pieni koukkaus. Hämäykset kuuluvat ajoon.
+  makeNightTrail(){
+    this._vanhaYokulutus();
+    const r=mulberry32((this.seed||1)^0xA5A5),t=[],H0=this.home;let fx,fz;
+    for(let k=0;k<60;k++){const a=r()*Math.PI*2,L=150+r()*250;fx=H0.x+Math.cos(a)*L;fz=H0.z+Math.sin(a)*L;if(!this.feed||this.feed(fx,fz))break;}
+    let x=fx,z=fz,h=Math.atan2(H0.z-fz,H0.x-fx);
+    for(let i=0;i<18;i++){h+=(r()-.5)*0.28;x+=Math.cos(h)*1.4;z+=Math.sin(h)*1.4;this._pt(t,x,z);
+      if(i%6===5){const bend=(r()-.5)*0.45;for(let j=0;j<4;j++){h+=bend*0.2;x+=Math.cos(h)*1.15;z+=Math.sin(h)*1.15;this._pt(t,x,z);}}}
+    for(let i=0;i<700;i++){const dx=H0.x-x,dz=H0.z-z,D=Math.hypot(dx,dz);if(D<10)break;const want=Math.atan2(dz,dx);let e=want-h;e=Math.atan2(Math.sin(e),Math.cos(e));
+      h+=e*0.5+(r()-.5)*0.16;x+=Math.cos(h)*1.7;z+=Math.sin(h)*1.7;this._pt(t,x,z);}
+    if(r()<0.5){const side=r()<0.5?1:-1;for(let i=0;i<6;i++){const dx=H0.x-x,dz=H0.z-z,D=Math.hypot(dx,dz)||1,want=Math.atan2(dz,dx);
+      h=want+Math.sin((i+1)/7*Math.PI)*0.85*side;x+=Math.cos(h)*1.6;z+=Math.sin(h)*1.6;this._pt(t,x,z,i===3);}}
+    for(let i=0;i<24;i++){const dx=H0.x-x,dz=H0.z-z,D=Math.hypot(dx,dz);if(D<1.2)break;h=Math.atan2(dz,dx);const step=Math.min(1.6,D);
+      x+=Math.cos(h)*step;z+=Math.sin(h)*step;this._pt(t,x,z);}
+    this._pt(t,H0.x,H0.z);
+    for(const p of t){p.yo=true;p.synty=0;}
+    this.x=H0.x;this.z=H0.z;this.home={x:H0.x,z:H0.z};return t;
+  }
+  // Makuupaikan vaihto päivällä: lyhyt suora siirtymä, jatkaa yöjälkeä ilman sivuloikkaa.
+  relocate(){const r=this.rand,a=r()*6.28,n=6+(r()*10|0);let h=a;for(let i=0;i<n;i++){h+=(r()-.5)*0.28;this.x+=Math.cos(h)*1.5;this.z+=Math.sin(h)*1.5;this._pt(this.nightTrail,this.x,this.z);const p=this.nightTrail.at(-1);p.yo=true;p.synty=this.kello||0;}
+    this.home={x:this.x,z:this.z};this.relocations=(this.relocations||0)+1;}
   // haavoittuminen: jos makuulla, lähtee; hidastuu ja jättää verijälkeä (main.js piirtää)
   // dmg 0..1 kertyy; vakavuus -> hidastus, taukojen tiheys/pituus, verijäljen tiheys
   wound(dmg,from){this.wounded=true;this.damage=Math.min(0.95,(this.damage||0)+dmg);this.pauseT=this.pauseT??this._pauseGap();if(this.state===H.MAKUU||this.paused)this.flush(from||{x:this.x+1,z:this.z});}

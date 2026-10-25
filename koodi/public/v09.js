@@ -17,13 +17,16 @@ const FB={kettu:()=>fbGroup(boxM(0.18,0.2,0.55,0xc0581c,0.3),boxM(0.12,0.12,0.15
   peura:()=>fbGroup(boxM(0.35,0.45,1.1,0x8a6a4a,0.95),boxM(0.15,0.4,0.15,0x8a6a4a,1.25,0.5)),
   orava:()=>fbGroup(boxM(0.08,0.1,0.2,0xa0522d,0.06),boxM(0.06,0.14,0.06,0xa0522d,0.13,-0.1)),
   teeri:()=>fbGroup(boxM(0.18,0.18,0.45,0x1a1a22,0.2)),korppi:()=>fbGroup(boxM(0.15,0.15,0.5,0x111111,0.18))};
+function kaurisMalli(sarvet){const g=fbGroup(boxM(0.2,0.26,0.62,0x6d645c,0.56),boxM(0.1,0.14,0.16,0x5c554e,0.74,0.34),boxM(0.14,0.16,0.08,0xf2f0ea,0.58,-0.28));
+  if(sarvet)for(const x of[-0.04,0.04]){const s=boxM(0.015,0.09,0.015,0xc4b08a,0.86,0.36);s.position.x=x;g.add(s);}return g;}
 // ---------- animaatio ----------
-function animQuad(n,{t,spd,kind}){if(!n)return;const run=spd>2.5,a=spd<0.05?0:run?(kind==='orava'?0.5:0.6):(kind==='peura'?0.25:0.3),f=run?spd*1.6:spd*5;
+function animQuad(n,{t,spd,kind}){if(!n)return;const run=spd>2.5,bound=kind==='kauris'&&spd>1,a=spd<0.05?0:run?(kind==='orava'?0.5:0.6):(kind==='peura'?0.25:0.3),f=run?spd*1.6:spd*5;
   const s=Math.sin(t*f),c=Math.sin(t*f+Math.PI);const L=(k,v)=>{if(n[k])n[k].rotation.x=v;};
-  if(run){L('jalka_ev',s*a);L('jalka_eo',Math.sin(t*f+0.2)*a);L('jalka_tv',c*a);L('jalka_to',Math.sin(t*f+Math.PI+0.2)*a);if(n.runko)n.runko.rotation.x=s*0.08;}
+  if(bound){L('jalka_ev',s*a);L('jalka_eo',s*a);L('jalka_tv',c*a);L('jalka_to',c*a);if(n.runko)n.runko.rotation.x=Math.abs(s)*0.12;}
+  else if(run){L('jalka_ev',s*a);L('jalka_eo',Math.sin(t*f+0.2)*a);L('jalka_tv',c*a);L('jalka_to',Math.sin(t*f+Math.PI+0.2)*a);if(n.runko)n.runko.rotation.x=s*0.08;}
   else{L('jalka_ev',s*a);L('jalka_to',s*a);L('jalka_eo',c*a);L('jalka_tv',c*a);if(n.runko)n.runko.rotation.x=0;}
   if(n.paa)n.paa.rotation.x=spd<0.05?0.15*Math.sin(t*0.7):0.05*s;
-  if(n.hanta)n.hanta.rotation.x=kind==='peura'&&run?0.8:kind==='kettu'&&run?0.2:0.1*s;}
+  if(n.hanta)n.hanta.rotation.x=kind==='peura'&&run?0.8:kind==='kauris'&&bound?0.6:kind==='kettu'&&run?0.2:0.1*s;}
 function animBird(n,{t,fly,kind,seed=0}){if(!n)return;const fv=n.siipi_v,fo=n.siipi_o;
   if(fly){const amp=kind==='teeri'?0.6:0.45,hz=kind==='teeri'?6:3,glide=kind==='korppi'&&Math.sin(t*0.5+seed)>0.3;const z=glide?0.1:Math.sin(t*hz*6.28+seed)*amp;
     for(const[w,sg]of[[fv,1],[fo,-1]])if(w){w.rotation.order='ZYX';w.rotation.y=-sg*Math.PI/2;w.rotation.z=sg*z;}
@@ -31,13 +34,13 @@ function animBird(n,{t,fly,kind,seed=0}){if(!n)return;const fv=n.siipi_v,fo=n.si
   else{for(const w of[fv,fo])if(w)w.rotation.set(0,0,0);for(const k of['jalka_v','jalka_o'])if(n[k])n[k].rotation.x=0.3;if(n.paa)n.paa.rotation.x=0.15*Math.max(0,Math.sin(t*1.3+seed));}}
 // ---------- riista + linnut ----------
 export const FLUSH={koira:15,ihminen:25};
-export const COUNTS={kettu:2,peura:6,orava:8,teeriParvet:4,teeriParvessa:12,korppi:12,tiainen:24};
+export const COUNTS={kettu:2,peura:6,kauris:3,orava:8,teeriParvet:4,teeriParvessa:12,korppi:12,tiainen:24};
 export function setupWildlife(scene,{height,isForest,trees,rand=Math.random,play3d=()=>{},aiInterval=()=>0}){
   const W={critters:[],birds:[],targets:[]};
   const spot=(ok,cx=0,cz=0,R=500)=>{for(let i=0;i<400;i++){const x=cx+(rand()*2-1)*R,z=cz+(rand()*2-1)*R;if(inBounds(x,z,20)&&ok(x,z))return{x,z};}return{x:cx,z:cz};};
-  const add=(kind,n)=>{for(let i=0;i<n;i++){const p=spot((x,z)=>isForest(x,z)&&Math.hypot(x,z)>60),c=new Critter(kind,{...p,seed:(rand()*1e6)|0});c.obj=loadModel('mallit/elaimet/'+kind+'.glb',FB[kind]());scene.add(c.obj);c.tn=0;W.critters.push(c);
-    if(kind!=='kettu')W.targets.push({kind,c,get alive(){return c.alive;},pos:()=>({x:c.x,y:height(c.x,c.z)+(kind==='peura'?0.9:0.08),z:c.z}),r:kind==='peura'?0.45:0.08,shoot:()=>c.shoot()});}};
-  add('kettu',COUNTS.kettu);add('peura',COUNTS.peura);add('orava',COUNTS.orava);
+  const add=(kind,n)=>{for(let i=0;i<n;i++){const p=spot((x,z)=>isForest(x,z)&&Math.hypot(x,z)>60),c=new Critter(kind,{...p,seed:(rand()*1e6)|0});c.obj=loadModel('mallit/elaimet/'+kind+'.glb',kind==='kauris'?kaurisMalli(rand()<0.5):FB[kind]());scene.add(c.obj);c.tn=0;W.critters.push(c);
+    if(kind!=='kettu')W.targets.push({kind,c,get alive(){return c.alive;},pos:()=>({x:c.x,y:height(c.x,c.z)+(kind==='peura'?0.9:kind==='kauris'?0.55:0.08),z:c.z}),r:kind==='peura'?0.45:kind==='kauris'?0.28:0.08,shoot:()=>c.shoot()});}};
+  add('kettu',COUNTS.kettu);add('peura',COUNTS.peura);add('kauris',COUNTS.kauris);add('orava',COUNTS.orava);
   // linnut: teeriparvi koivussa, korpit kiertelevät, tiaiset (pienet varamuodot)
   const koivut=trees.filter(t=>t.model?.includes('koivu')||t.kind==='koivu');
   const perch=()=>{const t=koivut.length?koivut[(rand()*koivut.length)|0]:{x:spot(isForest).x,z:0};return{x:t.x+(rand()-.5)*2,z:t.z+(rand()-.5)*2,y:height(t.x,t.z)+5+rand()*3};};
@@ -53,9 +56,9 @@ export function setupWildlife(scene,{height,isForest,trees,rand=Math.random,play
   for(const b of W.birds)W.targets.push({kind:b.kind,b,get alive(){return b.alive;},pos:()=>({x:b.obj.position.x,y:b.obj.position.y+0.15,z:b.obj.position.z}),r:0.2,shoot:()=>{b.alive=false;b.vy=0;}});
   W.update=(dt,{t,player,dog,addTrack})=>{const threats=[player,dog];
     for(const c of W.critters){c._acc=(c._acc||0)+dt;if(c._acc<aiInterval(Math.hypot(c.x-player.x,c.z-player.z)))continue;const cdt=Math.min(c._acc,0.25);c._acc=0;const was=c.state;c.update(cdt,{threats,ok:(x,z)=>inBounds(x,z)});
-      if(c.state==='pakenee'&&was!=='pakenee'){if(c.kind==='peura')play3d('sfx_peura_pakenee_1',{x:c.x,y:height(c.x,c.z)+1,z:c.z,gain:1.2,ref:10,max:600});if(c.kind==='kettu')play3d('sfx_kettu_haukahdus_'+(1+(rand()*2|0)),{x:c.x,y:height(c.x,c.z)+0.4,z:c.z,gain:1,ref:8,max:700});}
+      if(c.state==='pakenee'&&was!=='pakenee'){if(c.kind==='peura')play3d('sfx_peura_pakenee_1',{x:c.x,y:height(c.x,c.z)+1,z:c.z,gain:1.2,ref:10,max:600});if(c.kind==='kauris'){const o={x:c.x,y:height(c.x,c.z)+0.7,z:c.z};if(!play3d('sfx_kauris_haukku_1',{...o,gain:0.55,ref:8,max:450}))play3d('sfx_peura_pakenee_1',{...o,gain:0.4,ref:8,max:400,rate:1.55});}if(c.kind==='kettu')play3d('sfx_kettu_haukahdus_'+(1+(rand()*2|0)),{x:c.x,y:height(c.x,c.z)+0.4,z:c.z,gain:1,ref:8,max:700});}
       if(c.kind!=='orava')while(c.tn<c.trail.length)addTrack(c.kind,c.trail[c.tn++]);
-      c.obj.position.set(c.x,height(c.x,c.z),c.z);c.obj.rotation.set(0,Math.PI/2-c.heading,c.alive?0:Math.PI/2);animQuad(c.obj.userData.n,{t,spd:c.speed,kind:c.kind});}
+      c.obj.position.set(c.x,height(c.x,c.z)+(c.kind==='kauris'&&c.state==='pakenee'?Math.abs(Math.sin(t*11))*0.28:0),c.z);c.obj.rotation.set(0,Math.PI/2-c.heading,c.alive?0:Math.PI/2);animQuad(c.obj.userData.n,{t,spd:c.speed,kind:c.kind});}
     for(const q of W.tiaiset){if((q.T-=dt)>0)continue;q.T=8+rand()*17;if(Math.hypot(q.x-player.x,q.z-player.z)>250)for(let k=0;k<40;k++){const t=koivut[(rand()*koivut.length)|0];if(t&&Math.hypot(t.x-player.x,t.z-player.z)<110){q.x=t.x;q.z=t.z;q.y=height(t.x,t.z)+3;break;}}
       if(Math.hypot(q.x-player.x,q.z-player.z)<120&&play3d('amb_tiainen_'+(1+(rand()*2|0)),{x:q.x,y:q.y,z:q.z,gain:0.9,ref:6,max:120})){if(typeof window!=='undefined')window.__tiainenSoitot++;}}
     for(const F of W.flocks){const teeret=W.birds.filter(b=>b.F===F&&b.alive);F.t+=dt;
@@ -117,5 +120,7 @@ export function setupWeapons(vm){const W={weapon:'haulikko',bino:0,binoOn:false,
   return W;}
 // jälkien varatekstuurit
 export function trackCanvas(kind){const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.fillStyle='#7f8a9a';
-  if(kind==='peura'){for(const x of[11,18]){g.beginPath();g.ellipse(x,16,3,8,x<16?0.15:-0.15,0,7);g.fill();}}else{g.beginPath();g.ellipse(16,18,4,5,0,0,7);g.fill();for(const[x,y]of[[11,10],[21,10],[14,7],[18,7]]){g.beginPath();g.arc(x,y,1.8,0,7);g.fill();}}
+  if(kind==='peura'){for(const x of[11,18]){g.beginPath();g.ellipse(x,16,3,8,x<16?0.15:-0.15,0,7);g.fill();}}
+  else if(kind==='kauris'){for(const x of[14,18]){g.beginPath();g.ellipse(x,16,2,5,x<16?0.12:-0.12,0,7);g.fill();}}
+  else{g.beginPath();g.ellipse(16,18,4,5,0,0,7);g.fill();for(const[x,y]of[[11,10],[21,10],[14,7],[18,7]]){g.beginPath();g.arc(x,y,1.8,0,7);g.fill();}}
   const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;return t;}

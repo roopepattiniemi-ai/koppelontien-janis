@@ -1,5 +1,6 @@
 // Riistakamerat pihalla ja metsän reunassa, sekä tietokone jolta kuvia katsotaan.
 import { mulberry32 } from './rng.js';
+import { RIISTAKAMERA } from './config.js';
 
 export const HAUSKA = ['juoppo', 'ufomies', 'norsu', 'bigfoot'];
 const TEKSTI = {
@@ -39,6 +40,17 @@ export function koneMaailma(cabin) {
 export function koneLaatikko(cabin) {
   const p = koneMaailma(cabin);
   return { x: p.x, z: p.z, yaw: cabin.rot || 0, hx: 0.55, hz: 0.42 };
+}
+
+// Pelissä näkyvä kamera ja kone. Lippu false: ei synny mitään. Geometria jää talteen.
+export function pelinKamerat(cabin) {
+  return RIISTAKAMERA ? kameratPihasta(cabin) : [];
+}
+export function pelinKone(cabin) {
+  return RIISTAKAMERA ? koneMaailma(cabin) : null;
+}
+export function pelinKoneLaatikko(cabin) {
+  return RIISTAKAMERA ? koneLaatikko(cabin) : null;
 }
 
 export function nakyy(cam, e) {
