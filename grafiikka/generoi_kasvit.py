@@ -47,10 +47,11 @@ def cone_tier(m, y0, y1, r, n, rot, droop, rnd):
         m.quad(inner[i], inner[j], base[j], base[i], LUMI_V if i % 3 == 0 else NEULA)
         m.tri(base[i], base[j], (0, y0 + .15*(y1-y0), 0), NEULA_T)  # alapinta
 
-def kuusi(H, tiers, rmax, n=7, seed=0, slim=1.0):
+def kuusi(H, tiers, rmax, n=7, seed=0, slim=1.0, base=None):
+    """base: alimman oksan (roikkuvan sakaran) korkeus metreinä; None = vanha H*.12-alku."""
     rnd = random.Random(seed); m = M()
-    cyl(m, (0, 0, 0), (0, H*.25, 0), .07+H*.012, .05+H*.008, 5, lambda i: KUORI_T)
-    y = H*.12
+    y = H*.12 if base is None else base + .18*rmax*slim  # sakaran roikkuma lisätään -> alin piste = base
+    cyl(m, (0, 0, 0), (0, max(H*.25, y + .6), 0), .07+H*.012, .05+H*.008, 5, lambda i: KUORI_T)
     for k in range(tiers):
         f = k/(tiers-1); y1 = y + (H - y)*(.42 if k < tiers-1 else 1.0)
         if k == tiers-1: y1 = H
@@ -160,8 +161,8 @@ def write_glb(m, path, name):
     return len(m.t), P.min(0), P.max(0)
 
 MALLIT = [
-    ('kuusi_1', kuusi(6.0, 4, 1.7, seed=1)), ('kuusi_2', kuusi(9.5, 5, 2.3, seed=2)),
-    ('kuusi_3', kuusi(13.0, 6, 2.4, seed=3, slim=.85)), ('kuusi_4', kuusi(16.0, 6, 3.4, n=8, seed=4)),
+    ('kuusi_1', kuusi(6.0, 4, 1.7, seed=1, base=1.3)), ('kuusi_2', kuusi(9.5, 5, 2.3, seed=2, base=1.3)),
+    ('kuusi_3', kuusi(13.0, 6, 2.4, seed=3, slim=.85, base=1.8)), ('kuusi_4', kuusi(16.0, 6, 3.4, n=8, seed=4, base=1.8)),
     ('koivu_1', koivu(11.0, 5)), ('koivu_2', koivu(8.0, 6)),
     ('manty_1', manty(14.0, 7)), ('manty_2', manty(11.0, 8)),
     ('taimi_1', taimi(0.6, 9)), ('taimi_2', taimi(1.4, 10)),
