@@ -101,7 +101,7 @@ t('ajettu jänis kaartaa vaiheittain laajan lenkin ja palaa pelaajan/lähtöpaik
   assert.ok(maxR>150&&maxR<1100,'lenkki '+maxR);assert.ok(minLate<80,'paluu lähelle '+minLate);assert.ok(turn>Math.PI*2,'kaartaa '+turn);});
 t('radiojuonto: jokaisen biisin jälkeen välipuhe, ei samaa kahdesti, puuttuva ohitetaan',async()=>{const {pickJuonto,valipuheNimi,VALIPUHE,uusiRadio,radioEtene,radioPuuttuu,radioKuva,radioSovita}=await import('../logic/radio.js');
   const {BIISIT,JUONNOT}=await import('../logic/radio.js');assert.equal(BIISIT,4);assert.equal(JUONNOT,8);assert.equal(VALIPUHE,8);
-  let last=null;for(let i=0;i<400;i++){const j=pickJuonto('tekno',last);assert.ok(j);assert.notEqual(j,last);assert.match(j,/^puhe\/radio\/tekno_0[1-8]$/);last=j;}
+  let last=null;for(let i=0;i<400;i++){const j=pickJuonto('tekno',last);assert.ok(j);assert.notEqual(j,last);assert.match(j,/^(puhe\/radio\/tekno_0[1-8]|radio\/juonto_tekno_[1-8])$/);last=j;}
   assert.equal(valipuheNimi('parkano',1),'puhe/radio/parkano_01');assert.equal(valipuheNimi('country',8),'puhe/radio/country_08');assert.equal(valipuheNimi('tekno',3),'puhe/radio/tekno_03');
   const s=uusiRadio(1);s.on=true;s.ch=0;s.clip='radio_parkano_1';s.song=0;s.pos=10;
   assert.equal(radioEtene(s,0.01,10),true);assert.match(s.clip,/^puhe\/radio\/parkano_0[1-8]$/);const vp=s.clip;

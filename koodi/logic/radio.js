@@ -6,8 +6,8 @@ export const JUONNOT=8;
 export const VALIPUHE=JUONNOT;
 export function valipuheNimi(k,i){return 'puhe/radio/'+k+'_'+String(i).padStart(2,'0');}
 export function pickJuonto(k,last,rand=Math.random){
-  const opts=[];for(let i=1;i<=VALIPUHE;i++){const n=valipuheNimi(k,i);if(n!==last)opts.push(n);}return opts[Math.floor(rand()*opts.length)%opts.length];}
-export function onValipuhe(clip){return /^puhe\/radio\/(parkano|country|tekno)_\d{2}$/.test(clip||'');}
+  const opts=[];for(let i=1;i<=VALIPUHE;i++){for(const n of[valipuheNimi(k,i),'radio/juonto_'+k+'_'+i])if(n!==last)opts.push(n);}return opts[Math.floor(rand()*opts.length)%opts.length];}
+export function onValipuhe(clip){return /^(puhe\/radio\/(parkano|country|tekno)_\d{2}|radio\/juonto_(parkano|country|tekno)_\d)$/.test(clip||'');}
 
 // Isäntä arpoo juonnot ja biisijärjestyksen. Vieras soittaa saman klipin samasta kohdasta.
 export const KANAVAT=['parkano','country','tekno'];
