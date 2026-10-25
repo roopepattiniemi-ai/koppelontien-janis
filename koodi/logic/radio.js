@@ -1,10 +1,13 @@
-// Juonto biisien välissä 50 % todennäköisyydellä, ei samaa juontoa kahdesti peräkkäin.
-// Kanavalla on neljä biisiä ja kahdeksan välijuontoa.
+// Jokaisen biisin jälkeen välipuhe. Sama ei kahdesti peräkkäin.
+// Tiedostot: /aanet/puhe/radio/<kanava>_NN.mp3 (parkano, country, tekno, 01–08).
 import { mulberry32 } from './rng.js';
 export const BIISIT=4;
 export const JUONNOT=8;
-export function pickJuonto(k,last,rand=Math.random){if(rand()>=0.5)return null;
-  const opts=[];for(let i=1;i<=JUONNOT;i++){const n='radio/juonto_'+k+'_'+i;if(n!==last)opts.push(n);}return opts[Math.floor(rand()*opts.length)%opts.length];}
+export const VALIPUHE=JUONNOT;
+export function valipuheNimi(k,i){return 'puhe/radio/'+k+'_'+String(i).padStart(2,'0');}
+export function pickJuonto(k,last,rand=Math.random){
+  const opts=[];for(let i=1;i<=VALIPUHE;i++){const n=valipuheNimi(k,i);if(n!==last)opts.push(n);}return opts[Math.floor(rand()*opts.length)%opts.length];}
+export function onValipuhe(clip){return /^puhe\/radio\/(parkano|country|tekno)_\d{2}$/.test(clip||'');}
 
 // Isäntä arpoo juonnot ja biisijärjestyksen. Vieras soittaa saman klipin samasta kohdasta.
 export const KANAVAT=['parkano','country','tekno'];
@@ -42,10 +45,18 @@ export function radioEtene(s, dt, kesto){
   if(onBiisi(s.clip)){
     s.song=(s.song+1)%BIISIT;
     const j=pickJuonto(c, s.lastJ, s.rand);
-    if(j) s.lastJ=j;
-    s.clip=j||('radio_'+c+'_'+(s.song+1));
+    s.lastJ=j;
+    s.clip=j;
     return true;
   }
+  s.clip='radio_'+c+'_'+((s.song%BIISIT)+1);
+  return true;
+}
+// Puuttuva välipuhe ohitetaan seuraavaan biisiin. Biisiä ei ohiteta.
+export function radioPuuttuu(s){
+  if(!s.on||!onValipuhe(s.clip)) return false;
+  s.pos=0; s.gen++;
+  const c=KANAVAT[s.ch]||KANAVAT[0];
   s.clip='radio_'+c+'_'+((s.song%BIISIT)+1);
   return true;
 }

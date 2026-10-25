@@ -4,7 +4,8 @@ import * as V8 from '/v08.js';
 import * as V9 from '/v09.js';
 import * as TV from '/tienvarsi.js';
 import * as AL from '/aloitus.js';
-import { uusiRadio, radioKomento, radioEtene, radioKuva, radioSovita, radioVoimakkuus, radioSuodin, radioAlkuOffset, radioJatka } from '/logic/radio.js';
+import { uusiRadio, radioKomento, radioEtene, radioKuva, radioSovita, radioVoimakkuus, radioSuodin, radioAlkuOffset, radioJatka, radioPuuttuu, onValipuhe } from '/logic/radio.js';
+import { lataaAsetukset, talletaAsetukset, RES_SKAALA, NAKYVYYS, lataaLaatu, LAATUNIMI } from '/logic/asetukset.js';
 import { gpsMerkit, gpsPino, gpsTapahtuma } from '/logic/gps.js';
 import { nouseKyytiin, hyppaaUlos } from '/logic/kyyti.js';
 import { kylaAani, tunnelma } from '/logic/kylaAani.js';
@@ -23,7 +24,7 @@ import { pelletPattern, swarmHits, judgeHits, woundDmg, groundImpacts, pelletAt,
 import { roomSeed, newRoomCode, packWorld, applyWorld, seatFor, startSeat } from '/logic/sync.js';
 import { saunaPiste, saunaEtu, nearSauna, yhteenveto, riviPaikat, yhteenvetoTeksti, lopetusPyynto, PISTE } from '/logic/lopetus.js';
 import { lisaa as kirjaaKaato, lataa as lataaKaadot, tanaan, jahdinTeksti, paivitaKoira } from '/logic/paivakirja.js';
-import { haukkuVali, haukkuSavel, haukkuAani } from '/logic/haukku.js';
+import { haukkuVali, haukkuSavel, haukkuAani, uusiHaukkuSoitin, haukkuPyynto, haukkuPeru } from '/logic/haukku.js';
 import { osuuPelaajaan, lehti as rakennaLehti, lehtiPoyta, lehtiHtml, piirraMainos, piirraJanis, poytaMaailma, nearPoyta, poytaLaatikko, poytaEstaa, siistiNimi } from '/logic/lehti.js';
 import { alkuKoira, uusiJahtiKomento } from '/logic/kierros.js';
 import { lahetaKoirakomento, vastaanotaKoirakomento } from '/logic/koirakomento.js';
@@ -45,12 +46,17 @@ import { ditch, distToWater } from '/logic/world.js';
 const ROOM=new URLSearchParams(location.search).get('huone');const WSEED=ROOM?roomSeed(ROOM.toUpperCase()):(Math.random()*2**32)>>>0;window.__WSEED=WSEED;let ME='h';
 const feedOk=(x,z)=>inField(x,z)||distToWater(x,z)<8||ditch(x,z)>0.05;
 const G='/grafiikka/', $=id=>document.getElementById(id);
-// ---------- renderöinti: matala sisäinen resoluutio, sumu ----------
-let RW=640,RH=400;const RES=[[320,200],[640,400],[960,600]];let resI=+(new URLSearchParams(location.search).get('res')??1);[RW,RH]=RES[resI]||RES[1]; const renderer=new THREE.WebGLRenderer({antialias:false});
-renderer.setPixelRatio(1); renderer.setSize(RW,RH,false); document.body.prepend(renderer.domElement);
+// ---------- renderöinti: pikselisuhteen osuus, sumu ----------
+const qs=new URLSearchParams(location.search);
+let aset=lataaAsetukset(localStorage);
+if(qs.get('res')!=null){const r=+qs.get('res');if(r>=0&&r<RES_SKAALA.length)aset.res=r;}
+let resI=aset.res;
+function applyRes(){const s=RES_SKAALA[resI]??1;renderer.setPixelRatio(Math.max(0.25,(window.devicePixelRatio||1)*s));renderer.setSize(innerWidth,innerHeight,false);}
+const renderer=new THREE.WebGLRenderer({antialias:false});
+applyRes(); document.body.prepend(renderer.domElement);
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0xb0bed2); scene.fog=new THREE.FogExp2(0xb0bed2,0.012);
 const cam=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.05,600); cam.rotation.order='YXZ';
-addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();});
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();applyRes();});
 const hemi=new THREE.HemisphereLight(0xc8d4e8,0x8899aa,1.6); scene.add(hemi); const sun=new THREE.DirectionalLight(0xf0f0f4,1.1); sun.position.set(-1,0.35,1); scene.add(sun);
 // ---------- tekstuurit: oikea tiedosto tai proseduraalinen varatekstuuri ----------
 const TL=new THREE.TextureLoader();
@@ -115,21 +121,21 @@ const NEAR=[];const TREES=TV.suodataPuut(trees(),window.__tvi,{SIGNS,inBuilding}
 // ---------- v1.1b puiden LOD + kulling + grafiikka-asetus ----------
 // lähellä: GLB-instanssit (per malli), kauempana yksi halpa kartio-InstancedMesh, sumun takana ei mitään. Solut 50 m, frustum-testi soluittain.
 const LAATU={matala:{rn:45,rf:140,fog:0.016},keski:{rn:80,rf:190,fog:0.012},korkea:{rn:130,rf:240,fog:0.009}},LN=Object.keys(LAATU);
-const qs=new URLSearchParams(location.search);let laatu=qs.get('laatu')||localStorage.getItem('jahti_laatu')||'keski';if(!LAATU[laatu])laatu='keski';const autoQ=qs.get('auto')!=='0';
+let laatu=lataaLaatu(localStorage);if(LAATU[qs.get('laatu')])laatu=qs.get('laatu');
 const farGeo=new THREE.ConeGeometry(1,1,5).translate(0,0.5,0),farIM=new THREE.InstancedMesh(farGeo,new THREE.MeshLambertMaterial({color:0xffffff,flatShading:true}),TREES.length);
 farIM.count=0;farIM.frustumCulled=false;scene.add(farIM);const CK={kuusi:new THREE.Color(0x2a4a34),koivu:new THREE.Color(0x7d8470)};
 const CELL=50,cells=new Map();for(const t of TREES){if(t.model.startsWith('kanto')||t.model.startsWith('kaatunut'))t.nofar=true;const k=Math.floor(t.x/CELL)+','+Math.floor(t.z/CELL);let c=cells.get(k);if(!c)cells.set(k,c={x:(Math.floor(t.x/CELL)+.5)*CELL,z:(Math.floor(t.z/CELL)+.5)*CELL,l:[]});c.l.push(t);}
 const FR=new THREE.Frustum(),PM=new THREE.Matrix4(),SPH=new THREE.Sphere(),LQ=new THREE.Quaternion(),LS=new THREE.Vector3(),LP=new THREE.Vector3(),LM=new THREE.Matrix4(),LY=new THREE.Vector3(0,1,0);
-let lodT=9,lodX=1e9,lodZ=0,lodD=new THREE.Vector3(),fpsT=0,fpsN=0,dropT=0;
-function setLaatu(n,why){laatu=n;localStorage.setItem('jahti_laatu',n);scene.fog.density=LAATU[n].fog;lodT=9;if(why)say?.('Grafiikka: '+n+(why==='auto'?' (automaattinen pudotus, FPS matala)':''));}
+let lodT=9,lodX=1e9,lodZ=0,lodD=new THREE.Vector3(),fpsHudT=0,fpsHudN=0;
+function nakyKerroin(){return NAKYVYYS[aset.naky|0]?.kerroin||1;}
+function setLaatu(n,why){if(!LAATU[n])return;laatu=n;localStorage.setItem('jahti_laatu',n);scene.fog.density=LAATU[n].fog/nakyKerroin();lodT=9;paivitaAsetNapit();if(why)say?.('Grafiikka: '+(LAATUNIMI[n]||n));}
 setLaatu(laatu);window.__laatu=()=>laatu;window.__setLaatu=setLaatu;
 addEventListener('keydown',e=>{if(e.code==='KeyL'&&!e.repeat)setLaatu(LN[(LN.indexOf(laatu)+1)%3],'k');});
-function treeLOD(dt){fpsT+=dt;fpsN++;dropT+=dt;if(fpsT>=4){const f=fpsN/fpsT;fpsT=0;fpsN=0;if(autoQ&&f<24&&dropT>10&&laatu!=='matala'){dropT=0;setLaatu(LN[LN.indexOf(laatu)-1],'auto');}}
-  cam.updateMatrixWorld();const dv=cam.getWorldDirection(new THREE.Vector3()),cx=cam.position.x,cz=cam.position.z;lodT+=dt;
+function treeLOD(dt){cam.updateMatrixWorld();const dv=cam.getWorldDirection(new THREE.Vector3()),cx=cam.position.x,cz=cam.position.z;lodT+=dt;
   if(lodT<0.25&&Math.hypot(cx-lodX,cz-lodZ)<6&&dv.dot(lodD)>0.97)return;lodT=0;lodX=cx;lodZ=cz;lodD.copy(dv);
-  const Q=LAATU[laatu],rn2=Q.rn*Q.rn,rf2=Q.rf*Q.rf;PM.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);FR.setFromProjectionMatrix(PM);
+  const Q=LAATU[laatu],nk=nakyKerroin(),rn=Q.rn*nk,rf=Q.rf*nk,rn2=rn*rn,rf2=rf*rf;PM.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);FR.setFromProjectionMatrix(PM);
   for(const im of NEAR)im.count=0;let nf=0;
-  for(const c of cells.values()){const dx=c.x-cx,dz=c.z-cz;if(dx*dx+dz*dz>(Q.rf+CELL)**2)continue;SPH.center.set(c.x,cam.position.y,c.z);SPH.radius=CELL*0.75+15;if(!FR.intersectsSphere(SPH))continue;
+  for(const c of cells.values()){const dx=c.x-cx,dz=c.z-cz;if(dx*dx+dz*dz>(rf+CELL)**2)continue;SPH.center.set(c.x,cam.position.y,c.z);SPH.radius=CELL*0.75+15;if(!FR.intersectsSphere(SPH))continue;
     for(const t of c.l){const ex=t.x-cx,ez=t.z-cz,d2=ex*ex+ez*ez;if(d2>rf2)continue;
       LQ.setFromAxisAngle(LY,t.rot);LP.set(t.x,t.y,t.z);
       if(d2<rn2){const im=t.im;if(im.count>=im.instanceMatrix.count)continue;LS.setScalar(t.s);LM.compose(LP,LQ,LS);im.setMatrixAt(im.count++,LM);}
@@ -260,9 +266,11 @@ const wheels={};let door=null,doorT=0;
 const carObj=model(['vitara.glb'],carFb,car,0,sc=>{for(const n of['pyora_ev','pyora_eo','pyora_tv','pyora_to'])wheels[n]=sc.getObjectByName(n);door=sc.getObjectByName('ovi_kuljettaja');if(door)door.userData.r0=door.rotation.y;});
 const fsd=fsdTila(),fsdValot=[];
 function luoFsdValot(){if(fsdValot.length)return;for(const x of[-0.72,0.72]){const m=new THREE.Mesh(new THREE.SphereGeometry(0.07,6,6),new THREE.MeshBasicMaterial({color:0xfff1a8}));m.position.set(x,0.72,1.55);const l=new THREE.PointLight(0xffe090,0,9);l.position.copy(m.position);carObj.add(m);carObj.add(l);fsdValot.push({m,l});}}
-function fsdSeis(teksti){if(!fsd.on)return;fsd.on=false;if(teksti)say(teksti);if(NET?.peer&&ME==='h')NET.send({t:'fsd',on:0,teksti:teksti||''});}
-function kaynnistaFsd(x,z){if(!fsdSaaKutsua({autossa:!!pl.inCar,vierasAutossa:!!(NET?.last?.inCar)})){say('FSD ei aja, kun autossa istutaan');return;}const alku=fsdKaynnista(fsd,car,{x,z},{vapaa:carFree,roads:ROADS});luoFsdValot();say(alku.teksti||FSD_TEKSTI);if(alku.kommentti)setTimeout(()=>{if(fsd.on)say(alku.kommentti);},1100);if(NET?.peer&&ME==='h')NET.send({t:'fsd',on:1,teksti:alku.teksti||FSD_TEKSTI});}
-function kutsuFsd(){if(lehtiOn||loppuOn||lukuOn||editorOn)return;if(!fsdSaaKutsua({autossa:!!pl.inCar,vierasAutossa:!!(NET?.last?.inCar)})){say('FSD ei aja, kun autossa istutaan');return;}if(fsdKomento(ME,!!(NET&&NET.peer))==='pyynto'){NET.send({t:'fsd',x:pl.x,z:pl.z});say('FSD-pyyntö isännälle');return;}kaynnistaFsd(pl.x,pl.z);}
+function fsdViesti(on,teksti){const m={t:'fsd',on:on?1:0,teksti:teksti||''};if(!on){m.cx=car.x;m.cz=car.z;m.h=car.heading;}return m;}
+function fsdSeis(teksti){if(!fsd.on)return;fsd.on=false;if(teksti)say(teksti);if(NET?.peer&&ME==='h')NET.send(fsdViesti(0,teksti));}
+function kieltaydyFsd(){const t='FSD ei aja, kun autossa istutaan';say(t);if(NET?.peer&&ME==='h')NET.send(fsdViesti(0,t));}
+function kaynnistaFsd(x,z){if(!fsdSaaKutsua({autossa:!!pl.inCar,vierasAutossa:!!(NET?.last?.inCar)})){kieltaydyFsd();return;}const alku=fsdKaynnista(fsd,car,{x,z},{vapaa:carFree,roads:ROADS,blocked:car.blocked});luoFsdValot();say(alku.teksti||FSD_TEKSTI);if(alku.kommentti)setTimeout(()=>{if(fsd.on)say(alku.kommentti);},1100);if(NET?.peer&&ME==='h')NET.send({t:'fsd',on:1,teksti:alku.teksti||FSD_TEKSTI});}
+function kutsuFsd(){if(lehtiOn||loppuOn||lukuOn||editorOn)return;if(!fsdSaaKutsua({autossa:!!pl.inCar,vierasAutossa:!!(NET?.last?.inCar)})){kieltaydyFsd();return;}if(fsdKomento(ME,!!(NET&&NET.peer))==='pyynto'){NET.send({t:'fsd',x:pl.x,z:pl.z});say('FSD-pyyntö isännälle');return;}kaynnistaFsd(pl.x,pl.z);}
 const interior=V8.setupInterior(scene), vm=V8.setupViewmodel(), WP=V9.setupWeapons(vm);
 const FREQ={parkano:'98.4',country:'103.7',tekno:'91.1'};
 // ---------- jäljet lumessa (decalit, suunta) ----------
@@ -302,8 +310,8 @@ const play3d=(n,o)=>A3&&buf[n]?A3.play(buf[n],o):null;
 const engineStart=()=>({idle:play3d('sfx_vitara_tyhjakaynti_loop',{x:car.x,y:car.y+0.8,z:car.z,gain:.3,loop:true,ref:4,max:400,roll:1.2}),drive:play3d('sfx_vitara_ajo_loop',{x:car.x,y:car.y+0.8,z:car.z,gain:0.001,loop:true,ref:4,max:400,roll:1.2})});
 const SND=['sfx_koira_haukku_1','sfx_koira_haukku_2','sfx_koira_haukku_3','sfx_koira_haukku_4','sfx_koira_haukku_5','sfx_koira_haukku_6','sfx_koira_ajo_tiivis','sfx_koira_ajo_harva','sfx_koira_ylosotto','sfx_koira_nuuhkii','sfx_koira_nuuhkii_hidas','sfx_koira_vinkuu','sfx_koira_juoksu_lumi','sfx_haulikko_laukaus','sfx_haulikko_lataus','sfx_askel_lumi_1','sfx_askel_lumi_2','sfx_askel_lumi_3','sfx_askel_lumi_4','sfx_kavely_lumi_loop','sfx_janis_pakoloikka','amb_talvimetsa_tuuli_loop','musiikki_valikko_talvi','sfx_gps_avaus','sfx_gps_sulku','sfx_gps_piippaus','sfx_gps_haukkuindikaattori','sfx_gps_hukka','sfx_hihna_naksahdus','aani_taalla_1','aani_taalla_2','sfx_vitara_ovi_auki','sfx_vitara_ovi_kiinni','sfx_vitara_kaynnistys','sfx_vitara_sammutus','sfx_vitara_tyhjakaynti_loop','sfx_vitara_ajo_loop','sfx_koira_hyppy','amb_korppi_1','amb_korppi_2','amb_tikka_1',...['tanne','etsi','seuraa','irti'].flatMap(k=>['aani_'+k+'_1','aani_'+k+'_2'])];
 async function loadSnd(n){for(const e of['ogg','mp3']){try{const r=await fetch(`/aanet/${n}.${e}`);if(!r.ok)continue;buf[n]=await AC.decodeAudioData(await r.arrayBuffer());return;}catch{}}}
-function play(n,{gain=1,pan=0,loop=false}={}){if(!AC||gain<=0.001)return null;const g=AC.createGain();g.gain.value=gain;const p=AC.createStereoPanner();p.pan.value=pan;g.connect(p).connect(AC.destination);
-  let s;if(!buf[n]&&/pilli|aani_|hihna|gps|vitara|hyppy/.test(n))return null;if(buf[n]){s=AC.createBufferSource();s.buffer=buf[n];s.loop=loop;}else{if(loop)return null;s=AC.createOscillator();s.frequency.value=n.includes('haukku')||n.includes('ajo')?420:n.includes('laukaus')?90:200;s.type='sine';g.gain.value=gain*0.3;g.gain.setTargetAtTime(0,AC.currentTime+0.08,0.04);s.stop(AC.currentTime+0.3);}
+function play(n,{gain=1,pan=0,loop=false}={}){const y=aset.yleinen??1;if(!AC||gain*y<=0.001)return null;const g=AC.createGain();g.gain.value=gain*y;const p=AC.createStereoPanner();p.pan.value=pan;g.connect(p).connect(AC.destination);
+  let s;if(!buf[n]&&/pilli|aani_|hihna|gps|vitara|hyppy/.test(n))return null;if(buf[n]){s=AC.createBufferSource();s.buffer=buf[n];s.loop=loop;}else{if(loop)return null;s=AC.createOscillator();s.frequency.value=n.includes('haukku')||n.includes('ajo')?420:n.includes('laukaus')?90:200;s.type='sine';g.gain.value=gain*y*0.3;g.gain.setTargetAtTime(0,AC.currentTime+0.08,0.04);s.stop(AC.currentTime+0.3);}
   s.connect(g);s.start();return {s,g};}
 // ---------- peli ----------
 // 5 jänistä eri puolilla metsää (vähintään 120 m toisistaan), koira ajaa yhtä kerrallaan (dog.target)
@@ -325,6 +333,8 @@ const gpsCtx=$('gpsc').getContext('2d',{willReadFrequently:true});let gpsImgT=0;
 // Näytetään GPS <img>:nä: näkyvä 2D-kanvas tuotti mustan haamulaatikon kompassin alle (Chromen kompositointi)
 let engine=null;let gpsOn=false,gpsMode=0,gpsSpan=800,gpsKoriNyt=null,hyppyCd=0,hyppyEd=null,luovutus=0,vierasLuovutus=0;const gh={};for(const n of['ajo','seisonta','haukku','hiljaa'])(gh[n]=new Image()).src=G+'hud/gps_haukku_'+n+'.png';const gArrow=new Image();gArrow.src=G+'hud/gps_suunta_nuoli.png';const gDot=new Image();gDot.src=G+'hud/gps_reitti_piste.png';const gpsMap=new Image();let gpsGeo={m_per_px:SIZE/1024,maailma_origo_px:[512,512]};gpsMap.src=G+'hud/gps_kartta.png';fetch(G+'hud/gps_kartta.json').then(r=>r.ok&&r.json()).then(j=>{if(j)gpsGeo=j;}).catch(()=>{});const gi={};for(const n of['pelaaja','koira','koira_ajo','koira_haku','koira_hukka']){gi[n]=new Image();gi[n].src=G+'hud/gps_'+n+'.png';}
 let dogJaw=0,ambT=12;let dn=0,barkT=0,terrierBarkT=1.4,stepT=0,msgT=0,puheT=0,huutoTauko=0,lastDog=dog.state,shotFlash=0,hareFlushed=false,muistiT=0;
+const haukkuSoitin=uusiHaukkuSoitin();let haukkuKello=0,haukkuSeq=0;
+function soitaHaukku(koira,nimi,o,tunnus){if(!nimi||!buf[nimi])return false;const id=tunnus||null;const r=haukkuPyynto(haukkuSoitin,koira,nimi,haukkuKello,buf[nimi].duration||1,id);if(!r.soita)return false;const h=play3d(nimi,o);if(!h){haukkuPeru(haukkuSoitin,koira);return false;}if(koira==='ajokoira'&&!isGuest())dog.aani={id:id||('a'+(++haukkuSeq)),nimi};return true;}
 for(const h of hares)for(const p of h.nightTrail)addTrack(h.laji==='kettu'?'kettu':'janis',p);
 {const G={};for(const t of TREES)(G[Math.floor(t.x/4)+','+Math.floor(t.z/4)]??=[]).push(t);car.blocked=(x,z)=>{const gx=Math.floor(x/4),gz=Math.floor(z/4);for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)for(const t of G[(gx+a)+','+(gz+b)]||[])if(Math.hypot(t.x-x,t.z-z)<1.4)return true;return poytaEstaa(car.x,car.z,x,z,poytaLaatikko(CABIN,1))||poytaEstaa(car.x,car.z,x,z,pelinKoneLaatikko(CABIN));};}
 const PUUSOLU=8,PUUG=new Map();
@@ -350,10 +360,10 @@ async function radioSoita(offset){if(!AC||!RS.on||!RS.clip){radioOff();return;}
   const tok=++radioTok,gen=RS.gen,clip=RS.clip;radioKesken=true;radioLoppui=false;radioStop();
   if(AC.state==='suspended'&&AL.aanetPaalla()){try{await AC.resume();}catch{}}
   const alku=AC.currentTime,b=await rbuf(clip);if(tok!==radioTok)return;if(gen!==RS.gen||RS.clip!==clip||!RS.on){radioKesken=false;return;}
-  if(!b){radioKesken=false;return;}
+  if(!b){radioKesken=false;if(!isGuest()&&radioPuuttuu(RS)){lahetaRadio();radioSoita(0);}return;}
   let off=offset||0;if(isGuest())off+=Math.max(0,AC.currentTime-alku);
   const al=radioAlkuOffset(off,b.duration);radioKesken=false;if(al.ohi){radioLoppui=true;RS.pos=b.duration;return;}
-  const s=AC.createBufferSource();s.buffer=b;const sg=AC.createGain();sg.gain.value=clip.includes('juonto_')?1.15:1;s.connect(sg).connect(radioOut().hp);
+  const s=AC.createBufferSource();s.buffer=b;const sg=AC.createGain();sg.gain.value=(clip.includes('juonto_')||onValipuhe(clip))?1.15:1;s.connect(sg).connect(radioOut().hp);
   s.onended=()=>{if(radio.src!==s)return;radio.src=null;radioLoppui=true;};
   radio.src=s;try{s.start(0,al.off);}catch{try{s.start();}catch{}}RS.pos=al.off;peilaaRadio();}
 function lahetaRadio(){peilaaRadio();if(NET?.peer&&!isGuest())NET.send(radioKuva(RS));}
@@ -372,7 +382,12 @@ function radioTick(dt){peilaaRadio();if(!RS.on||!AC)return;
   if(radioEtene(RS,dt,b.duration)){radioLoppui=false;radioSoita(0);lahetaRadio();}
   if(NET?.peer&&ME==='h'){radioHb-=dt;if(radioHb<=0){radioHb=2;NET.send(radioKuva(RS));}}}
 addEventListener('focus',()=>radioHerata());
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')radioHerata();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){radioHerata();return;}
+  if(!window.__peliAlkanut||loppuOn||lehtiOn||lukuOn||editorOn||riistaOn)return;
+  if(document.pointerLockElement)document.exitPointerLock();
+  avaaTauko();
+});
 const keys={};addEventListener('keydown',e=>{keys[e.code]=true;
   if(e.target&&e.target.tagName==='INPUT')return;
   if(e.code==='Enter'&&$('menu').style.display==='flex'&&!loppuOn&&!lehtiOn&&!lukuOn){e.preventDefault();jatkaJahtia();return;}
@@ -392,7 +407,7 @@ const keys={};addEventListener('keydown',e=>{keys[e.code]=true;
     if(e.code==='Tab')return;if(e.code==='KeyQ'){radioNappi('ch');return;}}
 
   if(gpsMode&&(e.code==='Equal'||e.code==='Minus'||e.code==='NumpadAdd'||e.code==='NumpadSubtract')){gpsSpan=Math.max(150,Math.min(1600,gpsSpan*(e.code.includes('Equal')||e.code.includes('Add')?0.7:1.43)));say('GPS-zoom '+Math.round(gpsSpan)+' m');return;}
-  if(e.code==='Equal'||e.code==='Minus'||e.code==='NumpadAdd'||e.code==='NumpadSubtract'){resI=Math.max(0,Math.min(2,resI+(e.code.includes('Equal')||e.code.includes('Add')?1:-1)));[RW,RH]=RES[resI];renderer.setSize(RW,RH,false);say('Resoluutio '+RW+'x'+RH);}
+  if(e.code==='Equal'||e.code==='Minus'||e.code==='NumpadAdd'||e.code==='NumpadSubtract'){asetaRes(resI+(e.code.includes('Equal')||e.code.includes('Add')?1:-1),true);}
   if(e.code==='KeyG'||e.code==='KeyM'){const oli=gpsOn;gpsMode=(gpsMode+1)%3;gpsOn=gpsMode>0;if(gpsOn&&!oli)saavuta({tyyppi:'gps'});const gd=$('gps');gd.style.display=gpsOn?'block':'none';gd.style.width=gpsMode===2?'calc(50vh*0.8)':'min(24vw,240px)';gd.style.height=gpsMode===2?'50vh':'calc(min(24vw,240px)*1.25)';varmistaFsdNappi();const gpn=!oli&&gpsOn?'sfx_gps_avaus':oli&&!gpsOn?'sfx_gps_sulku':null;if(gpn)play(gpn,{gain:0.6});}
   {const viesti=lahetaKoirakomento({role:isGuest()?'v':'h',code:e.code,koira:dog,terrieri:terrier,x:pl.x,z:pl.z,hare});if(viesti){const C=viesti.c;if(isGuest())NET.send({t:'cmd',kenelle:'terrieri',c:C,x:pl.x,z:pl.z});const r=viesti.tulos;
     const shout=k=>play('aani_'+k+'_'+(1+Math.random()*2|0),{gain:.8});
@@ -528,7 +543,23 @@ function jumpPet(){if(!terrier.riding)return;const miten=hyppaaUlos(terrier);con
 function nouseTerrieri(){if(!NET?.peer||terrier.riding)return;if(!nouseKyytiin(terrier,{seuraaMyos:true}))return;const c1=car.cargo(1);terrier.x=c1.x;terrier.z=c1.z;terrier.dir=car.heading;hopSnd(c1.x,c1.z);}
 const cvs=renderer.domElement;
 function suljeVarmistus(){const v=$('lopeta-varmistus');if(v)v.style.display='none';}
-function avaaTauko(){suljeVarmistus();$('menu').style.display='flex';}
+function avaaTauko(){suljeVarmistus();paivitaAsetNapit();$('menu').style.display='flex';}
+function merkitse(id,i){const row=$(id);if(!row)return;for(const b of row.querySelectorAll('button'))b.classList.toggle('valittu',+b.dataset.i===i);}
+function paivitaAsetNapit(){merkitse('aset-laatu',LN.indexOf(laatu));merkitse('aset-res',resI);merkitse('aset-naky',aset.naky|0);merkitse('aset-fps',aset.fps?1:0);}
+function tallennaAset(){aset=talletaAsetukset(localStorage,aset);paivitaAsetNapit();}
+function asetaRes(i,kerro){resI=Math.max(0,Math.min(RES_SKAALA.length-1,i|0));aset.res=resI;applyRes();tallennaAset();if(kerro)say('Resoluutio '+Math.round((RES_SKAALA[resI]??1)*100)+' %');}
+function lisaaNappi(id,nimi,i,fn){const b=document.createElement('button');b.type='button';b.textContent=nimi;b.dataset.i=String(i);b.addEventListener('click',e=>{e.stopPropagation();fn();});$(id)?.append(b);}
+LN.forEach((k,i)=>lisaaNappi('aset-laatu',LAATUNIMI[k]||k,i,()=>setLaatu(k,'k')));
+RES_SKAALA.forEach((s,i)=>lisaaNappi('aset-res',Math.round(s*100)+' %',i,()=>asetaRes(i,true)));
+NAKYVYYS.forEach((n,i)=>lisaaNappi('aset-naky',n.nimi,i,()=>{aset.naky=i;lodT=9;tallennaAset();}));
+[['Pois',false],['Päällä',true]].forEach(([nimi,on],i)=>lisaaNappi('aset-fps',nimi,i,()=>{aset.fps=on;tallennaAset();}));
+function volLiuku(id,avain){const el=$(id);if(!el)return;el.value=String(Math.round((aset[avain]??1)*100));el.addEventListener('input',()=>{aset[avain]=(+el.value)/100;talletaAsetukset(localStorage,aset);});}
+volLiuku('vol-yleinen','yleinen');volLiuku('vol-radio','radio');volLiuku('vol-puhe','puhe');
+function taytaTaukoOhjeet(){const box=$('tauko-ohjeet');if(!box||box.querySelector('table'))return;const table=document.createElement('table');
+  for(const [k,t] of AL.OHJEET){const tr=document.createElement('tr'),a=document.createElement('td'),b=document.createElement('td');a.textContent=k;b.textContent=t;tr.append(a,b);table.append(tr);}box.append(table);}
+taytaTaukoOhjeet();
+$('menu-osiot')?.addEventListener('click',e=>e.stopPropagation());
+paivitaAsetNapit();
 function jatkaJahtia(){if(loppuOn||lehtiOn||lukuOn||editorOn)return;suljeVarmistus();startGame();}
 async function startGame(){$('menu').style.display='none';suljeVarmistus();cvs.requestPointerLock();if(!AC){AC=new AudioContext();if(!AL.aanetPaalla())AC.suspend();A3=V8.makeAudio3D(AC);await Promise.all(SND.map(loadSnd));await Promise.all(ALLSND.map(loadSnd));window.__aanetPuuttuu=ALLSND.filter(n=>!buf[n]);
   if(!amb)amb=play('amb_talvimetsa_tuuli_loop',{gain:.21,loop:true});if(!walk)walk=play('sfx_kavely_lumi_loop',{gain:0,loop:true});}
@@ -561,7 +592,7 @@ function netMsg(m){
   else if(m.t==='loppu'&&m.yhteenveto)aloitaKohtaus(m.yhteenveto);
   else if(m.t==='lehti'&&m.seed!=null)aloitaLehti(m.seed,m.pisteet|0,m.kaatui,m.nimi,m.kyla!=null||m.otsikko?{otsikko:m.otsikko,ingressi:m.ingressi,kyla:m.kyla}:null);
   else if(m.t==='uusi'){if(m.pyynto){if(ME==='h')kaynnistaUusiJahti();}else location.reload();}
-  else if(m.t==='fsd'){if(m.x!=null&&ME==='h')kaynnistaFsd(m.x,m.z);else if(ME!=='h'){fsd.on=!!m.on;if(fsd.on)luoFsdValot();if(m.teksti)say(m.teksti);}}
+  else if(m.t==='fsd'){if(m.x!=null&&m.cx==null&&ME==='h')kaynnistaFsd(m.x,m.z);else if(ME!=='h'){if(m.cx!=null){car.x=m.cx;car.z=m.cz;if(m.h!=null)car.heading=m.h;car.speed=0;car.pose();}fsd.on=!!m.on;if(fsd.on)luoFsdValot();if(m.teksti)say(m.teksti);}}
   else if(m.t==='hyppy'&&m.rivi){vierasLuovutus=0.7;naytaPelaajaPuhe(m.rivi,m.role||'v',m.x??pl.x,m.z??pl.z);}}
 let netT=0,worldT=0,vierasVauhti=0;
 function netTick(dt){if(!NET||!NET.peer)return;netT-=dt;worldT-=dt;
@@ -718,8 +749,8 @@ function varmistaPelaajaAani(){if(!AC||buf.pelaaja_h)return;for(const role of['h
 let puheIndeksiLupaus=null;
 function lataaPuheIndeksi(){if(!puheIndeksiLupaus)puheIndeksiLupaus=fetch('/aanet/puhe/indeksi.json').then(r=>r.ok?r.json():null).catch(()=>null);return puheIndeksiLupaus;}
 lataaPuheIndeksi();
-async function soitaPuheTiedosto(tiedosto,o){if(!AC)return false;const key='puhe:'+tiedosto;if(!(key in buf)){try{const r=await fetch('/aanet/puhe/'+String(tiedosto).replace(/^\//,''));if(!r.ok){buf[key]=null;return false;}buf[key]=await AC.decodeAudioData(await r.arrayBuffer());}catch{buf[key]=null;return false;}}if(!buf[key])return false;play3d(key,o);return true;}
-function soitaRepliikki({hahmot,teksti,x,z,mumina,gain=0.55,kategoria}){const opt={x,y:height(x,z)+1.5,z,gain,ref:4,max:28};varmistaKylaAanet();varmistaPelaajaAani();lataaPuheIndeksi().then(async idx=>{const tied=etsiPuhe(idx,{hahmo:hahmot,teksti,kategoria});if(tied&&await soitaPuheTiedosto(tied,opt))return;play3d(mumina,opt);});}
+async function soitaPuheTiedosto(tiedosto,o){if(!AC)return false;const key='puhe:'+tiedosto;if(!(key in buf)){try{const r=await fetch('/aanet/puhe/'+String(tiedosto).replace(/^\//,''));if(!r.ok){buf[key]=null;return false;}buf[key]=await AC.decodeAudioData(await r.arrayBuffer());}catch{buf[key]=null;return false;}}if(!buf[key])return false;play3d(key,{...o,gain:(o.gain??1)*(aset.puhe??1)});return true;}
+function soitaRepliikki({hahmot,teksti,x,z,mumina,gain=0.55,kategoria}){const opt={x,y:height(x,z)+1.5,z,gain,ref:4,max:28};varmistaKylaAanet();varmistaPelaajaAani();lataaPuheIndeksi().then(async idx=>{const tied=etsiPuhe(idx,{hahmo:hahmot,teksti,kategoria});if(tied&&await soitaPuheTiedosto(tied,opt))return;play3d(mumina,{...opt,gain:(opt.gain??1)*(aset.puhe??1)});});}
 function naytaPelaajaPuhe(rivi,role,x,z){const el=$('puhe');if(!el)return;el.replaceChildren();const b=document.createElement('b');b.textContent=role===ME?'Sinä':'Kaveri';el.append(b,document.createElement('br'),document.createTextNode(rivi));el.style.display='block';puheT=3.4;const hahmo=role==='v'?'pelaaja2':'pelaaja1';const mumina=role==='v'?'pelaaja_v':'pelaaja_h';soitaRepliikki({hahmot:[hahmo],teksti:rivi,x,z,mumina,gain:0.7,kategoria:'hyppy'});}
 function kieltaydyHypysta(){if(!window.__peliAlkanut||pl.inCar||loppuOn||lehtiOn||lukuOn||editorOn||!hyppySallittu(hyppyCd))return;const rivi=seuraavaHyppy(hyppyEd);hyppyEd=rivi;hyppyCd=1.5;luovutus=0.7;naytaPelaajaPuhe(rivi,ME,pl.x,pl.z);NET?.send({t:'hyppy',rivi,role:ME,x:pl.x,z:pl.z});}
 function varmistaFsdNappi(){const gd=$('gps');if(!gd||$('fsd-nappi'))return;const b=document.createElement('button');b.id='fsd-nappi';b.type='button';b.textContent='FSD';b.title='Kutsu Vitara';b.style.cssText='position:absolute;right:6px;top:6px;z-index:3;pointer-events:auto;font:700 13px sans-serif;padding:4px 8px;background:#ffe14a;color:#111;border:2px solid #111;cursor:pointer';b.addEventListener('click',e=>{e.stopPropagation();kutsuFsd();});gd.appendChild(b);}
@@ -740,10 +771,12 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   // pelaaja
   let f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);if(lukuOn||editorOn||riistaOn||$('menu').style.display==='flex')f=s=0;
   if(pl.inCar){if(fsd.on)fsdSeis('FSD perui – autossa istutaan');if(pl.seat==='kuski'){car.update(dt,{throttle:f,steer:s});car.steer=s;}pl.x=car.x;pl.z=car.z;f=s=0;if(window.__peliAlkanut){if(radio.on)saavuta({tyyppi:'radio',dt});if(pl.seat==='kuski'&&car.offroad)saavuta({tyyppi:'vitara',metri:Math.abs(car.speed)*dt});}}
-  else if(fsd.on&&!isGuest()){if(NET?.last?.inCar)fsdSeis('FSD perui – autossa istutaan');else{const r=fsdPaivita(fsd,car,dt);if(r){if(r.tapahtuma){if(r.teksti)say(r.teksti);if(NET?.peer&&ME==='h')NET.send({t:'fsd',on:0,teksti:r.teksti||''});}else{car.update(dt,{throttle:r.throttle,steer:r.steer});car.steer=r.steer;if(window.__peliAlkanut&&car.offroad)saavuta({tyyppi:'vitara',metri:Math.abs(car.speed)*dt});}}}}
+  else if(fsd.on&&!isGuest()){if(NET?.last?.inCar)fsdSeis('FSD perui – autossa istutaan');else{const r=fsdPaivita(fsd,car,dt);if(r){if(r.tapahtuma){if(r.teksti)say(r.teksti);if(NET?.peer&&ME==='h')NET.send(fsdViesti(0,r.teksti));}else{car.update(dt,{throttle:r.throttle,steer:r.steer});car.steer=r.steer;}}}}
   if(engine){const v=Math.min(1,Math.abs(car.speed)/16),r=0.8+0.7*v,eg=pl.inCar?0.5:2;for(const k in engine)if(engine[k]){engine[k].s.playbackRate.value=r;engine[k].setPos?.(car.x,car.y+0.8,car.z);}if(engine.idle)engine.idle.g.gain.value=0.25*(1-v)*eg;if(engine.drive)engine.drive.g.gain.value=0.25*v*eg;}
   radioTick(dt);
-  if(radio.out){const o=radio.out;o.c3.setPos?.(car.x,car.y+1,car.z);A3.setPos(o.c3,car.x,car.y+1,car.z);const open=doorT>0;const su=radioSuodin(pl.inCar,open);o.hp.frequency.value=su.hp;o.lp.frequency.value=su.lp;o.g.gain.value=radioVoimakkuus(pl.inCar,open);o.c3.lp.frequency.value=pl.inCar?18000:open?8000:2200;}
+  if(A3?.out)A3.out.gain.value=aset.yleinen??1;
+  if(amb?.g)amb.g.gain.value=0.21*(aset.yleinen??1);
+  if(radio.out){const o=radio.out;o.c3.setPos?.(car.x,car.y+1,car.z);A3.setPos(o.c3,car.x,car.y+1,car.z);const open=doorT>0;const su=radioSuodin(pl.inCar,open);o.hp.frequency.value=su.hp;o.lp.frequency.value=su.lp;o.g.gain.value=radioVoimakkuus(pl.inCar,open)*(aset.radio??1);o.c3.lp.frequency.value=pl.inCar?18000:open?8000:2200;}
   if(A3){A3.updateListener(cam);ambT-=dt;if(ambT<=0){ambT=15+Math.random()*30;const a=Math.random()*6.28,d=80+Math.random()*250,n=['amb_korppi_1','amb_korppi_2','amb_tikka_1'][Math.random()*3|0];play3d(n,{x:pl.x+Math.cos(a)*d,y:12,z:pl.z+Math.sin(a)*d,gain:1.5,ref:25,max:1500});}
     }
   carObj.rotation.order='YXZ';carObj.position.set(car.x,car.y,car.z);carObj.rotation.set(-car.pitch,Math.PI-car.heading,-car.roll);
@@ -756,7 +789,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   if(pl.moving){const sp=pl.crouch?0.7:keys.ShiftLeft?4:1.6;let nx=pl.x+(-Math.sin(pl.yaw)*f+Math.cos(pl.yaw)*s)*sp*dt,nz=pl.z+(-Math.cos(pl.yaw)*f-Math.sin(pl.yaw)*s)*sp*dt;const laatikot=[poytaLaatikko(CABIN),pelinKoneLaatikko(CABIN)];
     const estaa=(x1,z1)=>laatikot.some(b=>poytaEstaa(pl.x,pl.z,x1,z1,b));
     if(estaa(nx,nz)){if(!estaa(nx,pl.z))nz=pl.z;else if(!estaa(pl.x,nz))nx=pl.x;else{nx=pl.x;nz=pl.z;}}pl.x=nx;pl.z=nz;stepT-=dt;}pl.x=clampB(pl.x);pl.z=clampB(pl.z);
-  if(walk)walk.g.gain.value=pl.moving?0.4:0;
+  if(walk)walk.g.gain.value=(pl.moving?0.4:0)*(aset.yleinen??1);
   interior.g.position.copy(carObj.position);interior.g.rotation.copy(carObj.rotation);interior.g.visible=interior.loaded;
   // Sisänäkymässä ulkokori (vitara_kori, DoubleSide) peitti tuulilasin/ikkunat/radion/lattian 0.2–1.1 m päässä kamerasta → piiloon
   {const kori=carObj.getObjectByName('vitara_kori');if(kori)kori.visible=!(pl.inCar&&interior.loaded);if(interior.extra)interior.extra.visible=pl.inCar;}
@@ -793,12 +826,14 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
     terrierObj.position.set(terrier.x,terrier.riding?car.y+0.58:height(terrier.x,terrier.z),terrier.z);terrierObj.rotation.set(0,Math.PI-(terrier.dir||0),0);V8.animDog(terrierObj.userData.n,{t:tnow,spd:terrier.riding?0:ts,sit:!!terrier.riding,jaw:0,k:V8.DOG_K.terrier});}
   // ääni: kuuluvuus etäisyys + tuuli, panorointi suunnan mukaan
   const vol=audibility(dog.pos,P),rel=Math.atan2(dog.x-pl.x,-(dog.z-pl.z))+pl.yaw,pan=Math.max(-1,Math.min(1,Math.sin(rel)));
-  if(!dog.riding&&dog.state!==lastDog){if(dog.state===D.AJO){saavuta({tyyppi:'haukku'});play3d('sfx_koira_ylosotto',{x:dog.x,y:height(dog.x,dog.z)+0.6,z:dog.z,gain:1.4,ref:15,max:2500});}lastDog=dog.state;}
+  if(!dog.riding&&dog.state!==lastDog){if(!GUEST&&dog.state===D.AJO){saavuta({tyyppi:'haukku'});soitaHaukku('ajokoira','sfx_koira_ylosotto',{x:dog.x,y:height(dog.x,dog.z)+0.6,z:dog.z,gain:1.4,ref:15,max:2500});}lastDog=dog.state;}
   {const tap=gpsTapahtuma(gpsKoriNyt,dog.riding?'narussa':dog.state);if(tap){gpsKoriNyt=tap.kori;if(gpsOn&&window.__peliAlkanut){tap.aanet.forEach((a,i)=>setTimeout(()=>play(a,{gain:a==='sfx_gps_hukka'?0.5:0.4}),i*130));if(tap.teksti)say(tap.teksti);}}}
-  barkT-=dt;terrierBarkT-=dt;if(dog.riding)barkT=1;else if(barkT<=0){const mode=dog.haukku;if(mode){const rotu=dog.kimea?'terrieri':'ajokoira';const dist=hare?Math.hypot(hare.x-dog.x,hare.z-dog.z):60;const hiljaa=mode==='epavarma'||mode==='vingahdus';dog._hn=(dog._hn||0)+1;play3d(haukkuAani(mode,rotu,dog._hn),{x:dog.x,y:height(dog.x,dog.z)+0.6,z:dog.z,gain:(hiljaa?0.42:0.9)*(0.4+0.6*vol),ref:12,max:1600,roll:1.45,rate:haukkuSavel(rotu)});dogJaw=hiljaa?0.22:1;barkT=haukkuVali(mode,dist)*(0.85+Math.random()*0.35);}
+  haukkuKello+=dt;barkT-=dt;terrierBarkT-=dt;
+  if(GUEST){const a=dog.aani;if(a&&a.id&&a.id!==dog._aaniSoitu&&buf[a.nimi]&&soitaHaukku('ajokoira',a.nimi,{x:dog.x,y:height(dog.x,dog.z)+0.6,z:dog.z,gain:(0.9)*(0.4+0.6*vol),ref:12,max:1600,roll:1.45,rate:haukkuSavel(dog.kimea?'terrieri':'ajokoira')},a.id))dog._aaniSoitu=a.id;}
+  else if(dog.riding)barkT=1;else if(barkT<=0){const mode=dog.haukku;if(mode){const rotu=dog.kimea?'terrieri':'ajokoira';const dist=hare?Math.hypot(hare.x-dog.x,hare.z-dog.z):60;const hiljaa=mode==='epavarma'||mode==='vingahdus';const nimi=haukkuAani(mode,rotu,(dog._hn||0)+1);if(soitaHaukku('ajokoira',nimi,{x:dog.x,y:height(dog.x,dog.z)+0.6,z:dog.z,gain:(hiljaa?0.42:0.9)*(0.4+0.6*vol),ref:12,max:1600,roll:1.45,rate:haukkuSavel(rotu)})){dog._hn=(dog._hn||0)+1;dogJaw=hiljaa?0.22:1;barkT=haukkuVali(mode,dist)*(0.85+Math.random()*0.35);}else barkT=0.05;}
     else if(dog.state===D.HAKU){play3d('sfx_koira_nuuhkii',{x:dog.x,y:height(dog.x,dog.z)+0.4,z:dog.z,gain:.6,ref:3,max:120,roll:1.5});barkT=6;}
     else if(dog.state===D.YOJALKI||dog.state===D.YLOSOTTO){play3d('sfx_koira_nuuhkii_hidas',{x:dog.x,y:height(dog.x,dog.z)+0.35,z:dog.z,gain:.45,ref:3,max:80,roll:1.5});barkT=4;}else barkT=1;}
-  if(NET?.peer&&!terrier.riding&&(dog.haukku==='jalki'||dog.haukku==='nako')&&terrierBarkT<=0){terrier._hn=(terrier._hn||0)+1;play3d(haukkuAani(dog.haukku,'terrieri',terrier._hn),{x:terrier.x,y:height(terrier.x,terrier.z)+0.4,z:terrier.z,gain:0.62*(0.4+0.6*audibility(terrier.pos,P)),ref:10,max:1200,roll:1.5,rate:haukkuSavel('terrieri')});terrierBarkT=haukkuVali(dog.haukku,18)*1.8;}
+  if(NET?.peer&&!terrier.riding&&(dog.haukku==='jalki'||dog.haukku==='nako')&&terrierBarkT<=0){const nimi=haukkuAani(dog.haukku,'terrieri',(terrier._hn||0)+1);if(soitaHaukku('terrieri',nimi,{x:terrier.x,y:height(terrier.x,terrier.z)+0.4,z:terrier.z,gain:0.62*(0.4+0.6*audibility(terrier.pos,P)),ref:10,max:1200,roll:1.5,rate:haukkuSavel('terrieri')})){terrier._hn=(terrier._hn||0)+1;terrierBarkT=haukkuVali(dog.haukku,18)*1.8;}else terrierBarkT=0.05;}
   if((muistiT-=dt)<=0){muistiT=0.5;muistiKierros();}
   saavutusElukat();if(NET?.peer)saavuta({tyyppi:'moninpeli'});
   if(pl.moving&&stepT<=0){stepT=0.55;}
@@ -834,6 +869,8 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
     if((gpsImgT-=dt)<=0){gpsImgT=0.1;$('gpsi').src=$('gpsc').toDataURL();}}
   {const rp=$('radio');rp.style.display='none';if(interior.loaded&&(radio._d!==radio.on+''+radio.ch)){radio._d=radio.on+''+radio.ch;interior.drawRadio(radio.on,CH[radio.ch].n,FREQ[CH[radio.ch].k]);}radio.showT-=dt;$('radioch').textContent=CH[radio.ch].n;$('radioname').style.display=pl.inCar&&radio.showT>0?'block':'none';$('radioname').textContent='📻 '+CH[radio.ch].n;}
   if((msgT-=dt)<=0)$('msg').textContent='';
+  {const autoH=$('autohje');if(autoH)autoH.style.display=pl.inCar&&$('menu').style.display!=='flex'?'block':'none';const msgEl=$('msg');if(msgEl){if(pl.inCar){msgEl.style.top='44px';msgEl.style.bottom='auto';}else{msgEl.style.top='';msgEl.style.bottom='';}}
+    fpsHudN++;fpsHudT+=dt;const fn=$('fpsnaytto');if(fn){if(!aset.fps)fn.style.display='none';else if(fpsHudT>=0.5){fn.style.display='block';fn.textContent=Math.round(fpsHudN/fpsHudT)+' FPS';fpsHudN=0;fpsHudT=0;}}}
   if(puheT>0&&(puheT-=dt)<=0)piilotaPuhe();
   for(const k of kylalaiset){if(k.kaatunut)continue;if(Math.hypot(k.x-pl.x,k.z-pl.z)>80)continue;k.obj.userData.tick(dt);}
   huudaLahella(dt);kylaTunnelma(dt);paivitaPihaMallit();
@@ -841,7 +878,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),0
   {for(const [id2,on] of [['kyykky',pl.crouch],['gps-ikoni',gpsOn]]){const e2=$(id2);if(e2)e2.style.color=on?'#ff0':'';}}
   updateLeash();{const f=$('cmdF').querySelector('img');const want='/hud/ikonit/'+(omaKoiraNyt().leashed?'ikoni_naru_irti':'ikoni_naru_kiinni')+'.png';if(!f.src.endsWith(want))f.src=want;}
   vm.cam.aspect=cam.aspect;vm.cam.fov=55-8*vm.aim;vm.cam.updateProjectionMatrix();vm.update(dt,{moving:pl.moving,t:tnow,aim:aiming,run:!pl.crouch&&!!keys.ShiftLeft&&!!pl.moving,crouch:!!pl.crouch||luovutus>0});
-  scene.fog.density=LAATU[laatu].fog*(lumiTila.on?1+0.55*(lumiTila.voima||0.6):1);
+  scene.fog.density=LAATU[laatu].fog/nakyKerroin()*(lumiTila.on?1+0.55*(lumiTila.voima||0.6):1);
   renderer.autoClear=true;renderer.render(scene,cam);renderer.autoClear=false;renderer.clearDepth();if(!pl.inCar&&!INS.on&&!editorOn&&!riistaOn)renderer.render(vm.scene,vm.cam);renderIns();}
 let saav=null,saavDirty=0,saavutusJono=[],saavutusT=0,saavutusEl=null;
 function saavuta(ev){
@@ -856,7 +893,7 @@ function soittoSaavutus(){
   if(!AC||!AL.aanetPaalla())return;
   const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();
   o.type='sine';o.frequency.setValueAtTime(660,t);o.frequency.setValueAtTime(880,t+0.09);
-  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.07,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+0.35);
+  const huippu=Math.max(0.0002,0.07*(aset.yleinen??1));g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(huippu,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+0.35);
   o.connect(g).connect(AC.destination);o.start(t);o.stop(t+0.36);
 }
 function piirraSaavutus(dt){
