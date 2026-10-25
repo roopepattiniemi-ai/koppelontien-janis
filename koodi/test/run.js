@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { Hare, H, alkujaljenHamaykset } from '../logic/hare.js';
 import { Dog, D, nearTrack, dogInside } from '../logic/dog.js';
 import { audibility } from '../logic/hearing.js';
@@ -71,18 +72,23 @@ t('koira: lenkit 80–250 m, paluu pelaajan luo 30–90 s välein, haistelu',()=
 t('koira: jäljen löydyttyä ajo, ei paluuta; useista jäniksistä yksi kohde',()=>{const hs=[1,2,3].map(s=>new Hare({x:s*180-360,z:0,seed:s}));const tp=hs[1].nightTrail[5];const g=new Dog({x:tp.x+1,z:tp.z,seed:3});g._haku();g.returnT=0.5;
   g.update(.05,{hares:hs,player:{x:0,z:0}});assert.equal(g.state,D.YOJALKI);assert.equal(g.target,hs[1]);for(let i=0;i<200;i++){g.update(.05,{hares:hs,player:{x:0,z:0}});assert.notEqual(g.state,D.PALUU);}});
 t('riista pakenee pelaajaa, oja ja korkeus: tiet tasaisia, oja 0.4–0.6 m',async()=>{const c=new Critter('peura',{x:0,z:0,seed:1});c.update(.1,{threats:[{x:20,z:0}]});assert.equal(c.state,'pakenee');for(let i=0;i<20;i++)c.update(.1,{threats:[{x:20,z:0}]});assert.ok(c.x<-10);});
-t('metsäkauris katsoo 40–55 m ja loikkii vasta sitten',()=>{assert.deepEqual(SPECIES.kauris,{walk:0.8,run:10,fear:40,calm:12});
+t('metsäkauris katsoo 30–42 m ja loikkii vasta sitten',()=>{assert.deepEqual(SPECIES.kauris,{walk:0.8,run:10,fear:30,calm:12,katso:42});assert.equal(SPECIES.peura.fear,45);
   const far=new Critter('kauris',{x:0,z:0,seed:1});far.update(.1,{threats:[{x:70,z:0}]});assert.equal(far.state,'vaeltaa');
-  const close=new Critter('kauris',{x:0,z:0,seed:2});close.update(.1,{threats:[{x:30,z:0}]});assert.equal(close.state,'pakenee');
-  const deer=new Critter('peura',{x:0,z:0,seed:1});deer.update(.1,{threats:[{x:50,z:0}]});assert.equal(deer.state,'pakenee');
-  const c=new Critter('kauris',{x:0,z:0,seed:3}),thr={x:48,z:0};
+  const reuna=new Critter('kauris',{x:0,z:0,seed:1});reuna.update(.1,{threats:[{x:50,z:0}]});assert.equal(reuna.state,'vaeltaa');
+  const close=new Critter('kauris',{x:0,z:0,seed:2});close.update(.1,{threats:[{x:20,z:0}]});assert.equal(close.state,'pakenee');
+  const raja=new Critter('kauris',{x:0,z:0,seed:2});raja.update(.1,{threats:[{x:29,z:0}]});assert.equal(raja.state,'pakenee');
+  const deerFar=new Critter('peura',{x:0,z:0,seed:1});deerFar.update(.1,{threats:[{x:50,z:0}]});assert.equal(deerFar.state,'vaeltaa');
+  const deer=new Critter('peura',{x:0,z:0,seed:1});deer.update(.1,{threats:[{x:40,z:0}]});assert.equal(deer.state,'pakenee');
+  const c=new Critter('kauris',{x:0,z:0,seed:3}),thr={x:36,z:0};
   c.update(.05,{threats:[thr]});assert.equal(c.state,'katsoo');assert.equal(c.speed,0);assert.ok(Math.cos(c.heading)>0.5);
   for(let i=0;i<10;i++)c.update(.05,{threats:[thr]});assert.equal(c.state,'katsoo');assert.equal(c.speed,0);
   let t=0.55;while(c.state==='katsoo'&&t<3){c.update(.05,{threats:[thr]});t+=.05;}
   assert.equal(c.state,'pakenee');assert.ok(t>=0.9&&t<=2.15,'katsominen '+t);
   const x0=c.x;let hi=0,lo=99;for(let i=0;i<40;i++){c.update(.05,{threats:[thr]});hi=Math.max(hi,c.speed);lo=Math.min(lo,c.speed);}
   assert.ok(c.x<x0-2,'loikkii poispäin');assert.ok(hi>9&&lo<3,'loikka '+hi+'/'+lo);
-  const flee=new Critter('kauris',{x:0,z:0,seed:4});flee.update(.05,{threats:[{x:48,z:0}]});assert.equal(flee.state,'katsoo');
+  const yla=new Critter('kauris',{x:0,z:0,seed:5});yla.update(.05,{threats:[{x:42,z:0}]});assert.equal(yla.state,'katsoo');
+  const ohi=new Critter('kauris',{x:0,z:0,seed:5});ohi.update(.05,{threats:[{x:43,z:0}]});assert.equal(ohi.state,'vaeltaa');
+  const flee=new Critter('kauris',{x:0,z:0,seed:4});flee.update(.05,{threats:[{x:36,z:0}]});assert.equal(flee.state,'katsoo');
   flee.update(.05,{threats:[{x:20,z:0}]});assert.equal(flee.state,'katsoo');});
 {const W=await import('../logic/world.js');t('ojat: syvyys 0.4–0.6 m tien vierellä, ajoalue ja piha tasaisia, korkeus −6…+9 m',()=>{let mx=0;for(const r of W.ROADS){if(r.c!=='tie')continue;for(let i=0;i<r.pts.length-1;i+=3){const[a,b]=r.pts[i],[c,d]=r.pts[i+1],L=Math.hypot(c-a,d-b);if(L<1)continue;const ux=-(d-b)/L,uz=(c-a)/L,mx0=(a+c)/2,mz0=(b+d)/2;
     for(let e=-r.w/2;e<r.w/2+0.6;e+=0.3)assert.equal(W.ditch(mx0+ux*e,mz0+uz*e),0);let m=0;for(let e=0;e<4;e+=0.1)m=Math.max(m,W.ditch(mx0+ux*(r.w/2+e),mz0+uz*(r.w/2+e)));mx=Math.max(mx,m);}}
@@ -93,9 +99,31 @@ t('ajettu jänis kaartaa vaiheittain laajan lenkin ja palaa pelaajan/lähtöpaik
   let maxR=0,minLate=1e9,turn=0,ph=h.heading,straight=0;for(let i=0;i<6000;i++){const dog={x:h.x-Math.cos(h.heading)*60,z:h.z-Math.sin(h.heading)*60};h.update(.1,{dog,player:P});if(h.state===H.MAKUU)break;
     const r=Math.hypot(h.x-s0.x,h.z-s0.z);maxR=Math.max(maxR,r);let dh=h.heading-ph;dh=Math.atan2(Math.sin(dh),Math.cos(dh));turn+=Math.abs(dh);ph=h.heading;if(maxR>150)minLate=Math.min(minLate,Math.min(Math.hypot(h.x-P.x,h.z-P.z),r));}
   assert.ok(maxR>150&&maxR<1100,'lenkki '+maxR);assert.ok(minLate<80,'paluu lähelle '+minLate);assert.ok(turn>Math.PI*2,'kaartaa '+turn);});
-t('radiojuonto: ~50 % biisien välissä, ei samaa kahdesti peräkkäin, oikea kanava',async()=>{const {pickJuonto}=await import('../logic/radio.js');let last=null,n=0,prev=null;
-  const {BIISIT,JUONNOT}=await import('../logic/radio.js');assert.equal(BIISIT,4);assert.equal(JUONNOT,8);
-  for(let i=0;i<4000;i++){const j=pickJuonto('tekno',last);if(j){n++;assert.ok(j!==last,j);assert.match(j,/^radio\/juonto_tekno_[1-8]$/);last=j;}}assert.ok(n>1800&&n<2200,n);});
+t('radiojuonto: jokaisen biisin jälkeen välipuhe, ei samaa kahdesti, puuttuva ohitetaan',async()=>{const {pickJuonto,valipuheNimi,VALIPUHE,uusiRadio,radioEtene,radioPuuttuu,radioKuva,radioSovita}=await import('../logic/radio.js');
+  const {BIISIT,JUONNOT}=await import('../logic/radio.js');assert.equal(BIISIT,4);assert.equal(JUONNOT,8);assert.equal(VALIPUHE,8);
+  let last=null;for(let i=0;i<400;i++){const j=pickJuonto('tekno',last);assert.ok(j);assert.notEqual(j,last);assert.match(j,/^puhe\/radio\/tekno_0[1-8]$/);last=j;}
+  assert.equal(valipuheNimi('parkano',1),'puhe/radio/parkano_01');assert.equal(valipuheNimi('country',8),'puhe/radio/country_08');assert.equal(valipuheNimi('tekno',3),'puhe/radio/tekno_03');
+  const s=uusiRadio(1);s.on=true;s.ch=0;s.clip='radio_parkano_1';s.song=0;s.pos=10;
+  assert.equal(radioEtene(s,0.01,10),true);assert.match(s.clip,/^puhe\/radio\/parkano_0[1-8]$/);const vp=s.clip;
+  assert.equal(radioEtene(s,0.2,0.2),true);assert.equal(s.clip,'radio_parkano_2');
+  assert.equal(radioPuuttuu(s),false);s.clip=vp;assert.equal(radioPuuttuu(s),true);assert.equal(s.clip,'radio_parkano_2');
+  const v=uusiRadio(2);assert.equal(radioSovita(v,radioKuva(s)),'hae');assert.equal(v.clip,s.clip);assert.equal(v.song,s.song);});
+t('asetukset: localStorage, rajat ja oletukset',async()=>{const {lataaAsetukset,talletaAsetukset,puhdistaAsetukset,oletusAsetukset,lataaLaatu,LAATUNIMI,RES_SKAALA,NAKYVYYS,AVAIN}=await import('../logic/asetukset.js');
+  const mem={m:{},getItem(k){return this.m[k]??null;},setItem(k,v){this.m[k]=String(v);}};
+  assert.deepEqual(lataaAsetukset(mem),oletusAsetukset());
+  assert.equal(oletusAsetukset().res,2);assert.equal(RES_SKAALA[oletusAsetukset().res],1);assert.equal(oletusAsetukset().naky,2);assert.equal(NAKYVYYS[2].nimi,'Pitkä');
+  const p=talletaAsetukset(mem,{res:9,naky:-1,fps:1,yleinen:2,radio:-1,puhe:0.25,extra:1});
+  assert.equal(p.res,2);assert.equal(p.naky,2);assert.equal(p.fps,true);assert.equal(p.yleinen,1);assert.equal(p.radio,0);assert.equal(p.puhe,0.25);
+  assert.deepEqual(lataaAsetukset(mem),p);assert.equal(JSON.parse(mem.getItem(AVAIN)).puhe,0.25);
+  assert.deepEqual(RES_SKAALA,[0.5,0.75,1]);assert.equal(NAKYVYYS.length,3);assert.equal(NAKYVYYS[2].kerroin,1.4);
+  assert.deepEqual(puhdistaAsetukset('ei'),oletusAsetukset());
+  const laatu={m:{},getItem(k){return this.m[k]??null;},setItem(k,v){this.m[k]=String(v);}};
+  laatu.setItem('jahti_laatu','matala');assert.equal(lataaLaatu(laatu),'korkea');assert.equal(laatu.getItem('jahti_laatu'),'korkea');
+  laatu.setItem('jahti_laatu','keski');assert.equal(lataaLaatu(laatu),'keski');assert.equal(LAATUNIMI.korkea,'Photo realistic');
+  const src=fs.readFileSync(new URL('../public/main.js',import.meta.url),'utf8');
+  const al=fs.readFileSync(new URL('../public/aloitus.js',import.meta.url),'utf8');
+  const laatuSrc=fs.readFileSync(new URL('../logic/asetukset.js',import.meta.url),'utf8');
+  assert.match(laatuSrc,/Photo realistic/);assert.match(src,/LAATUNIMI\[n\]/);assert.ok(!/automaattinen pudotus/.test(src));assert.match(al,/Photo realistic/);assert.ok(!/pudottaa automaattisesti/.test(al));});
 t('tienvarsi: pylväät ojan ulkopuolella, rakennukset irti teistä',async()=>{globalThis.window=globalThis.window||{};globalThis.document=globalThis.document||{createElement:()=>({getContext:()=>new Proxy({},{get:()=>()=>{}})})};
   const W=await import('../logic/world.js'),TV=await import('../public/tienvarsi.js'),THREE=await import('three');const i=TV.setupRoadside(new THREE.Scene(),{ROADS:W.ROADS,height:W.height,distToRoad:W.distToRoad,SIZE:W.SIZE});
   assert.ok(i.valot.length>10&&i.sahko.length>10,[i.valot.length,i.sahko.length]);for(const p of[...i.valot,...i.sahko]){assert.ok(W.distToRoad(p.x,p.z)>0.6+1.8,'ojassa');assert.equal(W.ditch(p.x,p.z),0);}

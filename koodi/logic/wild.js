@@ -1,13 +1,13 @@
 // Muut eläimet: vaeltaa -> pakenee (pelaaja/koira lähellä) -> rauhoittuu.
-// Metsäkauris katsoo uhkaa 40–55 m päässä 1–2 s ja loikkii vasta sitten.
+// Metsäkauris katsoo uhkaa 30–42 m päässä 1–2 s ja loikkii vasta sitten. Alle 30 m se pakenee heti.
 import { mulberry32 } from './rng.js';
 import { inBounds, turnBack } from './bounds.js';
-export const SPECIES={kettu:{walk:1.1,run:9,fear:35,calm:12},peura:{walk:0.9,run:11,fear:60,calm:15},kauris:{walk:0.8,run:10,fear:40,calm:12},orava:{walk:0.7,run:4.5,fear:12,calm:6}};
+export const SPECIES={kettu:{walk:1.1,run:9,fear:35,calm:12},peura:{walk:0.9,run:11,fear:45,calm:15},kauris:{walk:0.8,run:10,fear:30,calm:12,katso:42},orava:{walk:0.7,run:4.5,fear:12,calm:6}};
 export class Critter{
   constructor(kind,{x=0,z=0,seed=1}={}){this.kind=kind;this.p=SPECIES[kind];this.rand=mulberry32(seed);this.x=x;this.z=z;this.home={x,z};this.heading=this.rand()*6.28;this.state='vaeltaa';this.t=0;this.speed=0;this.alive=true;this.trail=[];this.pause=0;}
   update(dt,{threats=[],ok=(x,z)=>inBounds(x,z)}={}){if(!this.alive)return;this.t+=dt;let near=null,nd=1e9;for(const p of threats){if(!p)continue;const d=Math.hypot(p.x-this.x,p.z-this.z);if(d<nd){nd=d;near=p;}}
     if(this.state==='katsoo'){this.speed=0;if(near)this.heading=Math.atan2(near.z-this.z,near.x-this.x);if((this.katso-=dt)<=0){this.state='pakenee';this.t=0;this.fled=true;}}
-    else if(this.kind==='kauris'&&this.state!=='pakenee'&&near&&nd>=this.p.fear&&nd<=55){this.state='katsoo';this.katso=1+this.rand();this.speed=0;this.t=0;this.heading=Math.atan2(near.z-this.z,near.x-this.x);}
+    else if(this.kind==='kauris'&&this.state!=='pakenee'&&near&&nd>=this.p.fear&&nd<=(this.p.katso||42)){this.state='katsoo';this.katso=1+this.rand();this.speed=0;this.t=0;this.heading=Math.atan2(near.z-this.z,near.x-this.x);}
     else if(near&&nd<this.p.fear&&this.state!=='pakenee'){this.state='pakenee';this.t=0;this.fled=true;}
     if(this.state==='pakenee'){let sp=this.p.run;if(this.kind==='kauris'){const v=this.t%0.5;sp=v<0.22?this.p.run:this.p.run*0.15;}this.speed=sp;if(near)this.heading=Math.atan2(this.z-near.z,this.x-near.x)+Math.sin(this.t*1.3)*0.3;if(this.t>this.p.calm&&nd>this.p.fear*1.5){this.state='vaeltaa';this.t=0;this.home={x:this.x,z:this.z};}}
     else if(this.state!=='katsoo'){if(this.pause>0){this.pause-=dt;this.speed=0;}else{this.speed=this.p.walk;this.heading+=(this.rand()-.5)*dt*1.5;const hd=Math.hypot(this.x-this.home.x,this.z-this.home.z);if(hd>60)this.heading=Math.atan2(this.home.z-this.z,this.home.x-this.x);if(this.rand()<dt*0.15)this.pause=2+this.rand()*5;}}

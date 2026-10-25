@@ -113,7 +113,8 @@ export function setupInterior(scene){
       g.fillStyle='#111';g.font='bold 64px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,512,60,995);
       const st=new THREE.CanvasTexture(sc);st.anisotropy=8;const sm=new THREE.Mesh(new THREE.PlaneGeometry(0.30,0.034),new THREE.MeshBasicMaterial({map:st,side:THREE.DoubleSide}));
       sm.name=name;rn.parent.add(sm);sm.position.copy(rn.position);sm.quaternion.copy(rn.quaternion);sm.translateY(dy);sm.translateX(dx);return [sm,sc];};
-    if(rn){[it.n.tarra,it.tarraCanvas]=tarra('R radio päälle – Q kanavan vaihto','radio_tarra',-0.02,-0.2);[it.n.tarraE,it.tarraECanvas]=tarra('E – ulos autosta','ulos_tarra',0);it.n.tarra.scale.x=-1;it.n.tarra.add(it.n.tarraE);it.n.tarraE.position.set(0,-0.04,0.001);it.n.tarraE.quaternion.identity();}
+    // Näyttö on skaalattu 1.6× (puolikorkeus 0.04). Tarrat tulevat sen alle omiksi riveikseen.
+    if(rn){[it.n.tarra,it.tarraCanvas]=tarra('R radio päälle – Q kanavan vaihto','radio_tarra',-0.065,0);[it.n.tarraE,it.tarraECanvas]=tarra('E – ulos autosta','ulos_tarra',0);it.n.tarra.scale.x=-1;it.n.tarra.add(it.n.tarraE);it.n.tarraE.position.set(0,-0.04,0.001);it.n.tarraE.quaternion.identity();}
     // Lattialevy + karmien muotoiset lasit (pisteet mitattu sisa_kori-meshistä). Näkyvät vain sisänäkymässä.
     const ex=new THREE.Group();it.extra=ex;ex.visible=false;gl.scene.add(ex);
     const fl=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.04,2.2),new THREE.MeshLambertMaterial({color:0x3a3d42,flatShading:true}));fl.position.set(0,0.44,-0.53);ex.add(fl);
