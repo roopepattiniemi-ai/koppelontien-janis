@@ -20,6 +20,8 @@ export const SAAVUTUKSET = [
     ikoni: ik('<circle cx="16" cy="16" r="10" fill="none" stroke="#d4a24c" stroke-width="2"/><circle cx="16" cy="16" r="4" fill="none" stroke="#d4a24c" stroke-width="2"/><circle cx="16" cy="16" r="1.4" fill="#d4a24c"/>') },
   { id: 'veri', nimi: 'Verijälki', kuvaus: 'Haavoittunut jänis löytyi. Lumi kertoi loput.',
     ikoni: ik('<circle cx="12" cy="14" r="3" fill="#a83232"/><circle cx="18" cy="18" r="2.2" fill="#a83232"/><circle cx="22" cy="12" r="1.6" fill="#a83232"/>') },
+  { id: 'kunnialla', nimi: 'Lopetus kunnialla', kuvaus: 'Haavakko löytyi verijäljeltä ja lopetettiin. Lumi johti perille.',
+    ikoni: ik('<circle cx="11" cy="18" r="2.4" fill="#a83232"/><circle cx="16" cy="14" r="1.7" fill="#a83232"/><circle cx="20" cy="11" r="1.2" fill="#a83232"/><path d="M22 18l3 3 5-6" fill="none" stroke="#e2c27a" stroke-width="1.6"/>') },
   { id: 'kyla', nimi: 'Kyläjuttu', kuvaus: 'Isäntä, mummo, naapuri ja äijä. Juoru ehti kiertää takaisin.',
     ikoni: ik('<rect x="6" y="8" width="14" height="10" rx="2" fill="#6f8fbf"/><rect x="12" y="14" width="14" height="10" rx="2" fill="#e6d3a1"/>') },
   { id: 'mummo', nimi: 'Mummon vihollinen', kuvaus: 'Mummo näki saaliin. Porkkana jäi kostamatta. Vielä.',
@@ -132,6 +134,7 @@ export function kirjaa(tila, ev = {}) {
     } else if (ev.laji === 'peura' && (ev.osumat | 0) <= 1) avaa('peura');
   } else if (tyyppi === 'lento') avaa('lento');
   else if (tyyppi === 'veri') avaa('veri');
+  else if (tyyppi === 'kunnialla') avaa('kunnialla');
   else if (tyyppi === 'nouto') {
     tila.noudot = (tila.noudot | 0) + 1;
     muuttui = true;

@@ -2,10 +2,18 @@
 // Metsäkauris katsoo uhkaa 30–42 m päässä 1–2 s ja loikkii vasta sitten. Alle 30 m se pakenee heti.
 import { mulberry32 } from './rng.js';
 import { inBounds, turnBack } from './bounds.js';
+import { haavaKaynnista, haavaPaivita, haavaKuolema, makuuMatka } from './haava.js';
 export const SPECIES={kettu:{walk:1.1,run:9,fear:35,calm:12},peura:{walk:0.9,run:11,fear:45,calm:15},kauris:{walk:0.8,run:10,fear:30,calm:12,katso:42},orava:{walk:0.7,run:4.5,fear:12,calm:6}};
 export class Critter{
   constructor(kind,{x=0,z=0,seed=1}={}){this.kind=kind;this.p=SPECIES[kind];this.rand=mulberry32(seed);this.x=x;this.z=z;this.home={x,z};this.heading=this.rand()*6.28;this.state='vaeltaa';this.t=0;this.speed=0;this.alive=true;this.trail=[];this.pause=0;}
-  update(dt,{threats=[],ok=(x,z)=>inBounds(x,z)}={}){if(!this.alive)return;this.t+=dt;let near=null,nd=1e9;for(const p of threats){if(!p)continue;const d=Math.hypot(p.x-this.x,p.z-this.z);if(d<nd){nd=d;near=p;}}
+  wound(dmg,from){if(this.kind==='orava'||!this.alive)return;haavaKaynnista(this,this.kind,dmg==null?0.45:dmg);this._haavaHuuto=this.state!=='pakenee';
+    if(this.haavaMakuu){this.haavaMakuu=false;this.haavaMatka=(this.haavaKuljettu||0)+makuuMatka(this.kind,this.rand)*0.4;this.haavaKuolee=haavaKuolema(this.kind);}
+    this.state='pakenee';this.fled=true;this.t=0;if(from)this.heading=Math.atan2(this.z-from.z,this.x-from.x);}
+  update(dt,{threats=[],player,ok=(x,z)=>inBounds(x,z),vieras=false}={}){if(!this.alive)return;
+    if(this.wounded&&this.kind!=='orava'){if(vieras)return;let uhka=null,ud=1e9;for(const p of threats){if(!p)continue;const d=Math.hypot(p.x-this.x,p.z-this.z);if(d<ud){ud=d;uhka=p;}}
+      haavaPaivita(this,dt,{uhka,pelaajat:player?[player]:[],laji:this.kind,move:(d,a)=>this._siirry(d,a,ok)});
+      if(!this.alive)this.state='kuollut';else if(this.haavaMakuu)this.state='haavamakuu';else this.state='pakenee';return;}
+    this.t+=dt;let near=null,nd=1e9;for(const p of threats){if(!p)continue;const d=Math.hypot(p.x-this.x,p.z-this.z);if(d<nd){nd=d;near=p;}}
     if(this.state==='katsoo'){this.speed=0;if(near)this.heading=Math.atan2(near.z-this.z,near.x-this.x);if((this.katso-=dt)<=0){this.state='pakenee';this.t=0;this.fled=true;}}
     else if(this.kind==='kauris'&&this.state!=='pakenee'&&near&&nd>=this.p.fear&&nd<=(this.p.katso||42)){this.state='katsoo';this.katso=1+this.rand();this.speed=0;this.t=0;this.heading=Math.atan2(near.z-this.z,near.x-this.x);}
     else if(near&&nd<this.p.fear&&this.state!=='pakenee'){this.state='pakenee';this.t=0;this.fled=true;}
@@ -13,5 +21,8 @@ export class Critter{
     else if(this.state!=='katsoo'){if(this.pause>0){this.pause-=dt;this.speed=0;}else{this.speed=this.p.walk;this.heading+=(this.rand()-.5)*dt*1.5;const hd=Math.hypot(this.x-this.home.x,this.z-this.home.z);if(hd>60)this.heading=Math.atan2(this.home.z-this.z,this.home.x-this.x);if(this.rand()<dt*0.15)this.pause=2+this.rand()*5;}}
     if(this.speed>0){this.heading=turnBack(this.x,this.z,this.heading);const nx=this.x+Math.cos(this.heading)*this.speed*dt,nz=this.z+Math.sin(this.heading)*this.speed*dt;if(ok(nx,nz)){this.x=nx;this.z=nz;}else this.heading+=1.5;
       const l=this.trail.at(-1);if(!l||Math.hypot(l.x-this.x,l.z-this.z)>(this.kind==='peura'?1.4:this.kind==='kauris'?1.15:0.9))this.trail.push({x:this.x,z:this.z,dir:Math.atan2(this.x-(l?.x??this.x),-(this.z-(l?.z??this.z)))});}}
-  shoot(){this.alive=false;this.speed=0;this.state='kuollut';}
+  _siirry(dt,a,ok){this.heading=turnBack(this.x,this.z,a);const nx=this.x+Math.cos(this.heading)*this.speed*dt,nz=this.z+Math.sin(this.heading)*this.speed*dt;
+    if(ok(nx,nz)){this.x=nx;this.z=nz;}else this.heading+=1.5;
+    const l=this.trail.at(-1);if(!l||Math.hypot(l.x-this.x,l.z-this.z)>(this.kind==='peura'?1.4:this.kind==='kauris'?1.15:0.9))this.trail.push({x:this.x,z:this.z,dir:Math.atan2(this.x-(l?.x??this.x),-(this.z-(l?.z??this.z)))});}
+  shoot(by){this.alive=false;this.speed=0;this.state='kuollut';this.haavaMakuu=false;if(by)this.killedBy=by;}
 }

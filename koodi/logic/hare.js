@@ -2,6 +2,7 @@
 import { mulberry32 } from './rng.js';
 import { turnBack, clampB, BOUND } from './bounds.js';
 import { ROADS, FIELDS } from './world.js';
+import { haavaKaynnista, haavaPaivita, haavaKuolema, makuuMatka } from './haava.js';
 export const H = { MAKUU:'makuu', PAKO:'pako', KIERTO:'kierto', PALUU:'paluuperat', KUOLLUT:'kuollut' };
 // Alkujäljen hämäykset: sivuloikka (jump) tai paluu omalle jäljelle. Rauhallinen mutka ei ole hämäys.
 export function alkujaljenHamaykset(trail){
@@ -63,9 +64,11 @@ export class Hare {
   // Makuupaikan vaihto päivällä: lyhyt suora siirtymä, jatkaa yöjälkeä ilman sivuloikkaa.
   relocate(){const r=this.rand,a=r()*6.28,n=6+(r()*10|0);let h=a;for(let i=0;i<n;i++){h+=(r()-.5)*0.28;this.x+=Math.cos(h)*1.5;this.z+=Math.sin(h)*1.5;this._pt(this.nightTrail,this.x,this.z);const p=this.nightTrail.at(-1);p.yo=true;p.synty=this.kello||0;}
     this.home={x:this.x,z:this.z};this.relocations=(this.relocations||0)+1;}
-  // haavoittuminen: jos makuulla, lähtee; hidastuu ja jättää verijälkeä (main.js piirtää)
+  // haavoittuminen: jos makuulla, lähtee; pakenee, hidastuu ja jättää verijälkeä
   // dmg 0..1 kertyy; vakavuus -> hidastus, taukojen tiheys/pituus, verijäljen tiheys
-  wound(dmg,from){this.wounded=true;this.damage=Math.min(0.95,(this.damage||0)+dmg);this.pauseT=this.pauseT??this._pauseGap();if(this.state===H.MAKUU||this.paused)this.flush(from||{x:this.x+1,z:this.z});}
+  wound(dmg,from){haavaKaynnista(this,this.laji,dmg);this.pauseT=this.pauseT??this._pauseGap();
+    if(this.haavaMakuu){this.haavaMakuu=false;this.haavaMatka=(this.haavaKuljettu||0)+makuuMatka(this.laji,this.rand)*0.4;this.haavaKuolee=haavaKuolema(this.laji);}
+    if(this.state===H.MAKUU||this.paused)this.flush(from||{x:this.x+1,z:this.z});}
   _pauseGap(){return 3+22*(1-(this.damage||0))*(0.6+0.8*this.rand());}
   get bloodStep(){return 0.6+3*(1-(this.damage||0));}
   shoot(by){this.state=H.KUOLLUT;this.alive=false;this.speed=0;this.paused=false;this.killedBy=by;}
@@ -111,10 +114,9 @@ export class Hare {
     this.kello=kello!=null?kello:(this.kello||0)+dt;
     const flushR=4;
     if(!this.alive)return;
-    // haavoittunut: tauot (tiheämpiä ja pidempiä kun vahinko suuri), verijälki this.blood
-    if(this.wounded&&this.state!==H.MAKUU){if(this.paused){if((this.pauseT-=dt)<=0){this.paused=false;this.pauseT=this._pauseGap();}this.speed=0;return;}
-      if((this.pauseT-=dt)<=0){this.paused=true;this.pauseT=1+6*this.damage*(0.5+this.rand());return;}
-      const b=(this.blood||(this.blood=[])).at(-1);if(!b||Math.hypot(b.x-this.x,b.z-this.z)>this.bloodStep)this.blood.push({x:this.x,z:this.z});}
+    if(this.wounded){const lista=[];if(player)lista.push(player);for(const h of (hunters||[]))if(h&&!h.inCar)lista.push(h);
+      let uhka=null,ud=1e9;for(const p of (dog?[dog]:[]).concat(lista)){const dd=Math.hypot(p.x-this.x,p.z-this.z);if(dd<ud){ud=dd;uhka=p;}}
+      haavaPaivita(this,dt,{uhka,pelaajat:lista,laji:this.laji,move:(d,a)=>this._move(d,a,{haava:true})});return;}
     this.t+=dt; const d=(p)=>p?Math.hypot(p.x-this.x,p.z-this.z):1e9;
     const lista=hunters?.length?hunters:(player?[{...player,moving:!!playerMoving||!!player.moving,crouch:!!player.crouch,run:!!player.run}]:[]);
     switch(this.state){
@@ -167,7 +169,7 @@ export class Hare {
         break;}
     }
   }
-  _move(dt,a){a=turnBack(this.x,this.z,a);this.heading=a;if(this.wounded)this.speed*=1-0.75*this.damage;this.x=clampB(this.x+Math.cos(a)*this.speed*dt);this.z=clampB(this.z+Math.sin(a)*this.speed*dt);
+  _move(dt,a,opt){a=turnBack(this.x,this.z,a);this.heading=a;if(this.wounded&&!opt?.haava)this.speed*=1-0.75*this.damage;this.x=clampB(this.x+Math.cos(a)*this.speed*dt);this.z=clampB(this.z+Math.sin(a)*this.speed*dt);
     const l=this.trail.at(-1);if(!l||Math.hypot(l.x-this.x,l.z-this.z)>1.5){this._pt(this.trail,this.x,this.z,!!this._hook);const vi=this.trail.at(-1);if(vi&&vi.synty==null)vi.synty=this.kello||0;this._hook=false;}}
 }
 
