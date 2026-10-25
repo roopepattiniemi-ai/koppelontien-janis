@@ -38,7 +38,7 @@ export const COUNTS={kettu:2,peura:6,kauris:3,orava:8,teeriParvet:4,teeriParvess
 export function setupWildlife(scene,{height,isForest,trees,rand=Math.random,play3d=()=>{},aiInterval=()=>0}){
   const W={critters:[],birds:[],targets:[]};
   const spot=(ok,cx=0,cz=0,R=500)=>{for(let i=0;i<400;i++){const x=cx+(rand()*2-1)*R,z=cz+(rand()*2-1)*R;if(inBounds(x,z,20)&&ok(x,z))return{x,z};}return{x:cx,z:cz};};
-  const add=(kind,n)=>{for(let i=0;i<n;i++){const p=spot((x,z)=>isForest(x,z)&&Math.hypot(x,z)>60),c=new Critter(kind,{...p,seed:(rand()*1e6)|0});c.obj=loadModel('mallit/elaimet/'+kind+'.glb',kind==='kauris'?kaurisMalli(rand()<0.5):FB[kind]());scene.add(c.obj);c.tn=0;W.critters.push(c);
+  const add=(kind,n)=>{for(let i=0;i<n;i++){const p=spot((x,z)=>isForest(x,z)&&Math.hypot(x,z)>60),c=new Critter(kind,{...p,seed:(rand()*1e6)|0});const pukki=kind==='kauris'&&rand()<0.5;c.obj=loadModel('mallit/elaimet/'+(kind==='kauris'&&!pukki?'kauris_naaras':kind)+'.glb',kind==='kauris'?kaurisMalli(pukki):FB[kind]());scene.add(c.obj);c.tn=0;W.critters.push(c);
     if(kind!=='kettu')W.targets.push({kind,c,get alive(){return c.alive;},pos:()=>({x:c.x,y:height(c.x,c.z)+(kind==='peura'?0.9:kind==='kauris'?0.55:0.08),z:c.z}),r:kind==='peura'?0.45:kind==='kauris'?0.28:0.08,shoot:()=>c.shoot()});}};
   add('kettu',COUNTS.kettu);add('peura',COUNTS.peura);add('kauris',COUNTS.kauris);add('orava',COUNTS.orava);
   // linnut: teeriparvi koivussa, korpit kiertelevät, tiaiset (pienet varamuodot)

@@ -286,3 +286,8 @@ Puutteet: ei hirsi-/lautakuviota (tasaväri), päädyt kolmioina ilman räystä�
 - Samat nodet ja hierarkia kuin `ajokoira.glb`: runko > (paa > leuka, korva_v, korva_o), jalka_ev/eo/tv/to, hanta.
   Pivotit = ajokoiran pivotit × 0.565 (korvat hieman muokattu) → `V8.bindNodes`/`animDog` toimii sellaisenaan. Ei GLB-animaatioita.
 - Huom: `animDog` makuuasento laskee runkoa absoluuttisesti 0.28 m (mitoitettu ajokoiralle); pienellä koiralla arvo pitäisi skaalata.
+
+## Metsäkauris (generoi_kauris.py)
+`python3 generoi_kauris.py` → `mallit/elaimet/kauris.glb` (pukki, lyhyet 3-haaraiset sarvet) ja `kauris_naaras.glb` (ei sarvia) + esikatselu `/workspace/jahti_varmuus/kauris_esikatselu.png`.
+Käyttää generoi_elaimet.py:n apufunktioita (ell/box/legs4/write); solmut ja hierarkia täsmälleen kuin peura.glb (runko > kaula > paa > korva_v/o; runko > jalka_ev/eo/tv/to, hanta), jotta v09.js:n animQuad toimii. Säkä ~0,70 m, ruskeanharmaa talviturkki, iso valkoinen peili, lähes näkymätön häntä, tumma kuono + valkoinen leukaläiskä.
+Koodi (v09.js) lataa toistaiseksi vain `kauris.glb`; naarasta ei vielä käytetä.
